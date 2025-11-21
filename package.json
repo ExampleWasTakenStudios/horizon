@@ -1,35 +1,35 @@
 {
-  "name": "horizon",
-  "version": "1.0.0",
-  "description": "A node DNS service.",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "ts": "tsc -p ./tsconfig.json --watch",
-    "node": "node --watch ./dist/index.js",
-    "build": "tsc -p ./tsconfig.json && node ./dist/index.js",
-    "preview": "tsc -p ./tsconfig.json && node ./dist/index.js",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/ExampleWasTakenStudios/horizon.git"
-  },
-  "author": "ExampleWasTaken",
-  "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/ExampleWasTakenStudios/horizon/issues"
-  },
-  "homepage": "https://github.com/ExampleWasTakenStudios/horizon#readme",
-  "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@types/node": "^24.5.2",
-    "eslint": "^9.36.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.1"
-  }
+    "name": "horizon",
+    "version": "1.0.0",
+    "description": "A node DNS service.",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "ts": "tsc -p ./tsconfig.json --watch",
+        "node": "node --watch ./dist/index.js",
+        "build": "tsc -p ./tsconfig.json && node ./dist/index.js",
+        "preview": "tsc -p ./tsconfig.json && node ./dist/index.js",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ExampleWasTakenStudios/horizon.git"
+    },
+    "author": "ExampleWasTaken",
+    "license": "GPL-3.0",
+    "bugs": {
+        "url": "https://github.com/ExampleWasTakenStudios/horizon/issues"
+    },
+    "homepage": "https://github.com/ExampleWasTakenStudios/horizon#readme",
+    "devDependencies": {
+        "@eslint/js": "^9.36.0",
+        "@types/node": "^24.5.2",
+        "eslint": "^9.36.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-prettier": "^5.5.4",
+        "prettier": "^3.6.2",
+        "typescript": "^5.9.2",
+        "typescript-eslint": "^8.44.1"
+    }
 }

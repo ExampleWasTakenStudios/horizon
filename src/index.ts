@@ -7,8 +7,8 @@ server.on('error', (err) => {
   server.close();
 });
 
-server.on('message', (msg, rinfo) => {
-  console.log(`server got: ${msg} from ${rinfo.address}:${rinfo.port}`);
+server.on('message', (buffer, rinfo) => {
+  
 });
 
 server.on('listening', () => {
@@ -16,4 +16,4 @@ server.on('listening', () => {
   console.log(`server listening ${address.address}:${address.port}`);
 });
 
-server.bind(605353);
+server.bind({ address: '127.0.0.1', port: 53 });
