@@ -1,3 +1,4 @@
+import { DNS_OP_CODES } from './constants/DNS_OP_CODES.js';
 import { DNSHeader } from './DNSHeader.js';
 import { DNSPacket } from './DNSPacket.js';
 import { DNSQuestion } from './DNSQuestion.js';

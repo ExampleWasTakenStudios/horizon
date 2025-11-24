@@ -1,4 +1,3 @@
-import type { DNS_OP_CODES } from './constants/DNS_OP_CODES.js';
 import type { DNS_RESPONSE_CODES } from './constants/DNS_REPONSE_CODES.js';
 
 export class DNSHeader {
@@ -24,7 +23,7 @@ export class DNSHeader {
     2       a server status request (STATUS)
     3-15    reserved for future use
    */
-  opCode: typeof DNS_OP_CODES;
+  opCode: number;
   /**
     Authoritative Answer - this bit is valid in responses,
     and specifies that the responding name server is an
@@ -87,7 +86,7 @@ export class DNSHeader {
          transfer) for particular data.
     6-15 Reserved for future use.
    */
-  responseCode: typeof DNS_RESPONSE_CODES;
+  responseCode: number;
   /**
     An unsigned 16 bit integer specifying the number of
     entries in the question section.
@@ -113,13 +112,13 @@ export class DNSHeader {
   constructor(
     id: number,
     isQuery: boolean,
-    opCode: typeof DNS_OP_CODES,
+    opCode: number,
     isAuthoritative: boolean,
     isTruncated: boolean,
     isRecursionDesired: boolean,
     isRecursionAvailable: boolean,
     z: number,
-    responseCode: typeof DNS_RESPONSE_CODES,
+    responseCode: number,
     questionCount: number,
     answerCount: number,
     resourceRecordsCount: number,
