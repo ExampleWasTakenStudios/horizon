@@ -1,7 +1,10 @@
-const DNS_CLASSES = new Map<number, string>([
-  [1, 'IN'],
-  [3, 'CH'],
-  [4, 'HS'],
+const DNS_CLASSES: ReadonlyMap<number, string> = new Map<
+  number,
+  string
+>([
+  [1, 'IN'] as const,
+  [3, 'CH'] as const,
+  [4, 'HS'] as const,
 ]);
 
 const DNS_QCLASSES = new Map<number, string>([...DNS_CLASSES, [255, '*']]);

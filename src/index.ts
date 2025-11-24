@@ -19,14 +19,11 @@ server.on('message', (buffer, rinfo) => {
   }
 
   const stats = {
-    rinfo,
-    questionCount: parser.getDNSPacket().getHeader().questionCount,
-    domain: parser.getDNSPacket().getQuestions()[0]!.qName.join('.'),
-    qType: DNS_QTYPES.get(parser.getDNSPacket().getQuestions()[0]!.qType),
-    qClass: DNS_QCLASSES.get(parser.getDNSPacket().getQuestions()[0]!.qClass),
-  };
+    header: parser.getDNSPacket().getHeader(),
+    questions: parser.getDNSPacket().getQuestions(),
+  }
 
-  console.log(stats);
+  console.log(JSON.stringify(stats, null, 2));
 });
 
 server.on('listening', () => {

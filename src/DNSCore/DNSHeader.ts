@@ -24,7 +24,7 @@ export class DNSHeader {
     2       a server status request (STATUS)
     3-15    reserved for future use
    */
-  opCode: DNS_OP_CODES;
+  opCode: typeof DNS_OP_CODES;
   /**
     Authoritative Answer - this bit is valid in responses,
     and specifies that the responding name server is an
@@ -87,7 +87,7 @@ export class DNSHeader {
          transfer) for particular data.
     6-15 Reserved for future use.
    */
-  responseCode: DNS_RESPONSE_CODES;
+  responseCode: typeof DNS_RESPONSE_CODES;
   /**
     An unsigned 16 bit integer specifying the number of
     entries in the question section.
@@ -113,13 +113,13 @@ export class DNSHeader {
   constructor(
     id: number,
     isQuery: boolean,
-    opCode: DNS_OP_CODES,
+    opCode: typeof DNS_OP_CODES,
     isAuthoritative: boolean,
     isTruncated: boolean,
     isRecursionDesired: boolean,
     isRecursionAvailable: boolean,
     z: number,
-    responseCode: DNS_RESPONSE_CODES,
+    responseCode: typeof DNS_RESPONSE_CODES,
     questionCount: number,
     answerCount: number,
     resourceRecordsCount: number,

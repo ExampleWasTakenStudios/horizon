@@ -1,9 +1,12 @@
-export enum DNS_RESPONSE_CODES {
-  NO_ERROR = 0,
-  FORMAT_ERROR = 1,
-  SERVER_FAILURE = 2,
-  NAME_ERROR = 3,
-  NOT_IMPLEMENTED = 4,
-  REFUSED = 5,
-  // RESERVED = 6-15
-}
+const DNS_RESPONSE_CODES: ReadonlyMap<number, string> = new Map<number, string>([
+  [0, 'NO_ERROR'] as const,
+  [1, 'FORMAT_ERROR'] as const,
+  [2, 'SERVER_FAILURE'] as const,
+  [3, 'NAME_ERROR'] as const,
+  [4, 'NOT_IMPLEMENTED'] as const,
+  [5, 'REFUSED'] as const,
+]);
+
+Object.freeze(DNS_RESPONSE_CODES);
+
+export { DNS_RESPONSE_CODES };

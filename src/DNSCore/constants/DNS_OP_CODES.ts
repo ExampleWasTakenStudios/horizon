@@ -1,6 +1,9 @@
-export enum DNS_OP_CODES {
-  QUERY = 0,
-  IQUERY = 1,
-  STATUS = 2,
-  // RESERVED = 3-15
-}
+const DNS_OP_CODES: ReadonlyMap<number, string> = new Map<number, string>([
+  [0, 'QUERY'] as const,
+  [1, 'IQUERY'] as const,
+  [2, 'STATUS'] as const,
+]);
+
+Object.freeze(DNS_OP_CODES);
+
+export { DNS_OP_CODES };

@@ -1,4 +1,4 @@
-const DNS_TYPES = new Map<number, string>([
+const DNS_TYPES: ReadonlyMap<number, string> = new Map<number, string>([
   [1, 'A'],
   [2, 'NS'],
   [5, 'CNAME'],
@@ -10,7 +10,7 @@ const DNS_TYPES = new Map<number, string>([
   [16, 'TXT'],
 ]);
 
-const DNS_QTYPES = new Map<number, string>([
+const DNS_QTYPES: ReadonlyMap<number, string> = new Map<number, string>([
   ...DNS_TYPES,
   [252, 'AXFR'],
   [253, 'MAILB'],
