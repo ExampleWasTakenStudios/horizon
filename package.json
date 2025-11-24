@@ -5,6 +5,7 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
+        "dev": "tsx watch ./src/index.ts",
         "ts": "tsc -p ./tsconfig.json --watch",
         "node": "node --watch ./dist/index.js",
         "build": "tsc -p ./tsconfig.json && node ./dist/index.js",
@@ -21,6 +22,9 @@
     "bugs": {
         "url": "https://github.com/ExampleWasTakenStudios/horizon/issues"
     },
+    "engines": {
+        "node": "24.x.x"
+    },
     "homepage": "https://github.com/ExampleWasTakenStudios/horizon#readme",
     "devDependencies": {
         "@eslint/js": "^9.36.0",
@@ -29,6 +33,7 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
         "prettier": "^3.6.2",
+        "tsx": "^4.20.6",
         "typescript": "^5.9.2",
         "typescript-eslint": "^8.44.1"
     }
