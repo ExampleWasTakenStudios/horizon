@@ -1,3 +1,4 @@
+import type { DNS_QCLASSES } from './constants/DNS_CLASSES.js';
 import { DNS_OP_CODES } from './constants/DNS_OP_CODES.js';
 import { DNSHeader } from './DNSHeader.js';
 import { DNSPacket } from './DNSPacket.js';
@@ -174,7 +175,7 @@ export class DNSParser {
     return this.packet.readUint16BE(startOffset);
   }
 
-  private parseQClass(startOffset: number): number {
+  private parseQClass(startOffset: number): DNS_QCLASSES {
     return this.packet.readUint16BE(startOffset);
   }
 
