@@ -1,12 +1,14 @@
 import type { AddressInfo } from 'node:net';
 import type { Module } from '../Module.js';
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
+import { WireProtocolModule } from '../wire-protocol/WireProtocolModule.js';
 
 const IP_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
 export class DownstreamModule implements Module {
   private socket: Socket;
+  private wireProtocolModule: WireProtocolModule;
 
   constructor() {
     this.socket = dgram.createSocket({ type: 'udp4' });
@@ -15,6 +17,8 @@ export class DownstreamModule implements Module {
     this.socket.on('close', () => this.onClose());
     this.socket.on('listening', () => this.onListening());
     this.socket.on('message', (msg, rinfo) => this.onMessage(msg, rinfo));
+
+    this.wireProtocolModule = new WireProtocolModule();
   }
 
   /**
@@ -46,7 +50,14 @@ export class DownstreamModule implements Module {
   }
 
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
-    console.log('Received msg: ', msg, ' from ', rinfo);
+    const decodedMsg = this.wireProtocolModule.decode(msg);
+
+    console.log(
+      'Received msg: ',
+      JSON.stringify(decodedMsg, null, 2),
+      ' from ',
+      rinfo
+    );
   }
 
   private onListening(): void {

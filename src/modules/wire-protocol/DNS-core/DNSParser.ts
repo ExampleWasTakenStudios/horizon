@@ -38,7 +38,12 @@ export class DNSParser {
     );
   }
 
-  getDNSPacket(): DNSPacket {
+  /**
+   * Technically, the raw DNS message is parsed when instantiating this class. 
+   * However, for clarity, this method is called parse to clearly indicate that it is supposed to be called when the output of the parser is needed.
+   * @returns The parsed DNSPacket.
+   */
+  parse(): DNSPacket {
     return this.dnsPacket;
   }
 
