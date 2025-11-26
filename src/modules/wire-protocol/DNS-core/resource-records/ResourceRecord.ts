@@ -1,13 +1,20 @@
-export class ResourceRecord {
+import type { DNS_CLASSES } from '../constants/DNS_CLASSES.js';
+import type { DNS_TYPES } from '../constants/DNS_TYPES.js';
+
+export interface ResourceRecord<T> {
   /**
    * A domain name to which this resource record pertains.
    */
-  name: string;
+  readonly name: string;
   /**
     Two octets which specify the class of the data in the
     RDATA field.
    */
-  type: Uint8Array;
+  readonly type: DNS_TYPES;
+  /**
+   * Two octets which specify the class of the data in the RDATA field.
+   */
+  readonly RR_class: DNS_CLASSES;
   /**
     A 32 bit unsigned integer that specifies the time
     interval (in seconds) that the resource record may be
@@ -15,12 +22,12 @@ export class ResourceRecord {
     interpreted to mean that the RR can only be used for the
     transaction in progress, and should not be cached.
    */
-  ttl: Uint32Array;
+  readonly ttl: number;
   /**
     An unsigned 16 bit integer that specifies the length in
     octets of the RDATA field.
    */
-  rdLength: Uint16Array;
+  readonly rdLength: number;
   /**
     A variable length string of octets that describes the
     resource.  The format of this information varies
@@ -28,13 +35,5 @@ export class ResourceRecord {
     For example, the if the TYPE is A and the CLASS is IN,
     the RDATA field is a 4 octet ARPA Internet address.
    */
-  rdData: Uint8Array;
-
-  constructor(name: string, type: Uint8Array, ttl: Uint32Array, rdLength: Uint16Array, rdData: Uint8Array) {
-    this.name = name;
-    this.type = type;
-    this.ttl = ttl;
-    this.rdLength = rdLength;
-    this.rdData = rdData;
-  }
+  readonly rData: T;
 }

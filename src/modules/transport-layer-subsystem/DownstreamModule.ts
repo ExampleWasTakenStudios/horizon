@@ -52,12 +52,7 @@ export class DownstreamModule implements Module {
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
     const decodedMsg = this.wireProtocolModule.decode(msg);
 
-    console.log(
-      'Received msg: ',
-      JSON.stringify(decodedMsg, null, 2),
-      ' from ',
-      rinfo
-    );
+    console.log('Received msg: ', JSON.stringify(decodedMsg, null, 2), ' from ', rinfo);
   }
 
   private onListening(): void {

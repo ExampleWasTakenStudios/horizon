@@ -1,20 +1,20 @@
 import type { DNSHeader } from './DNSHeader.js';
 import type { DNSQuestion } from './DNSQuestion.js';
-import type { ResourceRecord } from './ResourceRecord.js';
+import type { GenericResourceRecord } from './resource-records/ResourceRecord.js';
 
 export class DNSPacket {
   private header: DNSHeader;
   private questions: DNSQuestion[];
-  private answers: ResourceRecord[];
-  private authority: ResourceRecord[];
-  private additional: ResourceRecord[];
+  private answers: GenericResourceRecord[];
+  private authority: GenericResourceRecord[];
+  private additional: GenericResourceRecord[];
 
   constructor(
     header: DNSHeader,
     questions: DNSQuestion[],
-    answers: ResourceRecord[],
-    authority: ResourceRecord[],
-    additional: ResourceRecord[]
+    answers: GenericResourceRecord[],
+    authority: GenericResourceRecord[],
+    additional: GenericResourceRecord[]
   ) {
     this.header = header;
     this.questions = questions;
@@ -31,15 +31,15 @@ export class DNSPacket {
     return this.questions;
   }
 
-  getAnswers(): ResourceRecord[]{
+  getAnswers(): GenericResourceRecord[] {
     return this.answers;
   }
 
-  getAuthority(): ResourceRecord[] {
+  getAuthority(): GenericResourceRecord[] {
     return this.authority;
   }
 
-  getAdditional(): ResourceRecord[] {
+  getAdditional(): GenericResourceRecord[] {
     return this.additional;
   }
 }
