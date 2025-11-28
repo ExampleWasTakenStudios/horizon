@@ -3,7 +3,7 @@ import type { DNS_TYPES } from '../constants/DNS_TYPES.js';
 import type { RDataMap } from './RDataMap.js';
 import type { ResourceRecord } from './ResourceRecord.js';
 
-export class CNAME_Record implements ResourceRecord<RDataMap[DNS_TYPES.TXT]> {
+export class TXT_Record implements ResourceRecord<RDataMap[DNS_TYPES.TXT]> {
   readonly name: string;
   readonly type: DNS_TYPES.TXT;
   readonly RR_class: DNS_CLASSES;
