@@ -10,7 +10,7 @@ export class DNSQuestion {
     that this field may be an odd number of octets; no
     padding is used.
    */
-  qName: string[];
+  qName: string;
   /**
     A two octet code which specifies the type of the query.
     The values for this field include all codes valid for a
@@ -24,7 +24,7 @@ export class DNSQuestion {
    */
   qClass: DNS_QCLASSES;
 
-  constructor(qName: string[], qType: DNS_QTYPES, qClass: DNS_QCLASSES) {
+  constructor(qName: string, qType: DNS_QTYPES, qClass: DNS_QCLASSES) {
     this.qName = qName;
     this.qType = qType;
     this.qClass = qClass;

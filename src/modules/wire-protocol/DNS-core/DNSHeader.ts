@@ -103,7 +103,7 @@ export class DNSHeader {
     server resource records in the authority records
     section.
    */
-  readonly authorityCount: number;
+  readonly authoritativeCount: number;
   /**
     An unsigned 16 bit integer specifying the number of
     resource records in the additional records section.
@@ -136,7 +136,7 @@ export class DNSHeader {
     this.responseCode = responseCode;
     this.questionCount = questionCount;
     this.answerCount = answerCount;
-    this.authorityCount = authorityCount;
+    this.authoritativeCount = authorityCount;
     this.additionalCount = additionalCount;
   }
 }

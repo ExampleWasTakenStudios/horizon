@@ -1,25 +1,27 @@
+import type { DNS_TYPES } from './constants/DNS_TYPES.js';
 import type { DNSHeader } from './DNSHeader.js';
 import type { DNSQuestion } from './DNSQuestion.js';
-import type { GenericResourceRecord } from './resource-records/ResourceRecord.js';
+import type { RDataMap } from './resource-records/RDataMap.js';
+import type { ResourceRecord } from './resource-records/ResourceRecord.js';
 
 export class DNSPacket {
   private header: DNSHeader;
   private questions: DNSQuestion[];
-  private answers: GenericResourceRecord[];
-  private authority: GenericResourceRecord[];
-  private additional: GenericResourceRecord[];
+  private answers: ResourceRecord<RDataMap[DNS_TYPES]>[];
+  private authority: ResourceRecord<RDataMap[DNS_TYPES]>[];
+  private additional: ResourceRecord<RDataMap[DNS_TYPES]>[];
 
   constructor(
     header: DNSHeader,
     questions: DNSQuestion[],
-    answers: GenericResourceRecord[],
-    authority: GenericResourceRecord[],
-    additional: GenericResourceRecord[]
+    answers: ResourceRecord<RDataMap[DNS_TYPES]>[],
+    authoritative: ResourceRecord<RDataMap[DNS_TYPES]>[],
+    additional: ResourceRecord<RDataMap[DNS_TYPES]>[]
   ) {
     this.header = header;
     this.questions = questions;
     this.answers = answers;
-    this.authority = authority;
+    this.authority = authoritative;
     this.additional = additional;
   }
 
@@ -31,15 +33,15 @@ export class DNSPacket {
     return this.questions;
   }
 
-  getAnswers(): GenericResourceRecord[] {
+  getAnswers(): ResourceRecord<RDataMap[DNS_TYPES]>[] {
     return this.answers;
   }
 
-  getAuthority(): GenericResourceRecord[] {
+  getAuthority(): ResourceRecord<RDataMap[DNS_TYPES]>[] {
     return this.authority;
   }
 
-  getAdditional(): GenericResourceRecord[] {
+  getAdditional(): ResourceRecord<RDataMap[DNS_TYPES]>[] {
     return this.additional;
   }
 }

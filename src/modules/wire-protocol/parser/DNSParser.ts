@@ -1,7 +1,7 @@
+import { decode as decodePuny } from 'punycode';
 import { IllegalCharStringError } from '../../../errors/IllegalCharStringError.js';
-import { IllegalRDataFieldError } from '../../../errors/IllegalRDataFieldError.js';
-import { UnknownRRTypeError } from '../../../errors/UnknownRRTypeError.js';
-import { DNS_CLASSES, type DNS_QCLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
+import { PointerLoopError } from '../../../errors/PointerLoopError.js';
+import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
 import { DNSHeader } from '../DNS-core/DNSHeader.js';
 import { DNSPacket } from '../DNS-core/DNSPacket.js';
@@ -12,31 +12,28 @@ import { HINFO_Record } from '../DNS-core/resource-records/HINFO_Record.js';
 import { MX_Record } from '../DNS-core/resource-records/MX_Record.js';
 import { NS_Record } from '../DNS-core/resource-records/NS_Record.js';
 import { PTR_Record } from '../DNS-core/resource-records/PTR_Record.js';
-import { RawResourceRecord } from '../DNS-core/resource-records/RawResourceRecord.js';
 import type { RDataMap } from '../DNS-core/resource-records/RDataMap.js';
 import type { ResourceRecord } from '../DNS-core/resource-records/ResourceRecord.js';
 import { SOA_Record } from '../DNS-core/resource-records/SOA_Record.js';
 import { TXT_Record } from '../DNS-core/resource-records/TXT_Record.js';
 import { Cursor } from './Cursor.js';
+import { CursorBuffer } from './CursorBuffer.js';
 
 export class DNSParser {
-  // THE ORDER IN WHICH METHODS IN THIS METHOD ARE CALLED IS CRITICAL!!! - ONLY MODIFY IF YOU KNOW WHAT YOU'RE DOING!!!
-  parse(rawPacket: Buffer): DNSPacket {
-    const cursor = new Cursor();
+  parse(rawPacket: CursorBuffer): DNSPacket {
+    const header = this.parseHeader(rawPacket);
+    const questions = this.parseQuestions(rawPacket, header);
+    const answers = this.parseResourceRecord(rawPacket, header.answerCount);
+    const authoritative = this.parseResourceRecord(rawPacket, header.authoritativeCount);
+    const additional = this.parseResourceRecord(rawPacket, header.additionalCount);
 
-    const header = this.parseHeader(cursor, rawPacket);
-    const questions = this.parseQuestions(cursor, rawPacket, header);
-    const answers = this.parseResourceRecordSection(cursor, rawPacket, header.answerCount);
-    const authority = this.parseResourceRecordSection(cursor, rawPacket, header.authorityCount);
-    const additional = this.parseResourceRecordSection(cursor, rawPacket, header.additionalCount);
-
-    return new DNSPacket(header, questions, answers, authority, additional);
+    return new DNSPacket(header, questions, answers, authoritative, additional);
   }
 
-  private parseHeader(cursor: Cursor, rawPacket: Buffer): DNSHeader {
-    const id = rawPacket.readUint16BE(0);
+  private parseHeader(rawPacket: CursorBuffer): DNSHeader {
+    const id = rawPacket.readUint16();
 
-    const flags = rawPacket.readUint16BE(2);
+    const flags = rawPacket.readUint16();
 
     // Extract flag bits
     // prettier-ignore
@@ -56,23 +53,21 @@ export class DNSParser {
     // prettier-ignore
     const rCode =  (flags & 0b0000000000001111);
 
-    const qdCount = rawPacket.readUInt16BE(4);
-    const anCount = rawPacket.readUInt16BE(6);
-    const nsCount = rawPacket.readUInt16BE(8);
-    const arCount = rawPacket.readUInt16BE(10);
-
-    cursor.advance(12);
+    const qdCount = rawPacket.readUint16();
+    const anCount = rawPacket.readInt16();
+    const nsCount = rawPacket.readInt16();
+    const arCount = rawPacket.readInt16();
 
     return new DNSHeader(id, !qr, opCode, !!aa, !!tc, !!rd, !!ra, z, rCode, qdCount, anCount, nsCount, arCount);
   }
 
-  private parseQuestions(cursor: Cursor, rawPacket: Buffer, header: DNSHeader): DNSQuestion[] {
+  private parseQuestions(rawPacket: CursorBuffer, header: DNSHeader): DNSQuestion[] {
     const questions: DNSQuestion[] = [];
 
     for (let i = 0; i < header.questionCount; i++) {
-      const qNameLabels = this.parseNameLabels(cursor, rawPacket);
-      const qType = this.parseQType(cursor, rawPacket);
-      const qClass = this.parseQClass(cursor, rawPacket);
+      const qNameLabels = this.parseDomainName(rawPacket);
+      const qType = rawPacket.readUint16();
+      const qClass = rawPacket.readInt16();
 
       questions.push(new DNSQuestion(qNameLabels, qType, qClass));
     }
@@ -80,292 +75,189 @@ export class DNSParser {
     return questions;
   }
 
-  /**
-   * Parse **A SINGLE** resource record section.
-   * @param cursor - The cursor indicating the position from which on to parse the DNS message.
-   * @param rawPacket - The buffer containing the DNS message.
-   * @param resourceRecordCount - Derived from the header, indicates how many individual RRs are to be expected.
-   * @returns An array of classes that implement {@link ResourceRecord}.
-   */
-  private parseResourceRecordSection(
-    cursor: Cursor,
-    rawPacket: Buffer,
-    resourceRecordCount: number
-  ): ResourceRecord<RDataMap[DNS_TYPES]>[] {
+  private parseResourceRecord(rawPacket: CursorBuffer, rrCount: number): ResourceRecord<RDataMap[DNS_TYPES]>[] {
     const resourceRecords: ResourceRecord<RDataMap[DNS_TYPES]>[] = [];
 
-    for (let i = 0; i < resourceRecordCount; i++) {
-      const nameLabels = this.parseNameLabels(cursor, rawPacket);
+    for (let i = 0; i < rrCount; i++) {
+      const name = this.parseDomainName(rawPacket);
+      const type: DNS_TYPES = rawPacket.readUint16();
+      const RR_class: DNS_CLASSES = rawPacket.readInt16();
+      const ttl = rawPacket.readUint32();
+      const rdLength = rawPacket.readUint16();
+      const rawRData = rawPacket.subarray(rdLength);
 
-      const type: DNS_TYPES = rawPacket.readUInt16BE(cursor.getPosition());
-      cursor.advance(2);
-
-      const RR_class: DNS_CLASSES = rawPacket.readUint16BE(cursor.getPosition());
-      cursor.advance(2);
-
-      const ttl = rawPacket.readUInt32BE(cursor.getPosition());
-      cursor.advance(4);
-
-      const rdLength = rawPacket.readUint16BE(cursor.getPosition());
-      cursor.advance(2);
-
-      const rDataStart = cursor.getPosition();
-      const rDataEnd = rDataStart + rdLength;
-      const rData = rawPacket.subarray(rDataStart, rDataEnd);
-
-      if (rDataEnd - rDataStart !== rdLength) {
-        throw new IllegalRDataFieldError(`RDLENGTH field is ${rdLength} but RDATA is ${rDataEnd - rDataStart}`);
+      switch (type) {
+        case DNS_TYPES.A: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new A_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.CNAME: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new CNAME_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.HINFO: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new HINFO_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.MX: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new MX_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.NS: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new NS_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.PTR: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new PTR_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.SOA: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new SOA_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
+        case DNS_TYPES.TXT: {
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          resourceRecords.push(new TXT_Record(name, type, RR_class, ttl, rdLength, rData));
+          break;
+        }
       }
-      cursor.advance(rDataEnd - rDataStart);
-
-      const record = this.resourceRecordFactory(
-        new Cursor(rDataStart),
-        rawPacket,
-        new RawResourceRecord(nameLabels.join('.'), type, RR_class, ttl, rdLength, rData)
-      );
-
-      resourceRecords.push(record);
     }
 
     return resourceRecords;
   }
 
-  /**
-   * Parse a NAME section of a DNS message. This method supports compression pointers by recusively walking the NAME section.
-   * @param cursor - The cursor indicating the offset of the DNS message at which to start parsing.
-   * @param rawPacket - The buffer containing the DNS message.
-   * @param visitedPointers-  A set with already visited pointers. This defaults to an empty set and should only be used by recursive calls to prevent pointer loops.
-   * @returns The parsed labels and how many bytes of the DNS message were consumed.
-   */
-  private parseNameLabels(
-    cursor: Cursor,
-    rawPacket: Buffer,
-    visitedPointers: Set<number> = new Set<number>()
-  ): string[] {
-    const labels: string[] = [];
+  private parseDomainName(rawPacket: CursorBuffer, visitedPointers: Set<number> = new Set<number>()): string {
+    const nameLabels: string[] = [];
 
     while (true) {
-      // Current byte will usually be the length label. However, because it can also be a pointer, it is named "currentByte" to reflect that possibility.
-      const currentByte = rawPacket.readUint8(cursor.getPosition());
+      const currentByte = rawPacket.readUint8();
 
-      // Check if current byte is a pointer
+      // Check if currentByte is a pointer
       if ((currentByte & 0xc0) == 0xc0) {
-        const pointer = this.decodePointer(cursor, rawPacket);
+        const pointer = this.decodePointer(rawPacket.cloneBuffer(), currentByte);
 
+        // Check if the pointer has been visited before
         if (visitedPointers.has(pointer.getPosition())) {
-          throw new Error(`Pointer loop detected at ${pointer}`);
+          throw new PointerLoopError(`Pointer loop detected for pointer ${pointer.getPosition().toString(16)}.`);
         }
 
+        // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
+        // This way, we don't advance the pointer of rawPacket, that is used to parse the original DNS message.
+        const lookupPacket = new CursorBuffer(Buffer.from(rawPacket.cloneBuffer()));
+
         visitedPointers.add(pointer.getPosition());
-        labels.push(...this.parseNameLabels(pointer, rawPacket, visitedPointers));
+        nameLabels.push(...this.parseDomainName(lookupPacket, visitedPointers));
 
         break;
       }
 
-      // Check if current byte is a zero terminator
+      // Check if currentByte is a zero terminator (0x00)
       if (currentByte === 0) {
-        cursor.advance(1);
         break;
       }
 
-      // Current byte is a length label
+      // currentByte is a length label
       const length = currentByte;
-      cursor.advance(1);
-      const label = rawPacket.subarray(cursor.getPosition(), cursor.getPosition() + length).toString('ascii');
-
-      labels.push(label);
-      cursor.advance(length);
+      nameLabels.push(decodePuny(rawPacket.subarray(length).toString('ascii')));
     }
 
-    return labels;
+    return nameLabels.join('.') + '.';
   }
 
-  private parseQType(cursor: Cursor, rawPacket: Buffer): number {
-    const qType = rawPacket.readUint16BE(cursor.getPosition());
-    cursor.advance(2);
+  private parseCharString(rawPacket: CursorBuffer): string {
+    const length = rawPacket.readUint8();
 
-    return qType;
+    if (length + 1 > 256) {
+      throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`);
+    }
+
+    return decodePuny(rawPacket.subarray(length).toString('ascii'));
   }
 
-  private parseQClass(cursor: Cursor, rawPacket: Buffer): DNS_QCLASSES {
-    const qClass = rawPacket.readUint16BE(cursor.getPosition());
-    cursor.advance(2);
-
-    return qClass;
-  }
-
-  /**
-   * Decode a 14-bit pointer in a DNS message.
-   * This will advance the cursor by 2.
-   * @param cursor - Cursor The position of the pointer in the DNS message.
-   * @param rawPacket - The buffer containing the DNS message.
-   * @returns - A new cursor object representing the target of the pointer.
-   */
-  private decodePointer(cursor: Cursor, rawPacket: Buffer): Cursor {
-    const high = (rawPacket.readUint8(cursor.getPosition()) & 0x3f) << 8;
-    const low = rawPacket.readUint8(cursor.getPosition() + 1);
-    cursor.advance(2);
+  private decodePointer(buffer: Buffer, position: number): Cursor {
+    const high = (buffer.readUint8(position) & 0x3f) << 8;
+    const low = buffer.readUint8(position + 1);
 
     return new Cursor(high | low);
   }
 
-  private parseCharString(cursor: Cursor, rawPacket: Buffer): string {
-    const length = rawPacket.readUint8(cursor.getPosition());
-    cursor.advance(1);
+  private parseRData<RRType extends DNS_TYPES>(
+    rawPacket: CursorBuffer,
+    rrType: RRType,
+    rdLength: number,
+    rawRData: Buffer
+  ): RDataMap[RRType] {
+    const rDataCursorBuffer = new CursorBuffer(rawRData);
+    const rawPacketClone = rawPacket.clone();
 
-    if (length + 1 > 256) {
-      throw new IllegalCharStringError(`Detected ${length + 1} bytes. Must be <= 256.`);
-    }
-
-    const string = rawPacket.toString('ascii', cursor.getPosition(), cursor.getPosition() + length);
-    cursor.advance(length);
-
-    return string;
-  }
-
-  /**
-   * Turn a raw RR into a specific one.
-   * @param localCursor - A cursor instance positioned at the start of RDATA. DO NOT PASS the global cursor associated with {@link rawPacket} here as it will advance this cursor.
-   * @param rawPacket - The original buffer containing the DNS message.
-   * @param rawResourceRecord - A DNS RR where RDATA is stored inside a buffer.
-   * @returns A custom RR instance depending on its type.
-   */
-  private resourceRecordFactory(
-    localCursor: Cursor,
-    rawPacket: Buffer,
-    rawResourceRecord: RawResourceRecord
-  ): ResourceRecord<RDataMap[DNS_TYPES]> {
-    switch (rawResourceRecord.type) {
+    switch (rrType) {
       case DNS_TYPES.A: {
         const octets: string[] = [];
 
         for (let i = 0; i < 4; i++) {
-          octets.push(rawResourceRecord.rData.readUint8(i).toString());
+          octets.push(rawPacketClone.readUint8().toString());
         }
 
-        return new A_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          octets.join('.')
-        );
-      }
-      case DNS_TYPES.NS: {
-        const domains: string[] = this.parseNameLabels(localCursor, rawPacket);
-
-        return new NS_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          domains.join('.')
-        );
+        return octets.join('.') as RDataMap[RRType];
       }
       case DNS_TYPES.CNAME: {
-        const domains: string[] = this.parseNameLabels(localCursor, rawPacket);
-
-        return new CNAME_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          domains.join('.')
-        );
-      }
-      case DNS_TYPES.SOA: {
-        const mName = this.parseNameLabels(localCursor, rawPacket);
-        const rName = this.parseNameLabels(localCursor, rawPacket);
-        const serial = rawPacket.readUint32BE(localCursor.getPosition());
-        localCursor.advance(4);
-        const refresh = rawPacket.readUint32BE(localCursor.getPosition());
-        localCursor.advance(4);
-        const retry = rawPacket.readUint32BE(localCursor.getPosition());
-        localCursor.advance(4);
-        const expire = rawPacket.readUint32BE(localCursor.getPosition());
-        localCursor.advance(4);
-        const minimum = rawPacket.readUint32BE(localCursor.getPosition());
-        localCursor.advance(4);
-
-        return new SOA_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          {
-            mName: mName.join('.'),
-            rName: rName.join('.'),
-            serial,
-            refresh,
-            retry,
-            expire,
-            minimum,
-          }
-        );
-      }
-      case DNS_TYPES.PTR: {
-        const nameLabels = this.parseNameLabels(localCursor, rawPacket);
-
-        return new PTR_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          nameLabels.join('.')
-        );
+        return this.parseDomainName(rDataCursorBuffer) as RDataMap[RRType];
       }
       case DNS_TYPES.HINFO: {
-        const cpu = this.parseCharString(localCursor, rawPacket);
-        const os = this.parseCharString(localCursor, rawPacket);
+        const cpu = this.parseCharString(rDataCursorBuffer);
+        const os = this.parseCharString(rDataCursorBuffer);
 
-        return new HINFO_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          { cpu, os }
-        );
+        return { cpu, os } as RDataMap[RRType];
       }
       case DNS_TYPES.MX: {
-        const preference = rawPacket.readInt16BE(localCursor.getPosition());
-        localCursor.advance(2);
+        const preference = rDataCursorBuffer.readInt16();
+        const exchange = this.parseDomainName(rawPacketClone);
 
-        const exchange = this.parseNameLabels(localCursor, rawPacket).join('.');
+        return {
+          preference,
+          exchange,
+        } as RDataMap[RRType];
+      }
+      case DNS_TYPES.NS: {
+        return this.parseDomainName(rawPacketClone) as RDataMap[RRType];
+      }
+      case DNS_TYPES.PTR: {
+        return this.parseDomainName(rawPacketClone) as RDataMap[RRType];
+      }
+      case DNS_TYPES.SOA: {
+        const mName = this.parseDomainName(rawPacketClone);
+        const rName = this.parseDomainName(rawPacketClone);
+        const serial = rawPacketClone.readUint32();
+        const refresh = rawPacketClone.readInt32();
+        const retry = rawPacketClone.readInt32();
+        const expire = rawPacketClone.readInt32();
+        const minimum = rawPacketClone.readUint32();
 
-        return new MX_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          { preference, exchange }
-        );
+        return {
+          mName,
+          rName,
+          serial,
+          refresh,
+          retry,
+          expire,
+          minimum,
+        } as RDataMap[RRType];
       }
       case DNS_TYPES.TXT: {
         const charStrings: string[] = [];
-        const startPosition = localCursor.getPosition();
 
-        while (localCursor.getPosition() - startPosition < rawResourceRecord.rdLength) {
-          charStrings.push(this.parseCharString(localCursor, rawPacket));
+        while (rDataCursorBuffer.getCursorPosition() < rdLength) {
+          charStrings.push(this.parseCharString(rawPacketClone));
         }
 
-        return new TXT_Record(
-          rawResourceRecord.name,
-          rawResourceRecord.type,
-          rawResourceRecord.RR_class,
-          rawResourceRecord.ttl,
-          rawResourceRecord.rdLength,
-          charStrings
-        );
-      }
-      default: {
-        throw new UnknownRRTypeError(`Unknown TYPE ${rawResourceRecord.type} in ${JSON.stringify(rawResourceRecord)}.`);
+        return charStrings as RDataMap[RRType];
       }
     }
   }
