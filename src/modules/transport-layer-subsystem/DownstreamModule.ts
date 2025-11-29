@@ -1,16 +1,16 @@
-import type { AddressInfo } from 'node:net';
-import type { Module } from '../Module.js';
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
+import type { AddressInfo } from 'node:net';
+import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
+import type { Module } from '../Module.js';
 import { WireProtocolModule } from '../wire-protocol/WireProtocolModule.js';
-
-const IP_ADDRESS_REGEX =
-  /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+import { TransportLayerSubsystem } from './TransportLayerSubsystem.js';
 
 export class DownstreamModule implements Module {
   private socket: Socket;
   private wireProtocolModule: WireProtocolModule;
+  private networkInterfaceIPv4: NetworkInterfaceIPv4;
 
-  constructor() {
+  constructor(networkInterfaceIPv4: NetworkInterfaceIPv4) {
     this.socket = dgram.createSocket({ type: 'udp4' });
 
     this.socket.on('error', (error) => this.onError(error));
@@ -19,26 +19,27 @@ export class DownstreamModule implements Module {
     this.socket.on('message', (msg, rinfo) => this.onMessage(msg, rinfo));
 
     this.wireProtocolModule = new WireProtocolModule();
+    this.networkInterfaceIPv4 = networkInterfaceIPv4;
   }
 
   /**
    * @throws Illegal IP address error when an invalid IP address is passed.
    * @throws Illegal port error when a port < 0 || > 65535 is passed.
    */
-  send(msg: Buffer, address: string, port: number): void {
-    if (IP_ADDRESS_REGEX.test(address)) {
-      throw new Error(`Illegal IP address received: ${address}`);
+  send(msg: Buffer, destAddress: string, destPort: number): void {
+    if (TransportLayerSubsystem.IP_ADDRESS_REGEX.test(destAddress)) {
+      throw new Error(`Illegal IP address received: ${destAddress}`);
     }
 
-    if (port < 0 || port > 65535) {
+    if (destPort < 0 || destPort > 65535) {
       throw new Error('Illegal port received. Must be between 0-65535');
     }
 
-    this.socket.send(msg, 0, msg.length, port, address);
+    this.socket.send(msg, 0, msg.length, destPort, destAddress);
   }
 
-  bind(address: string): void {
-    this.socket.bind(53, address);
+  bind(): void {
+    this.socket.bind(53, this.networkInterfaceIPv4.address);
   }
 
   close(): void {

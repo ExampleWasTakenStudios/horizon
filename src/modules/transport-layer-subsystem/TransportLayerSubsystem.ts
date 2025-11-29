@@ -1,24 +1,23 @@
+import os from 'node:os';
 import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
 import type { Subsystem } from '../Subsystem.js';
 import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';
-import os from 'node:os';
 
 export class TransportLayerSubsystem implements Subsystem {
+  static readonly IP_ADDRESS_REGEX =
+    /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+
   private downstreamModule: DownstreamModule;
   private upstreamModule: UpstreamModule;
 
-  constructor(bindToLocalhost?: boolean) {
-    this.downstreamModule = new DownstreamModule();
+  constructor() {
+    const interfaces = this.getNormalizedIPv4Interfaces();
+
+    this.downstreamModule = new DownstreamModule(interfaces.find((current) => current.address === '192.168.1.2')!); // TODO: this should be based on configuration
     this.upstreamModule = new UpstreamModule();
 
-    const interfaces = this.getNormalizedIPv4Interfaces();
-    console.log('Discorvered ', interfaces.length, ' network interfaces.');
-
-    if (bindToLocalhost) {
-      console.log('bindToLocalhost enabled -> binding to localhost');
-      this.downstreamModule.bind('127.0.0.1');
-    }
+    this.downstreamModule.bind();
   }
 
   getDownstreamModule(): DownstreamModule {
