@@ -37,8 +37,8 @@ export class CursorBuffer {
    * @param length Number of bytes that should be parsed, starting from the current cursor position.
    * @returns A new {@link Buffer<ArrayBufferLike>} containing the requested section of the original buffer.
    */
-  subarray(length: number): Buffer<ArrayBufferLike> {
-    const array = Buffer.from(this.buffer.subarray(this.cursor.getPosition()));
+  nextSubarray(length: number): Buffer<ArrayBufferLike> {
+    const array = Buffer.from(this.buffer.subarray(this.cursor.getPosition(), this.cursor.getPosition() + length));
     this.cursor.advance(length);
 
     return array;
@@ -49,6 +49,10 @@ export class CursorBuffer {
    */
   cloneBuffer(): Buffer {
     return Buffer.from(this.buffer);
+  }
+
+  getRemaining(): number {
+    return this.buffer.length - this.cursor.getPosition();
   }
 
   readNextUint8(): number {

@@ -1,4 +1,4 @@
-import { decode as decodePuny } from 'punycode';
+import punycode from '@dcoffey-zengenti/punynode';
 import { IllegalCharStringError } from '../../../errors/IllegalCharStringError.js';
 import { PointerLoopError } from '../../../errors/PointerLoopError.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
@@ -67,7 +67,7 @@ export class DNSParser {
     for (let i = 0; i < header.questionCount; i++) {
       const qNameLabels = this.parseDomainName(rawPacket);
       const qType = rawPacket.readNextUint16();
-      const qClass = rawPacket.readNextInt16();
+      const qClass = rawPacket.readNextUint16();
 
       questions.push(new DNSQuestion(qNameLabels, qType, qClass));
     }
@@ -81,10 +81,10 @@ export class DNSParser {
     for (let i = 0; i < rrCount; i++) {
       const name = this.parseDomainName(rawPacket);
       const type: DNS_TYPES = rawPacket.readNextUint16();
-      const RR_class: DNS_CLASSES = rawPacket.readNextInt16();
+      const RR_class: DNS_CLASSES = rawPacket.readNextUint16();
       const ttl = rawPacket.readNextUint32();
       const rdLength = rawPacket.readNextUint16();
-      const rawRData = rawPacket.subarray(rdLength);
+      const rawRData = rawPacket.nextSubarray(rdLength);
 
       switch (type) {
         case DNS_TYPES.A: {
@@ -150,7 +150,7 @@ export class DNSParser {
 
         // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
         // This way, we don't advance the pointer of rawPacket, that is used to parse the original DNS message.
-        const lookupPacket = new CursorBuffer(Buffer.from(rawPacket.cloneBuffer()));
+        const lookupPacket = new CursorBuffer(rawPacket.cloneBuffer(), pointer.getPosition());
 
         visitedPointers.add(pointer.getPosition());
         nameLabels.push(...this.parseDomainName(lookupPacket, visitedPointers));
@@ -165,10 +165,14 @@ export class DNSParser {
 
       // currentByte is a length label
       const length = currentByte;
-      nameLabels.push(decodePuny(rawPacket.subarray(length + 1).toString('ascii')));
+      const asciiString = rawPacket.nextSubarray(length).toString('ascii');
+
+      const label = asciiString.startsWith('xn--') ? punycode.toUnicode(asciiString) : asciiString;
+
+      nameLabels.push(label);
     }
 
-    return nameLabels.join('.') + '.';
+    return nameLabels.join('.');
   }
 
   private parseCharString(rawPacket: CursorBuffer): string {
@@ -178,7 +182,7 @@ export class DNSParser {
       throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`);
     }
 
-    return decodePuny(rawPacket.subarray(length + 1).toString('ascii'));
+    return rawPacket.nextSubarray(length).toString('ascii');
   }
 
   private decodePointer(buffer: Buffer, position: number): Cursor {
@@ -202,7 +206,7 @@ export class DNSParser {
         const octets: string[] = [];
 
         for (let i = 0; i < 4; i++) {
-          octets.push(rawPacketClone.readNextUint8().toString());
+          octets.push(rDataCursorBuffer.readNextUint8().toString());
         }
 
         return octets.join('.') as RDataMap[RRType];
@@ -254,7 +258,7 @@ export class DNSParser {
         const charStrings: string[] = [];
 
         while (rDataCursorBuffer.getCursorPosition() < rdLength) {
-          charStrings.push(this.parseCharString(rawPacketClone));
+          charStrings.push(this.parseCharString(rDataCursorBuffer));
         }
 
         return charStrings as RDataMap[RRType];
