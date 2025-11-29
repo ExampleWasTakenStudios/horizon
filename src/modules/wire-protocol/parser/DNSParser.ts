@@ -31,9 +31,9 @@ export class DNSParser {
   }
 
   private parseHeader(rawPacket: CursorBuffer): DNSHeader {
-    const id = rawPacket.readUint16();
+    const id = rawPacket.readNextUint16();
 
-    const flags = rawPacket.readUint16();
+    const flags = rawPacket.readNextUint16();
 
     // Extract flag bits
     // prettier-ignore
@@ -53,10 +53,10 @@ export class DNSParser {
     // prettier-ignore
     const rCode =  (flags & 0b0000000000001111);
 
-    const qdCount = rawPacket.readUint16();
-    const anCount = rawPacket.readInt16();
-    const nsCount = rawPacket.readInt16();
-    const arCount = rawPacket.readInt16();
+    const qdCount = rawPacket.readNextUint16();
+    const anCount = rawPacket.readNextInt16();
+    const nsCount = rawPacket.readNextInt16();
+    const arCount = rawPacket.readNextInt16();
 
     return new DNSHeader(id, !qr, opCode, !!aa, !!tc, !!rd, !!ra, z, rCode, qdCount, anCount, nsCount, arCount);
   }
@@ -66,8 +66,8 @@ export class DNSParser {
 
     for (let i = 0; i < header.questionCount; i++) {
       const qNameLabels = this.parseDomainName(rawPacket);
-      const qType = rawPacket.readUint16();
-      const qClass = rawPacket.readInt16();
+      const qType = rawPacket.readNextUint16();
+      const qClass = rawPacket.readNextInt16();
 
       questions.push(new DNSQuestion(qNameLabels, qType, qClass));
     }
@@ -80,10 +80,10 @@ export class DNSParser {
 
     for (let i = 0; i < rrCount; i++) {
       const name = this.parseDomainName(rawPacket);
-      const type: DNS_TYPES = rawPacket.readUint16();
-      const RR_class: DNS_CLASSES = rawPacket.readInt16();
-      const ttl = rawPacket.readUint32();
-      const rdLength = rawPacket.readUint16();
+      const type: DNS_TYPES = rawPacket.readNextUint16();
+      const RR_class: DNS_CLASSES = rawPacket.readNextInt16();
+      const ttl = rawPacket.readNextUint32();
+      const rdLength = rawPacket.readNextUint16();
       const rawRData = rawPacket.subarray(rdLength);
 
       switch (type) {
@@ -137,7 +137,7 @@ export class DNSParser {
     const nameLabels: string[] = [];
 
     while (true) {
-      const currentByte = rawPacket.readUint8();
+      const currentByte = rawPacket.readNextUint8();
 
       // Check if currentByte is a pointer
       if ((currentByte & 0xc0) == 0xc0) {
@@ -165,20 +165,20 @@ export class DNSParser {
 
       // currentByte is a length label
       const length = currentByte;
-      nameLabels.push(decodePuny(rawPacket.subarray(length).toString('ascii')));
+      nameLabels.push(decodePuny(rawPacket.subarray(length + 1).toString('ascii')));
     }
 
     return nameLabels.join('.') + '.';
   }
 
   private parseCharString(rawPacket: CursorBuffer): string {
-    const length = rawPacket.readUint8();
+    const length = rawPacket.readNextUint8();
 
     if (length + 1 > 256) {
       throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`);
     }
 
-    return decodePuny(rawPacket.subarray(length).toString('ascii'));
+    return decodePuny(rawPacket.subarray(length + 1).toString('ascii'));
   }
 
   private decodePointer(buffer: Buffer, position: number): Cursor {
@@ -202,7 +202,7 @@ export class DNSParser {
         const octets: string[] = [];
 
         for (let i = 0; i < 4; i++) {
-          octets.push(rawPacketClone.readUint8().toString());
+          octets.push(rawPacketClone.readNextUint8().toString());
         }
 
         return octets.join('.') as RDataMap[RRType];
@@ -217,7 +217,7 @@ export class DNSParser {
         return { cpu, os } as RDataMap[RRType];
       }
       case DNS_TYPES.MX: {
-        const preference = rDataCursorBuffer.readInt16();
+        const preference = rDataCursorBuffer.readNextInt16();
         const exchange = this.parseDomainName(rawPacketClone);
 
         return {
@@ -234,11 +234,11 @@ export class DNSParser {
       case DNS_TYPES.SOA: {
         const mName = this.parseDomainName(rawPacketClone);
         const rName = this.parseDomainName(rawPacketClone);
-        const serial = rawPacketClone.readUint32();
-        const refresh = rawPacketClone.readInt32();
-        const retry = rawPacketClone.readInt32();
-        const expire = rawPacketClone.readInt32();
-        const minimum = rawPacketClone.readUint32();
+        const serial = rawPacketClone.readNextUint32();
+        const refresh = rawPacketClone.readNextInt32();
+        const retry = rawPacketClone.readNextInt32();
+        const expire = rawPacketClone.readNextInt32();
+        const minimum = rawPacketClone.readNextUint32();
 
         return {
           mName,

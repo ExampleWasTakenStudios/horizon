@@ -1,15 +1,18 @@
 import type { Module } from '../Module.js';
 import { DNSPacket } from './DNS-core/DNSPacket.js';
+import { CursorBuffer } from './parser/CursorBuffer.js';
 import { DNSParser } from './parser/DNSParser.js';
 
 export class WireProtocolModule implements Module {
   decode(buffer: Buffer): DNSPacket {
-    const parser = new DNSParser(buffer);
+    const parser = new DNSParser();
 
-    return parser.parse();
+    const rawPacketCursorBuffer = new CursorBuffer(buffer);
+
+    return parser.parse(rawPacketCursorBuffer);
   }
 
-  encode(dnsPacket: DNSPacket): Buffer {
+  encode(_dnsPacket: DNSPacket): Buffer {
     // TODO: implement DNS packet encoder
     return Buffer.from('');
   }

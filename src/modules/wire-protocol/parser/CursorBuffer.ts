@@ -51,42 +51,42 @@ export class CursorBuffer {
     return Buffer.from(this.buffer);
   }
 
-  readUint8(): number {
+  readNextUint8(): number {
     const u_int8 = this.buffer.readUint8(this.cursor.getPosition());
     this.cursor.advance(1);
 
     return u_int8;
   }
 
-  readUint16(): number {
+  readNextUint16(): number {
     const u_int16 = this.buffer.readUint16BE(this.cursor.getPosition());
     this.cursor.advance(2);
 
     return u_int16;
   }
 
-  readUint32(): number {
+  readNextUint32(): number {
     const u_int32 = this.buffer.readUint32BE(this.cursor.getPosition());
     this.cursor.advance(4);
 
     return u_int32;
   }
 
-  readInt8(): number {
+  readNextInt8(): number {
     const int8 = this.buffer.readInt8(this.cursor.getPosition());
     this.cursor.advance(1);
 
     return int8;
   }
 
-  readInt16(): number {
+  readNextInt16(): number {
     const int16 = this.buffer.readInt16BE(this.cursor.getPosition());
     this.cursor.advance(2);
 
     return int16;
   }
 
-  readInt32(): number {
+  readNextInt32(): number {
     const int32 = this.buffer.readInt32BE(this.cursor.getPosition());
     this.cursor.advance(4);
 
