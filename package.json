@@ -23,7 +23,7 @@
         "url": "https://github.com/ExampleWasTakenStudios/horizon/issues"
     },
     "engines": {
-        "node": "24.x.x"
+        "node": "^25.2.1"
     },
     "homepage": "https://github.com/ExampleWasTakenStudios/horizon#readme",
     "devDependencies": {
