@@ -1,24 +1,26 @@
-import { ConsoleTransport } from '../../logging/transports/ConsoleTransport.js';
 import { Logger } from '../../logging/Logger.js';
+import { ConsoleTransport } from '../../logging/transports/ConsoleTransport.js';
 import type { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule implements Module {
   private transportLayerSubsystem: TransportLayerSubsystem;
-  private mainLogger: Logger;
+  private logger: Logger;
 
   constructor() {
-    this.mainLogger = new Logger('HEAD');
-    this.mainLogger.addTransport(new ConsoleTransport());
-    this.transportLayerSubsystem = new TransportLayerSubsystem(true);
+    this.logger = new Logger('HEAD');
+    this.logger.addTransport(new ConsoleTransport());
+    this.transportLayerSubsystem = new TransportLayerSubsystem(
+      this.logger.getSubLogger('TRANSPORT LAYER SUBSYSTEM'),
+      true
+    );
 
-    this.mainLogger.debug('I am a debug message');
-    this.mainLogger.verbose('I am a verbose message');
-    this.mainLogger.info('I am an info message');
-    this.mainLogger.warn('I am a warn message');
-    this.mainLogger.error('I am an error message');
-    this.mainLogger.fatal('I am a fatal message');
-
-    this.mainLogger.info('I am an info message with an attached object:\n', this.transportLayerSubsystem);
+    this.logger.debug('I am a debug message');
+    this.logger.verbose('I am a verbose message');
+    this.logger.info('I am an info message');
+    this.logger.warn('I am a warn message');
+    this.logger.info('I am an info message with an attached object:\n', this.transportLayerSubsystem);
+    this.logger.error('I am an error message');
+    this.logger.fatal('I am a fatal message');
   }
 }
