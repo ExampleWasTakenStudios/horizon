@@ -1,4 +1,4 @@
-import type { BaseTransport } from './BaseTransport.js';
+import type { BaseTransport } from './transports/BaseTransport.js';
 import type { LogEntry } from './LogEntry.js';
 import { LogLevel } from './LogLevel.js';
 

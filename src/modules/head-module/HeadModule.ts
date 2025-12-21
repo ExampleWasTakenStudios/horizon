@@ -1,4 +1,4 @@
-import { ConsoleTransport } from '../../logging/ConsoleTransport.js';
+import { ConsoleTransport } from '../../logging/transports/ConsoleTransport.js';
 import { Logger } from '../../logging/Logger.js';
 import type { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';

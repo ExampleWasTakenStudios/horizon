@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import { stderr, stdout } from 'process';
+import type { LogEntry } from '../LogEntry.js';
+import { LogLevel } from '../LogLevel.js';
 import type { BaseTransport } from './BaseTransport.js';
-import type { LogEntry } from './LogEntry.js';
-import { LogLevel } from './LogLevel.js';
 
 export class ConsoleTransport implements BaseTransport {
   log(logEntry: LogEntry): void {
