@@ -1,22 +1,26 @@
+import os from 'node:os';
+import type { Logger } from '../../logging/Logger.js';
 import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
-import type { Subsystem } from '../Subsystem.js';
+import { Subsystem } from '../Subsystem.js';
 import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';
-import os from 'node:os';
 
-export class TransportLayerSubsystem implements Subsystem {
+export class TransportLayerSubsystem extends Subsystem {
   private downstreamModule: DownstreamModule;
   private upstreamModule: UpstreamModule;
 
-  constructor(bindToLocalhost?: boolean) {
-    this.downstreamModule = new DownstreamModule();
+  constructor(logger: Logger, bindToLocalhost?: boolean) {
+    super(logger);
+
+    this.downstreamModule = new DownstreamModule(this.logger.getSubLogger('DOWNSTREAM MODULE'));
     this.upstreamModule = new UpstreamModule();
 
     const interfaces = this.getNormalizedIPv4Interfaces();
-    console.log('Discorvered ', interfaces.length, ' network interfaces.');
+
+    this.logger.info('Discorvered ', interfaces.length, ' network interfaces.');
 
     if (bindToLocalhost) {
-      console.log('bindToLocalhost enabled -> binding to localhost');
+      this.logger.warn('bindToLocalhost enabled -> binding to localhost');
       this.downstreamModule.bind('127.0.0.1');
     }
   }

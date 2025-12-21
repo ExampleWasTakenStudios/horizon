@@ -1,16 +1,19 @@
-import type { AddressInfo } from 'node:net';
-import type { Module } from '../Module.js';
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
+import type { AddressInfo } from 'node:net';
+import type { Logger } from '../../logging/Logger.js';
+import { Module } from '../Module.js';
 import { WireProtocolModule } from '../wire-protocol/WireProtocolModule.js';
 
 const IP_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
-export class DownstreamModule implements Module {
+export class DownstreamModule extends Module {
   private socket: Socket;
   private wireProtocolModule: WireProtocolModule;
 
-  constructor() {
+  constructor(logger: Logger) {
+    super(logger);
+
     this.socket = dgram.createSocket({ type: 'udp4' });
 
     this.socket.on('error', (error) => this.onError(error));
@@ -51,20 +54,19 @@ export class DownstreamModule implements Module {
 
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
     const decodedMsg = this.wireProtocolModule.decode(msg);
-
-    console.log('Received msg: ', JSON.stringify(decodedMsg, null, 2), ' from ', rinfo);
+    this.logger.verbose('Received msg: ', JSON.stringify(decodedMsg, null, 2), ' from ', rinfo);
   }
 
   private onListening(): void {
     const address = this.socket.address();
-    console.log(`Server listening on ${address.address}:${address.port}.`);
+    this.logger.info(`Server listening on ${address.address}:${address.port}.`);
   }
 
   private onClose(): void {
-    console.log('Server closed.');
+    this.logger.info('Server closed.');
   }
 
   private onError(error: Error): void {
-    console.error('Server Error: ', error);
+    this.logger.error('Server error: ', error);
   }
 }
