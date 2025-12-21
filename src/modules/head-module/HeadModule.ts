@@ -1,24 +1,24 @@
-import { LogManager } from '../../logging/LogManager.js';
+import { ConsoleTransport } from '../../logging/ConsoleTransport.js';
+import { Logger } from '../../logging/Logger.js';
 import type { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule implements Module {
   private transportLayerSubsystem: TransportLayerSubsystem;
-  private logManager: LogManager;
+  private mainLogger: Logger;
 
   constructor() {
-    this.logManager = new LogManager();
+    this.mainLogger = new Logger('HEAD');
+    this.mainLogger.addTransport(new ConsoleTransport());
     this.transportLayerSubsystem = new TransportLayerSubsystem(true);
 
-    const logger = this.logManager.getLogger();
+    this.mainLogger.debug('I am a debug message');
+    this.mainLogger.verbose('I am a verbose message');
+    this.mainLogger.info('I am an info message');
+    this.mainLogger.warn('I am a warn message');
+    this.mainLogger.error('I am an error message');
+    this.mainLogger.fatal('I am a fatal message');
 
-    /* logger.debug('I am a debug message');
-    logger.verbose('I am a verbose message');
-    logger.info('I am an info message');
-    logger.warn('I am a warn message');
-    logger.error('I am an error message'); */
-    logger.fatal('I am a fatal message');
-
-    // logger.info('I am an info message with an attached object', this.transportLayerSubsystem);
+    this.mainLogger.info('I am an info message with an attached object:\n', this.transportLayerSubsystem);
   }
 }
