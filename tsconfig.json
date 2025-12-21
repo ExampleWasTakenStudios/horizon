@@ -13,7 +13,7 @@
         "lib": ["ESNext"],
 
         // Other Outputs
-        "sourceMap": true,
+        "inlineSourceMap": true,
         "declaration": true,
         "declarationMap": true,
 
