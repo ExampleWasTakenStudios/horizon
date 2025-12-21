@@ -2,3 +2,4 @@ node_modules
 dist
 continuation.txt
 .env
+logs
