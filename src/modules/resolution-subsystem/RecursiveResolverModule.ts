@@ -1,3 +1,3 @@
-import type { Module } from '../Module.js';
+import { Module } from '../Module.js';
 
-export class RecursiveResolverModule implements Module {}
+export class RecursiveResolverModule extends Module {}

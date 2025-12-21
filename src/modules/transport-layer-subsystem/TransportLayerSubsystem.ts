@@ -13,7 +13,7 @@ export class TransportLayerSubsystem extends Subsystem {
     super(logger);
 
     this.downstreamModule = new DownstreamModule(this.logger.getSubLogger('DOWNSTREAM MODULE'));
-    this.upstreamModule = new UpstreamModule();
+    this.upstreamModule = new UpstreamModule(this.logger.getSubLogger('UPSTREAM MODULE'));
 
     const interfaces = this.getNormalizedIPv4Interfaces();
 
