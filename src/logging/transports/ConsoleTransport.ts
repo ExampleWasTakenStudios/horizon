@@ -13,34 +13,66 @@ export class ConsoleTransport implements BaseTransport {
       out = stdout;
     }
 
-    const timestamp = chalk.white(logEntry.timestamp.toISOString());
-    const source = logEntry.source;
-    const level = this.colorizeLevel(logEntry.level);
-    const message = logEntry.message;
-    const data = logEntry.data ? JSON.stringify(logEntry.data, undefined, 2) : null;
+    const timestamp = chalk.whiteBright(`[${chalk.white(logEntry.timestamp.toISOString())}]`);
+    const source = chalk.whiteBright(`[${logEntry.source}]`);
+    const level = chalk.whiteBright(`[${this.colorize(logEntry.level, LogLevel[logEntry.level])}]`);
+    const message = this.colorize(logEntry.level, logEntry.message);
+    const data = logEntry.data ? this.colorize(logEntry.level, this.processData(...logEntry.data)) : null;
 
-    out.write(`[${timestamp}] [${source}]\t[${level}]\t${message}${data ? `${data}` : ''}\n`);
+    out.write(`${timestamp} ${source} ${level} ${message}${data}\n`);
   }
 
-  private colorizeLevel(level: LogLevel): string {
+  private processData(...data: unknown[]): string {
+    let str: string = '';
+
+    for (const current of data) {
+      switch (typeof current) {
+        case 'string': {
+          str += current;
+          break;
+        }
+        case 'number': {
+          str += current.toString();
+          break;
+        }
+        case 'boolean': {
+          str += current.toString();
+          break;
+        }
+        case 'bigint': {
+          str += current.toString();
+          break;
+        }
+        default: {
+          str += JSON.stringify(current, undefined, 2);
+          break;
+        }
+      }
+    }
+
+    return str;
+  }
+
+  private colorize(level: LogLevel, input: string): string {
     switch (level) {
       case LogLevel.FATAL: {
-        return chalk.red(chalk.bold(LogLevel[level]));
+        return chalk.red(input);
       }
       case LogLevel.ERROR: {
-        return chalk.red(LogLevel[level]);
+        return chalk.red(chalk.bold(input));
       }
       case LogLevel.WARN: {
-        return chalk.yellow(LogLevel[level]);
+        const orange = chalk.hex('#FFA500');
+        return orange(input);
       }
       case LogLevel.INFO: {
-        return chalk.green(LogLevel[level]);
+        return chalk.greenBright(input);
       }
       case LogLevel.VERBOSE: {
-        return chalk.cyan(LogLevel[level]);
+        return chalk.cyan(input);
       }
       case LogLevel.DEBUG: {
-        return chalk.white(LogLevel[level]);
+        return chalk.white(input);
       }
     }
   }
