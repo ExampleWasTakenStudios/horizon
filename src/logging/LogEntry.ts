@@ -5,5 +5,5 @@ export interface LogEntry {
   level: LogLevel;
   source: string;
   message: string;
-  data?: unknown;
+  data?: unknown[];
 }

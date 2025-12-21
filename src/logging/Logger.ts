@@ -1,6 +1,6 @@
-import type { BaseTransport } from './transports/BaseTransport.js';
 import type { LogEntry } from './LogEntry.js';
 import { LogLevel } from './LogLevel.js';
+import type { BaseTransport } from './transports/BaseTransport.js';
 
 export class Logger {
   private readonly name: string;
@@ -11,7 +11,7 @@ export class Logger {
     this.transports = transports ? transports : new Set();
   }
 
-  private write(level: LogLevel, message: string, data?: unknown): void {
+  private write(level: LogLevel, message: string, ...data: unknown[]): void {
     const logEntry: LogEntry = {
       timestamp: new Date(),
       level,
@@ -27,28 +27,28 @@ export class Logger {
 
   // --- Public API ---
 
-  fatal(message: string, data?: unknown): void {
-    this.write(LogLevel.FATAL, message, data);
+  fatal(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.FATAL, message, ...data);
   }
 
-  error(message: string, data?: unknown): void {
-    this.write(LogLevel.ERROR, message, data);
+  error(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.ERROR, message, ...data);
   }
 
-  warn(message: string, data?: unknown): void {
-    this.write(LogLevel.WARN, message, data);
+  warn(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.WARN, message, ...data);
   }
 
-  info(message: string, data?: unknown): void {
-    this.write(LogLevel.INFO, message, data);
+  info(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.INFO, message, ...data);
   }
 
-  verbose(message: string, data?: unknown): void {
-    this.write(LogLevel.VERBOSE, message, data);
+  verbose(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.VERBOSE, message, ...data);
   }
 
-  debug(message: string, data?: unknown): void {
-    this.write(LogLevel.DEBUG, message, data);
+  debug(message: string, ...data: unknown[]): void {
+    this.write(LogLevel.DEBUG, message, ...data);
   }
 
   addTransport(transport: BaseTransport): void {
