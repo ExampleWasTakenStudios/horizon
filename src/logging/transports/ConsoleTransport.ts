@@ -5,6 +5,12 @@ import { LogLevel } from '../LogLevel.js';
 import type { BaseTransport } from './BaseTransport.js';
 
 export class ConsoleTransport implements BaseTransport {
+  private maxLevel: LogLevel;
+
+  constructor(maxLevel: LogLevel) {
+    this.maxLevel = maxLevel;
+  }
+
   log(logEntry: LogEntry): void {
     let out: typeof stdout | typeof stderr;
     if (logEntry.level <= LogLevel.ERROR) {
@@ -20,6 +26,14 @@ export class ConsoleTransport implements BaseTransport {
     const data = logEntry.data ? this.colorize(logEntry.level, this.processData(...logEntry.data)) : null;
 
     out.write(`${timestamp} ${source} ${level} ${message}${data}\n`);
+  }
+
+  getMaxLevel(): Readonly<LogLevel> {
+    return this.maxLevel;
+  }
+
+  setMaxLevel(level: LogLevel): void {
+    this.maxLevel = level;
   }
 
   private processData(...data: unknown[]): string {
