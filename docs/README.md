@@ -1,4 +1,12 @@
 # Documentation
-This directory is mainly intended for documenting development related topics. To provide a unified place for documentation, documentation relevant for users, may be placed here as well, but should be unified in a dedicated subdirectory of this directory.
+Welcome to the official documentation of Horizon. This is where you find, both, developer and user documentation.
 
-There are no further guidelines on how documentation should be structured but writers ***should*** orient themselves on existing styles.
+As such, this directory is separated into two subdirectories:
+- `dev`
+- `usr`
+
+## [`dev/`](./dev/)
+This is where developer documentation is stored. It is only relevant for people actively developing Horizon or wishing to contribute to the project.
+
+## [`usr/`](./usr/)
+This is where user documentation is stored. It is relevant for people using Horizon. Things like configuration options, usage recommendations, etc. can be found here.
