@@ -16,7 +16,7 @@ Each logger instance holds a Set of transports that it forwards log events to if
 
 As is common in modern logging solutions, the system uses transports to send logs to various places.
 
-Transports express interest in a log level by exposing a property `maxLevel`. Any log event with a level higher that `maxLevel` is not forwarded to the transport by the logging instance.
+Transports express interest in a log level by exposing a `maxLevel` property. Any log event with a level higher than `maxLevel` is not forwarded to the transport by the logging instance.
 
 ### Creation
 Transports are created by extending the [`BaseTransport.ts`](../src/logging/transports/BaseTransport.ts) class.
