@@ -1,3 +1,3 @@
-import type { Subsystem } from '../Subsystem.js';
+import { Subsystem } from '../Subsystem.js';
 
-export class ResolutionSubsystem implements Subsystem {}
+export class ResolutionSubsystem extends Subsystem {}

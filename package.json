@@ -38,6 +38,8 @@
         "typescript-eslint": "^8.44.1"
     },
     "dependencies": {
-        "@dcoffey-zengenti/punynode": "^0.1.0"
+        "@dcoffey-zengenti/punynode": "^0.1.0",
+        "chalk": "^5.6.2",
+        "rotating-file-stream": "^3.2.7"
     }
 }
