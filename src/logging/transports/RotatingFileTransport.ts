@@ -42,11 +42,11 @@ export class RotatingFileTransport implements BaseTransport {
     filename: string,
     settings: RotatingFileTransportSettings,
     maxLevel: LogLevel,
-    clearLogsOnStartup?: boolean
+    DEV_DO_NOT_USE_IN_PROD_clearLogsOnStartup?: boolean
   ) {
     this.maxLevel = maxLevel;
 
-    if (clearLogsOnStartup && fs.existsSync(settings.path)) {
+    if (DEV_DO_NOT_USE_IN_PROD_clearLogsOnStartup && fs.existsSync(settings.path)) {
       const contents = fs.readdirSync(settings.path);
 
       for (const current of contents) {
