@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import path from 'path';
 import { Logger } from './logging/Logger.js';
 import { LogLevel } from './logging/LogLevel.js';
