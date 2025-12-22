@@ -1,6 +1,8 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { createStream, type Options as RFSOptions, type RotatingFileStream } from 'rotating-file-stream';
 import type { LogEntry } from '../LogEntry.js';
-import type { LogLevel } from '../LogLevel.js';
+import { LogLevel } from '../LogLevel.js';
 import type { BaseTransport } from './BaseTransport.js';
 
 /**
@@ -24,15 +26,35 @@ const jsonReplacer = (_key: string, value: unknown): unknown => {
   return value;
 };
 
+export interface RotatingFileTransportSettings extends RFSOptions {
+  interval: Exclude<RFSOptions['interval'], undefined>;
+  size: Exclude<RFSOptions['size'], undefined>;
+  maxFiles: Exclude<RFSOptions['maxFiles'], undefined>;
+  path: Exclude<RFSOptions['path'], undefined>;
+}
+
 export class RotatingFileTransport implements BaseTransport {
   private stream: RotatingFileStream;
 
   private maxLevel: LogLevel;
 
-  constructor(filename: string, settings: RFSOptions, maxLevel: LogLevel) {
+  constructor(
+    filename: string,
+    settings: RotatingFileTransportSettings,
+    maxLevel: LogLevel,
+    clearLogsOnStartup?: boolean
+  ) {
     this.maxLevel = maxLevel;
 
-    this.stream = createStream(filename + '.json', settings);
+    if (clearLogsOnStartup) {
+      const contents = fs.readdirSync(settings.path);
+
+      for (const current of contents) {
+        fs.rmSync(path.join(settings.path, current));
+      }
+    }
+
+    this.stream = createStream(filename + '.json', { ...settings });
   }
 
   log(logEntry: LogEntry): void {

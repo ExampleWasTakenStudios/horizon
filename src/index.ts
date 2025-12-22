@@ -1,12 +1,14 @@
 import path from 'path';
-import { type Options as RFSOptions } from 'rotating-file-stream';
 import { Logger } from './logging/Logger.js';
 import { LogLevel } from './logging/LogLevel.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
-import { RotatingFileTransport } from './logging/transports/RotatingFileTransport.js';
+import {
+  RotatingFileTransport,
+  type RotatingFileTransportSettings,
+} from './logging/transports/RotatingFileTransport.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
-const ROTATING_STREAM_SETTINGS: RFSOptions = {
+const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
   size: `${100 * 1024 * 1024}B`, // 100 Mib
   maxFiles: 14,
@@ -18,11 +20,11 @@ const ROTATING_STREAM_SETTINGS: RFSOptions = {
 };
 
 const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
-const generalLogTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
+const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
 
 const mainLogger = new Logger('MAIN');
 mainLogger.addTransport(consoleTransport);
-mainLogger.addTransport(generalLogTransport);
+mainLogger.addTransport(rotatingFileTransport);
 
 process.on('uncaughtException', (error, origin) => {
   mainLogger.fatal(
