@@ -20,7 +20,7 @@ const ROTATING_STREAM_SETTINGS: RFSOptions = {
 const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
 const generalLogTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
 
-const mainLogger = new Logger('HEAD MODULE');
+const mainLogger = new Logger('MAIN');
 mainLogger.addTransport(consoleTransport);
 mainLogger.addTransport(generalLogTransport);
 
@@ -46,4 +46,4 @@ process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
 
 process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
 
-const _headModule = new HeadModule(mainLogger);
+const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'));
