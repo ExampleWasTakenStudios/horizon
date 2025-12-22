@@ -18,10 +18,32 @@ const ROTATING_STREAM_SETTINGS: RFSOptions = {
 };
 
 const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
-const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
+const generalLogTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
 
 const mainLogger = new Logger('HEAD MODULE');
 mainLogger.addTransport(consoleTransport);
-mainLogger.addTransport(rotatingFileTransport);
+mainLogger.addTransport(generalLogTransport);
+
+process.on('uncaughtException', (error, origin) => {
+  mainLogger.fatal(
+    'Uncaught Exception - Attempting cleanup and graceful exit...',
+    '\nError: ',
+    error,
+    '\nOrigin: ',
+    origin
+  );
+
+  // TODO: destroy all modules, end and file streams etc,
+
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  mainLogger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
+});
+
+process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
+
+process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
 
 const _headModule = new HeadModule(mainLogger);
