@@ -46,7 +46,7 @@ export class RotatingFileTransport implements BaseTransport {
   ) {
     this.maxLevel = maxLevel;
 
-    if (clearLogsOnStartup) {
+    if (clearLogsOnStartup && fs.existsSync(settings.path)) {
       const contents = fs.readdirSync(settings.path);
 
       for (const current of contents) {
