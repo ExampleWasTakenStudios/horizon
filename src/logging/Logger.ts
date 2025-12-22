@@ -12,6 +12,15 @@ export class Logger {
   }
 
   private write(level: LogLevel, message: string, ...data: unknown[]): void {
+    const interestedTransports = this.transports
+      .values()
+      .toArray()
+      .filter((current) => current.getMaxLevel() <= level);
+
+    if (interestedTransports.length <= 0) {
+      return;
+    }
+
     const logEntry: LogEntry = {
       timestamp: new Date(),
       level,
@@ -20,7 +29,7 @@ export class Logger {
       data,
     };
 
-    for (const current of this.transports) {
+    for (const current of interestedTransports) {
       current.log(logEntry);
     }
   }
