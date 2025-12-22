@@ -1,5 +1,8 @@
-node_modules
-dist
-continuation.txt
-.env
-log
+# Directories
+node_modules/
+dist/
+log/
+
+# .env files
+*.env
+!example.env
