@@ -9,10 +9,8 @@ export class HeadModule extends Module {
     super(logger);
 
     this.transportLayerSubsystem = new TransportLayerSubsystem(
-      this.logger.getSubLogger('TRANSPORT LAYER SUBSYSTEM'),
+      this.logger.spawnSubLogger('TRANSPORT LAYER SUBSYSTEM'),
       true
     );
-
-    this.logger.debug('This is a test to log entire classes.', this.transportLayerSubsystem);
   }
 }

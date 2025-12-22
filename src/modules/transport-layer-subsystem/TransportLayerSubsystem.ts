@@ -12,8 +12,8 @@ export class TransportLayerSubsystem extends Subsystem {
   constructor(logger: Logger, bindToLocalhost?: boolean) {
     super(logger);
 
-    this.downstreamModule = new DownstreamModule(this.logger.getSubLogger('DOWNSTREAM MODULE'));
-    this.upstreamModule = new UpstreamModule(this.logger.getSubLogger('UPSTREAM MODULE'));
+    this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'));
+    this.upstreamModule = new UpstreamModule(this.logger.spawnSubLogger('UPSTREAM MODULE'));
 
     const interfaces = this.getNormalizedIPv4Interfaces();
 

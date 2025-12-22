@@ -40,19 +40,18 @@ export class ConsoleTransport implements BaseTransport {
     let str: string = '';
 
     for (const current of data) {
+      if (current instanceof Error) {
+        str += `\n${current.stack || current.message}`;
+        continue;
+      }
+
       switch (typeof current) {
         case 'string': {
           str += current;
           break;
         }
-        case 'number': {
-          str += current.toString();
-          break;
-        }
-        case 'boolean': {
-          str += current.toString();
-          break;
-        }
+        case 'number':
+        case 'boolean':
         case 'bigint': {
           str += current.toString();
           break;

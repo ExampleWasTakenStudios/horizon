@@ -68,7 +68,7 @@ export class Logger {
    * @param name The name of this sublogger. Will be appended to the name of the parent logger -> <parentName>:<name>
    * @param transports The transports that should be added to the logger. Defaults to the transports of the parent logger. If none are wanted, pass an empty Set.
    */
-  getSubLogger(name: string, transports: Set<BaseTransport> = this.transports): Logger {
+  spawnSubLogger(name: string, transports: Set<BaseTransport> = this.transports): Logger {
     return new Logger(`${this.name}>${name.replace(/\s/g, '_')}`, transports);
   }
 }
