@@ -11,7 +11,6 @@ const ROTATING_STREAM_SETTINGS: RFSOptions = {
   size: `${100 * 1024 * 1024}B`, // 100 Mib
   maxFiles: 14,
   intervalUTC: true,
-  immutable: true,
   history: 'rotation-history.txt',
   path: path.join(process.cwd(), 'log'), // TODO: this should eventually be configurable
   compress: false, // TODO: this should eventually be changed to check if the current env is dev or prod -> if prod compress
@@ -21,8 +20,8 @@ const ROTATING_STREAM_SETTINGS: RFSOptions = {
 const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
 const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
 
-const mainLogger = new Logger('MAIN');
+const mainLogger = new Logger('HEAD MODULE');
 mainLogger.addTransport(consoleTransport);
 mainLogger.addTransport(rotatingFileTransport);
 
-const _headModule = new HeadModule(mainLogger.getSubLogger('HEAD MODULE'));
+const _headModule = new HeadModule(mainLogger);

@@ -10,6 +10,7 @@ export class RotatingFileTransport implements BaseTransport {
 
   constructor(filename: string, settings: RFSOptions, maxLevel: LogLevel) {
     this.maxLevel = maxLevel;
+
     this.stream = createStream(filename + '.json', settings);
   }
 
@@ -23,17 +24,5 @@ export class RotatingFileTransport implements BaseTransport {
 
   setMaxLevel(level: LogLevel): void {
     this.maxLevel = level;
-  }
-
-  private generateFilename(filename: string): string {
-    const ts = new Date();
-    const year = ts.getUTCFullYear().toString().padStart(4);
-    const month = (ts.getUTCMonth() + 1).toString().padStart(2);
-    const date = ts.getUTCDate().toString().padStart(2);
-    const hour = ts.getUTCHours().toString().padStart(2);
-    const minute = ts.getUTCMinutes().toString().padStart(2);
-    const second = ts.getUTCSeconds().toString().padStart(2);
-
-    return `${filename}-${year}-${month}-${date}-${hour}:${minute}:${second}.json`;
   }
 }
