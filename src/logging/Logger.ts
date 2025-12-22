@@ -15,7 +15,7 @@ export class Logger {
     const interestedTransports = this.transports
       .values()
       .toArray()
-      .filter((current) => current.getMaxLevel() <= level);
+      .filter((current) => level <= current.getMaxLevel());
 
     if (interestedTransports.length <= 0) {
       return;
