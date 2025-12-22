@@ -12,25 +12,22 @@ export class Logger {
   }
 
   private write(level: LogLevel, message: string, ...data: unknown[]): void {
-    const interestedTransports = this.transports
-      .values()
-      .toArray()
-      .filter((current) => level <= current.getMaxLevel());
+    let logEntry: LogEntry | undefined;
 
-    if (interestedTransports.length <= 0) {
-      return;
-    }
+    for (const transport of this.transports) {
+      if (level <= transport.getMaxLevel()) {
+        if (!logEntry) {
+          logEntry = {
+            timestamp: new Date(),
+            level,
+            message,
+            source: this.name,
+            data,
+          };
+        }
 
-    const logEntry: LogEntry = {
-      timestamp: new Date(),
-      level,
-      message,
-      source: this.name,
-      data,
-    };
-
-    for (const current of interestedTransports) {
-      current.log(logEntry);
+        transport.log(logEntry);
+      }
     }
   }
 
