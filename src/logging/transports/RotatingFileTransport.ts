@@ -54,7 +54,7 @@ export class RotatingFileTransport implements BaseTransport {
       }
     }
 
-    this.stream = createStream(filename + '.json', { ...settings });
+    this.stream = createStream(filename + '.json', settings);
   }
 
   log(logEntry: LogEntry): void {
