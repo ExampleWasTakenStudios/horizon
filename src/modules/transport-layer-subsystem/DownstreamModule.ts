@@ -54,7 +54,7 @@ export class DownstreamModule extends Module {
 
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
     const decodedMsg = this.wireProtocolModule.decode(msg);
-    this.logger.verbose('Received msg: ', JSON.stringify(decodedMsg, null, 2), ' from ', rinfo);
+    this.logger.verbose('Received msg: ', decodedMsg, ' from ', rinfo);
   }
 
   private onListening(): void {
