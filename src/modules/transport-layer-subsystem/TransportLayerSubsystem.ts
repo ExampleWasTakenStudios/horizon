@@ -1,6 +1,7 @@
 import os from 'node:os';
 import type { Logger } from '../../logging/Logger.js';
 import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
+import type { ConfigManager } from '../config-module/ConfigModule.js';
 import { Subsystem } from '../Subsystem.js';
 import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';
@@ -9,11 +10,11 @@ export class TransportLayerSubsystem extends Subsystem {
   private downstreamModule: DownstreamModule;
   private upstreamModule: UpstreamModule;
 
-  constructor(logger: Logger, bindToLocalhost?: boolean) {
-    super(logger);
+  constructor(logger: Logger, config: ConfigManager, bindToLocalhost?: boolean) {
+    super(logger, config);
 
-    this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'));
-    this.upstreamModule = new UpstreamModule(this.logger.spawnSubLogger('UPSTREAM MODULE'));
+    this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'), config);
+    this.upstreamModule = new UpstreamModule(this.logger.spawnSubLogger('UPSTREAM MODULE'), config);
 
     const interfaces = this.getNormalizedIPv4Interfaces();
 

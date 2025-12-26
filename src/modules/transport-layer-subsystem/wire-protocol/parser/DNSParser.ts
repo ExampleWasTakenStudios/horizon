@@ -1,6 +1,6 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { IllegalCharStringError } from '../../../errors/IllegalCharStringError.js';
-import { PointerLoopError } from '../../../errors/PointerLoopError.js';
+import { IllegalCharStringError } from '../../../../errors/IllegalCharStringError.js';
+import { PointerLoopError } from '../../../../errors/PointerLoopError.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
 import { DNSHeader } from '../DNS-core/DNSHeader.js';
