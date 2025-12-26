@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import * as z from 'zod';
-import type { Logger } from '../../logging/Logger.js';
+import type { Logger } from '../logging/Logger.js';
 import { DefaultConfig } from './DefaultConfig.js';
 import { HorizonConfigSchema, type HorizonConfig } from './HorizonConfig.js';
 

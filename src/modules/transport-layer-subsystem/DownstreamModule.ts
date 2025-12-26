@@ -1,7 +1,7 @@
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
 import type { AddressInfo } from 'node:net';
+import type { ConfigManager } from '../../config/ConfigManager.js';
 import type { Logger } from '../../logging/Logger.js';
-import type { ConfigManager } from '../config-module/ConfigModule.js';
 import { Module } from '../Module.js';
 import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 

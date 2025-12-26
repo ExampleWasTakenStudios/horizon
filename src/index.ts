@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import path from 'path';
+import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
 import { LogLevel } from './logging/LogLevel.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
@@ -7,7 +8,6 @@ import {
   RotatingFileTransport,
   type RotatingFileTransportSettings,
 } from './logging/transports/RotatingFileTransport.js';
-import { ConfigManager } from './modules/config-module/ConfigModule.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {

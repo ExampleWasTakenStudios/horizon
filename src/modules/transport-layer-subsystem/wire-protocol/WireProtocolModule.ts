@@ -1,5 +1,5 @@
+import type { ConfigManager } from '../../../config/ConfigManager.js';
 import type { Logger } from '../../../logging/Logger.js';
-import type { ConfigManager } from '../../config-module/ConfigModule.js';
 import { Module } from '../../Module.js';
 import { DNSPacket } from './DNS-core/DNSPacket.js';
 import { CursorBuffer } from './parser/CursorBuffer.js';

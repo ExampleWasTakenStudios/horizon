@@ -1,5 +1,5 @@
+import type { ConfigManager } from '../config/ConfigManager.js';
 import type { Logger } from '../logging/Logger.js';
-import type { ConfigManager } from './config-module/ConfigModule.js';
 
 export abstract class Subsystem {
   protected logger: Logger;

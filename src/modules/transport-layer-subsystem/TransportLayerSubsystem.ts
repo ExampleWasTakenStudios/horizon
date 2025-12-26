@@ -1,7 +1,7 @@
 import os from 'node:os';
+import type { ConfigManager } from '../../config/ConfigManager.js';
 import type { Logger } from '../../logging/Logger.js';
 import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
-import type { ConfigManager } from '../config-module/ConfigModule.js';
 import { Subsystem } from '../Subsystem.js';
 import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';

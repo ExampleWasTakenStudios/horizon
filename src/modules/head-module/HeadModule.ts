@@ -1,5 +1,5 @@
+import { ConfigManager } from '../../config/ConfigManager.js';
 import { Logger } from '../../logging/Logger.js';
-import { ConfigManager } from '../config-module/ConfigModule.js';
 import { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
