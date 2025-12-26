@@ -9,8 +9,8 @@ Upon startup, the config manager is initialized and checks if a config file exis
 
 Once a config file has either been created or read the configuration data is loaded to memory and exposed via a getter method. All classes wishing to access the config data, must use the config manager instance through dependency injection.
 
-[!NOTE]
-Currently, the config is loaded once at startup and never thereafter! Hot reloading functionality is on the roadmap and will be implemented at a later point.
+> [!NOTE]
+> Currently, the config is loaded once at startup and never thereafter! Hot reloading functionality is on the roadmap and will be implemented at a later point.
 
 ##### Note to devs implementing hot reloading
 The following requirements exist for hot reloading functionality:
