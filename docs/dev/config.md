@@ -12,7 +12,14 @@ Once a config file has either been created or read the configuration data is loa
 > [!NOTE]
 > Currently, the config is loaded once at startup and never thereafter! Hot reloading functionality is on the roadmap and will be implemented at a later point.
 
+### File paths
+The config is stored in different locations based on the NODE_ENV env var:
+- `dev`: `process.cwd()/.config/Horizon/config.json5`
+- `prod`: `os.homedir()/.coinfg/Horizon/config.json5`
+
+---
+
 ##### Note to devs implementing hot reloading
 The following requirements exist for hot reloading functionality:
-1. The process must be fully atomic and asynchronous
+1. The process must be fully atomic and asynchronous.
 2. Any failures occuring during hot reloading MUST be handled and result in the previous config being used. -> Crashes due to invalid configs are not acceptable.
