@@ -7,6 +7,7 @@ import {
   RotatingFileTransport,
   type RotatingFileTransportSettings,
 } from './logging/transports/RotatingFileTransport.js';
+import { ConfigManager } from './modules/config-module/ConfigModule.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
@@ -49,4 +50,5 @@ process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
 
 process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
 
-const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'));
+const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
+const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);

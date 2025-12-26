@@ -4,18 +4,19 @@ import os from 'node:os';
 import path from 'node:path';
 import * as z from 'zod';
 import type { Logger } from '../../logging/Logger.js';
-import { Module } from '../Module.js';
 import { DefaultConfig } from './DefaultConfig.js';
 import { HorizonConfigSchema, type HorizonConfig } from './HorizonConfig.js';
 
-export class ConfigModule extends Module {
+export class ConfigManager {
+  private logger: Logger;
+
   private readonly path: string;
   private readonly filename: string;
 
   private config: HorizonConfig;
 
   constructor(logger: Logger) {
-    super(logger);
+    this.logger = logger;
 
     this.filename = 'config.json5';
     this.path = this.constructConfigPath();
