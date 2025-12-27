@@ -21,8 +21,8 @@ const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   omitExtension: false,
 };
 
-const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
-const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
+const consoleTransport = new ConsoleTransport(LogLevel.VERBOSE);
+const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.VERBOSE);
 
 const mainLogger = new Logger('MAIN');
 mainLogger.addTransport(consoleTransport);
