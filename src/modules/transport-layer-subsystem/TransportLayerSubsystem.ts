@@ -10,7 +10,7 @@ export class TransportLayerSubsystem extends Subsystem {
   private downstreamModule: DownstreamModule;
   private upstreamModule: UpstreamModule;
 
-  constructor(logger: Logger, config: ConfigManager, bindToLocalhost?: boolean) {
+  constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'), config);
@@ -20,10 +20,9 @@ export class TransportLayerSubsystem extends Subsystem {
 
     this.logger.info('Discorvered ', interfaces.length, ' network interfaces.');
 
-    if (bindToLocalhost) {
-      this.logger.warn('bindToLocalhost enabled -> binding to localhost');
-      this.downstreamModule.bind('127.0.0.1');
-    }
+    // Bind modules
+    this.logger.info('Binding modules...');
+    this.downstreamModule.bind();
   }
 
   getDownstreamModule(): DownstreamModule {

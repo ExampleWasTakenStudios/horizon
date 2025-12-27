@@ -41,8 +41,10 @@ export class DownstreamModule extends Module {
     this.socket.send(msg, 0, msg.length, port, address);
   }
 
-  bind(address: string): void {
+  bind(): void {
+    const address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPAddress;
     this.socket.bind(53, address);
+    this.logger.info('Bound to ', address, ':53');
   }
 
   close(): void {
@@ -55,7 +57,7 @@ export class DownstreamModule extends Module {
 
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
     const decodedMsg = this.wireProtocolModule.decode(msg);
-    this.logger.verbose('Received msg: ', decodedMsg, ' from ', rinfo);
+    this.logger.debug('Received msg: ', decodedMsg, ' from ', rinfo);
   }
 
   private onListening(): void {
