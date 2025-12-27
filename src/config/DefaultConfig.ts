@@ -14,7 +14,9 @@ export const DefaultConfig: HorizonConfig = {
   },
   transportLayerSubsystem: {
     upstreamModule: {},
-    downstreamModule: {},
+    downstreamModule: {
+      dnsIPAddress: '0.0.0.0',
+    },
     wireProtocolModule: {},
   },
   analyticsModule: {},

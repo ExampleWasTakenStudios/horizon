@@ -14,7 +14,12 @@ export const HorizonConfigSchema = z.object({
   }),
   transportLayerSubsystem: z.object({
     upstreamModule: z.object({}),
-    downstreamModule: z.object({}),
+    downstreamModule: z.object({
+      /**
+       * The IP address on which the DNS service will listen.
+       */
+      dnsIPAddress: z.ipv4(),
+    }),
     wireProtocolModule: z.object({}),
   }),
   analyticsModule: z.object({}),
