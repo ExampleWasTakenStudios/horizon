@@ -2,7 +2,6 @@ import 'dotenv/config';
 import path from 'path';
 import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
-import { LogLevel } from './logging/LogLevel.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
 import {
   RotatingFileTransport,
@@ -21,8 +20,12 @@ const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   omitExtension: false,
 };
 
-const consoleTransport = new ConsoleTransport(LogLevel.VERBOSE);
-const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.VERBOSE);
+const consoleTransport = new ConsoleTransport(process.env.HORIZON_CONSOLE_LOG_LEVEL);
+const rotatingFileTransport = new RotatingFileTransport(
+  'log',
+  ROTATING_STREAM_SETTINGS,
+  process.env.HORIZON_FILE_LOG_LEVEL
+);
 
 const mainLogger = new Logger('MAIN');
 mainLogger.addTransport(consoleTransport);
