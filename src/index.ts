@@ -1,4 +1,11 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+/* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
+const env = dotenv.config({ quiet: true });
+
+if (env.error) {
+  throw env.error;
+}
+
 import path from 'path';
 import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
