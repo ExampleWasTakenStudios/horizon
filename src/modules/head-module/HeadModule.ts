@@ -1,3 +1,4 @@
+import { ConfigManager } from '../../config/ConfigManager.js';
 import { Logger } from '../../logging/Logger.js';
 import { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
@@ -5,12 +6,11 @@ import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportL
 export class HeadModule extends Module {
   private transportLayerSubsystem: TransportLayerSubsystem;
 
-  constructor(logger: Logger) {
-    super(logger);
-
+  constructor(logger: Logger, config: ConfigManager) {
+    super(logger, config);
     this.transportLayerSubsystem = new TransportLayerSubsystem(
       this.logger.spawnSubLogger('TRANSPORT LAYER SUBSYSTEM'),
-      true
+      config
     );
   }
 }

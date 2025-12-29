@@ -1,7 +1,11 @@
 # Directories
 node_modules/
+.vscode/
 dist/
 log/
+
+# Files
+.config/Horizon/config.json5
 
 # .env files
 *.env

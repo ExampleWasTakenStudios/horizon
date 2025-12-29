@@ -1,8 +1,9 @@
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
 import type { AddressInfo } from 'node:net';
+import type { ConfigManager } from '../../config/ConfigManager.js';
 import type { Logger } from '../../logging/Logger.js';
 import { Module } from '../Module.js';
-import { WireProtocolModule } from '../wire-protocol/WireProtocolModule.js';
+import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
 const IP_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -11,8 +12,8 @@ export class DownstreamModule extends Module {
   private socket: Socket;
   private wireProtocolModule: WireProtocolModule;
 
-  constructor(logger: Logger) {
-    super(logger);
+  constructor(logger: Logger, config: ConfigManager) {
+    super(logger, config);
 
     this.socket = dgram.createSocket({ type: 'udp4' });
 
@@ -21,7 +22,7 @@ export class DownstreamModule extends Module {
     this.socket.on('listening', () => this.onListening());
     this.socket.on('message', (msg, rinfo) => this.onMessage(msg, rinfo));
 
-    this.wireProtocolModule = new WireProtocolModule();
+    this.wireProtocolModule = new WireProtocolModule(logger, config);
   }
 
   /**
@@ -40,8 +41,10 @@ export class DownstreamModule extends Module {
     this.socket.send(msg, 0, msg.length, port, address);
   }
 
-  bind(address: string): void {
+  bind(): void {
+    const address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPAddress;
     this.socket.bind(53, address);
+    this.logger.info('Bound to ', address, ':53');
   }
 
   close(): void {
@@ -54,7 +57,7 @@ export class DownstreamModule extends Module {
 
   private onMessage(msg: Buffer, rinfo: RemoteInfo): void {
     const decodedMsg = this.wireProtocolModule.decode(msg);
-    this.logger.verbose('Received msg: ', decodedMsg, ' from ', rinfo);
+    this.logger.debug('Received msg: ', decodedMsg, ' from ', rinfo);
   }
 
   private onListening(): void {

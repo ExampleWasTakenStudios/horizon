@@ -1,7 +1,14 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+/* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
+const env = dotenv.config({ quiet: true });
+
+if (env.error) {
+  throw env.error;
+}
+
 import path from 'path';
+import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
-import { LogLevel } from './logging/LogLevel.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
 import {
   RotatingFileTransport,
@@ -20,8 +27,12 @@ const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   omitExtension: false,
 };
 
-const consoleTransport = new ConsoleTransport(LogLevel.DEBUG);
-const rotatingFileTransport = new RotatingFileTransport('log', ROTATING_STREAM_SETTINGS, LogLevel.DEBUG);
+const consoleTransport = new ConsoleTransport(process.env.HORIZON_CONSOLE_LOG_LEVEL);
+const rotatingFileTransport = new RotatingFileTransport(
+  'log',
+  ROTATING_STREAM_SETTINGS,
+  process.env.HORIZON_FILE_LOG_LEVEL
+);
 
 const mainLogger = new Logger('MAIN');
 mainLogger.addTransport(consoleTransport);
@@ -49,4 +60,5 @@ process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
 
 process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
 
-const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'));
+const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
+const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
