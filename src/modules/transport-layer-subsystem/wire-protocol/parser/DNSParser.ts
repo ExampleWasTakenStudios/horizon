@@ -1,5 +1,6 @@
 import punycode from '@dcoffey-zengenti/punynode';
 import type { ReturnResult } from '../../../../types/ReturnResult.js';
+import { err, ok } from '../../../../utils/return-type-helpers.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_RESPONSE_CODES } from '../DNS-core/constants/DNS_RESPONSE_CODES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
@@ -31,27 +32,27 @@ export class DNSParser {
   parse(rawPacket: CursorBuffer): ReturnResult<DNSPacket> {
     const headerResult = this.parseHeader(rawPacket);
     if (!headerResult.success) {
-      return { success: false, rCode: headerResult.rCode };
+      return err(headerResult.rCode);
     }
 
     const questionsResult = this.parseQuestions(rawPacket, headerResult.data);
     if (!questionsResult.success) {
-      return { success: false, rCode: questionsResult.rCode };
+      return err(questionsResult.rCode);
     }
 
     const answersResult = this.parseResourceRecord(rawPacket, headerResult.data.answerCount);
     if (!answersResult.success) {
-      return { success: false, rCode: answersResult.rCode };
+      return err(answersResult.rCode);
     }
 
     const authoritativeResult = this.parseResourceRecord(rawPacket, headerResult.data.authoritativeCount);
     if (!authoritativeResult.success) {
-      return { success: false, rCode: authoritativeResult.rCode };
+      return err(authoritativeResult.rCode);
     }
 
     const additionalResult = this.parseResourceRecord(rawPacket, headerResult.data.additionalCount);
     if (!additionalResult.success) {
-      return { success: false, rCode: additionalResult.rCode };
+      return err(additionalResult.rCode);
     }
 
     return {
@@ -118,7 +119,7 @@ export class DNSParser {
       questions.push(new DNSQuestion(qNameLabels.data, qType, qClass));
     }
 
-    return { success: true, data: questions };
+    return ok(questions);
   }
 
   private parseResourceRecord(
@@ -130,7 +131,7 @@ export class DNSParser {
     for (let i = 0; i < rrCount; i++) {
       const name = this.parseDomainName(rawPacket);
       if (!name.success) {
-        return { success: false, rCode: name.rCode };
+        return err(name.rCode);
       }
 
       const type: DNS_TYPES = rawPacket.readNextUint16();
@@ -143,10 +144,7 @@ export class DNSParser {
         case DNS_TYPES.A: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new A_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -154,10 +152,7 @@ export class DNSParser {
         case DNS_TYPES.CNAME: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new CNAME_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -165,10 +160,7 @@ export class DNSParser {
         case DNS_TYPES.HINFO: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new HINFO_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -176,10 +168,7 @@ export class DNSParser {
         case DNS_TYPES.MX: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new MX_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -187,10 +176,7 @@ export class DNSParser {
         case DNS_TYPES.NS: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new NS_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -198,10 +184,7 @@ export class DNSParser {
         case DNS_TYPES.PTR: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new PTR_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -209,10 +192,7 @@ export class DNSParser {
         case DNS_TYPES.SOA: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new SOA_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -220,10 +200,7 @@ export class DNSParser {
         case DNS_TYPES.TXT: {
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
           resourceRecords.push(new TXT_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
           break;
@@ -233,20 +210,14 @@ export class DNSParser {
           // keep the data flow identical between all types of RRs we pass it to the method anyway.
           const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           if (!rData.success) {
-            return {
-              success: false,
-              rCode: rData.rCode,
-            };
+            return err(rData.rCode);
           }
 
           const extendedRCode = (ttl >>> 24) & 0xff;
           const ednsVersion = (ttl >>> 16) & 0x00ff;
 
           if (ednsVersion !== 0) {
-            return {
-              success: false,
-              rCode: DNS_RESPONSE_CODES.BAD_VERSION,
-            };
+            return err(DNS_RESPONSE_CODES.BAD_VERSION);
           }
 
           resourceRecords.push(
@@ -255,18 +226,12 @@ export class DNSParser {
           break;
         }
         default: {
-          return {
-            success: false,
-            rCode: DNS_RESPONSE_CODES.NOT_IMPLEMENTED,
-          };
+          return err(DNS_RESPONSE_CODES.NOT_IMPLEMENTED);
         }
       }
     }
 
-    return {
-      success: true,
-      data: resourceRecords,
-    };
+    return ok(resourceRecords);
   }
 
   private parseDomainName(
@@ -284,10 +249,7 @@ export class DNSParser {
 
         // Check if the pointer has been visited before
         if (visitedPointers.has(pointer.getPosition())) {
-          return {
-            success: false,
-            rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
-          };
+          return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
         }
 
         // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
@@ -297,10 +259,7 @@ export class DNSParser {
         visitedPointers.add(pointer.getPosition());
         const domainNameResult = this.parseDomainName(lookupPacket, visitedPointers);
         if (!domainNameResult.success) {
-          return {
-            success: false,
-            rCode: domainNameResult.rCode,
-          };
+          return err(domainNameResult.rCode);
         }
 
         nameLabels.push(domainNameResult.data);
@@ -322,23 +281,17 @@ export class DNSParser {
       nameLabels.push(label);
     }
 
-    return {
-      success: true,
-      data: nameLabels.join('.'),
-    };
+    return ok(nameLabels.join('.'));
   }
 
   private parseCharString(rawPacket: CursorBuffer): ReturnResult<string> {
     const length = rawPacket.readNextUint8();
 
     if (length > 255) {
-      return {
-        success: false,
-        rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
-      };
+      return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
     }
 
-    return { success: true, data: rawPacket.nextSubarray(length).toString('ascii') };
+    return ok(rawPacket.nextSubarray(length).toString('ascii'));
   }
 
   private decodePointer(buffer: Buffer, position: number): Cursor {
@@ -365,92 +318,59 @@ export class DNSParser {
           octets.push(rDataCursorBuffer.readNextUint8().toString());
         }
 
-        return {
-          success: true,
-          data: octets.join('.') as RDataMap[RRType],
-        };
+        return ok(octets.join('.') as RDataMap[RRType]);
       }
       case DNS_TYPES.CNAME: {
         const nameResult = this.parseDomainName(rDataCursorBuffer);
         if (!nameResult.success) {
-          return {
-            success: false,
-            rCode: nameResult.rCode,
-          };
+          return err(nameResult.rCode);
         }
 
-        return {
-          success: true,
-          data: nameResult.data as RDataMap[RRType],
-        };
+        return ok(nameResult.data as RDataMap[RRType]);
       }
       case DNS_TYPES.HINFO: {
         const cpu = this.parseCharString(rDataCursorBuffer);
         if (!cpu.success) {
-          return {
-            success: false,
-            rCode: cpu.rCode,
-          };
+          return err(cpu.rCode);
         }
 
         const os = this.parseCharString(rDataCursorBuffer);
         if (!os.success) {
-          return {
-            success: false,
-            rCode: os.rCode,
-          };
+          return err(os.rCode);
         }
 
-        return { success: true, data: { cpu, os } as RDataMap[RRType] };
+        return ok({ cpu, os } as RDataMap[RRType]);
       }
       case DNS_TYPES.MX: {
         const preference = rDataCursorBuffer.readNextInt16();
         const exchange = this.parseDomainName(rawPacketClone);
         if (!exchange.success) {
-          return {
-            success: false,
-            rCode: exchange.rCode,
-          };
+          return err(exchange.rCode);
         }
 
-        return {
-          success: true,
-          data: {
-            preference,
-            exchange,
-          } as RDataMap[RRType],
-        };
+        return ok({
+          preference,
+          exchange,
+        } as RDataMap[RRType]);
       }
       case DNS_TYPES.NS:
       case DNS_TYPES.PTR: {
         const name = this.parseDomainName(rawPacketClone);
         if (!name.success) {
-          return {
-            success: false,
-            rCode: name.rCode,
-          };
+          return err(name.rCode);
         }
 
-        return {
-          success: true,
-          data: name.data as RDataMap[RRType],
-        };
+        return ok(name.data as RDataMap[RRType]);
       }
       case DNS_TYPES.SOA: {
         const mName = this.parseDomainName(rawPacketClone);
         if (!mName.success) {
-          return {
-            success: false,
-            rCode: mName.rCode,
-          };
+          return err(mName.rCode);
         }
 
         const rName = this.parseDomainName(rawPacketClone);
         if (!rName.success) {
-          return {
-            success: false,
-            rCode: rName.rCode,
-          };
+          return err(rName.rCode);
         }
 
         const serial = rawPacketClone.readNextUint32();
@@ -459,18 +379,15 @@ export class DNSParser {
         const expire = rawPacketClone.readNextInt32();
         const minimum = rawPacketClone.readNextUint32();
 
-        return {
-          success: true,
-          data: {
-            mName,
-            rName,
-            serial,
-            refresh,
-            retry,
-            expire,
-            minimum,
-          } as RDataMap[RRType],
-        };
+        return ok({
+          mName,
+          rName,
+          serial,
+          refresh,
+          retry,
+          expire,
+          minimum,
+        } as RDataMap[RRType]);
       }
       case DNS_TYPES.TXT: {
         const charStrings: string[] = [];
@@ -478,20 +395,17 @@ export class DNSParser {
         while (rDataCursorBuffer.getCursorPosition() < rdLength) {
           const charStringResult = this.parseCharString(rDataCursorBuffer);
           if (!charStringResult.success) {
-            return {
-              success: false,
-              rCode: charStringResult.rCode,
-            };
+            return err(charStringResult.rCode);
           }
 
           charStrings.push(charStringResult.data);
         }
 
-        return { success: true, data: charStrings as RDataMap[RRType] };
+        return ok(charStrings as RDataMap[RRType]);
       }
       case DNS_TYPES.OPT: {
         // We do not support any RDATA in the OPT RR at the moment so we just return it back, thereby effectively ignoring it.
-        return { success: true, data: rawRData as RDataMap[RRType] };
+        return ok(rawRData as RDataMap[RRType]);
       }
     }
   }
