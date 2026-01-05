@@ -5,11 +5,11 @@ import type { RDataMap } from './resource-records/RDataMap.js';
 import type { ResourceRecord } from './resource-records/ResourceRecord.js';
 
 export class DNSPacket {
-  private header: DNSHeader;
-  private questions: DNSQuestion[];
-  private answers: ResourceRecord<RDataMap[DNS_TYPES]>[];
-  private authority: ResourceRecord<RDataMap[DNS_TYPES]>[];
-  private additional: ResourceRecord<RDataMap[DNS_TYPES]>[];
+  private readonly header: DNSHeader;
+  private readonly questions: DNSQuestion[];
+  private readonly answers: ResourceRecord<RDataMap[DNS_TYPES]>[];
+  private readonly authority: ResourceRecord<RDataMap[DNS_TYPES]>[];
+  private readonly additional: ResourceRecord<RDataMap[DNS_TYPES]>[];
 
   constructor(
     header: DNSHeader,
