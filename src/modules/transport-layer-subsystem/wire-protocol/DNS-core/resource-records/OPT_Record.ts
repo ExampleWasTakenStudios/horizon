@@ -31,7 +31,7 @@ export class OPT_Record implements I_OPT_Record {
     RR_class: number,
     rdLength: number,
     rData: RDataMap[DNS_TYPES.OPT],
-    extendedRcode: number,
+    extendedRCode: number,
     ednsVersion: number
   ) {
     this.name = name;
@@ -40,7 +40,7 @@ export class OPT_Record implements I_OPT_Record {
     this.RR_class = RR_class;
     this.rdLength = rdLength;
     this.rData = rData;
-    this.extendedRCode = extendedRcode;
+    this.extendedRCode = extendedRCode;
     this.ednsVersion = ednsVersion;
   }
 }

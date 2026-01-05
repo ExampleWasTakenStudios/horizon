@@ -35,7 +35,7 @@ export class DownstreamModule extends Module {
     }
 
     if (port < 0 || port > 65535) {
-      throw new Error('Illegal port received. Must be between 0-65535');
+      throw new Error(`Illegal port received: ${port}. Must be between 0-65535`);
     }
 
     this.socket.send(msg, 0, msg.length, port, address);

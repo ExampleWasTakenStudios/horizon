@@ -6,7 +6,7 @@ import { CursorBuffer } from './parser/CursorBuffer.js';
 import { DNSParser } from './parser/DNSParser.js';
 
 export class WireProtocolModule extends Module {
-  private parser: DNSParser;
+  private readonly parser: DNSParser;
 
   constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);

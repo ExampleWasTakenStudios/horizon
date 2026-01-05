@@ -44,4 +44,6 @@ export interface ResourceRecord<T> {
  */
 export interface I_OPT_Record extends ResourceRecord<RDataMap[DNS_TYPES.OPT]> {
   RR_class: number;
+  extendedRCode: number;
+  ednsVersion: number;
 }

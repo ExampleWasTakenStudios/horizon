@@ -89,55 +89,55 @@ export class DNSParser {
 
       switch (type) {
         case DNS_TYPES.A: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new A_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.CNAME: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new CNAME_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.HINFO: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new HINFO_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.MX: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new MX_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.NS: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new NS_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.PTR: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new PTR_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.SOA: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new SOA_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.TXT: {
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
           resourceRecords.push(new TXT_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
         case DNS_TYPES.OPT: {
           // At the moment, this call is actually unecessary, since 'parseRData()' just returns 'rawRData' but to
           // keep the data flow identical between all types of RRs we pass it to the method anyway.
-          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
 
           const extendedRCode = (ttl >>> 24) & 0xff;
           const ednsVersion = (ttl >>> 16) & 0x00ff;
 
           if (ednsVersion !== 0) {
-            // TODO: trigger a BADVERS(16) response
+            // TODO: signal a BADVERS(16)
           }
 
           resourceRecords.push(new OPT_Record(name, type, ttl, RR_class, rdLength, rData, extendedRCode, ednsVersion));
