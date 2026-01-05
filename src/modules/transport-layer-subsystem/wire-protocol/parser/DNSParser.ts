@@ -1,6 +1,6 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { IllegalCharStringError } from '../../../../errors/IllegalCharStringError.js';
 import { PointerLoopError } from '../../../../errors/PointerLoopError.js';
+import type { ReturnResult } from '../../../../types/ReturnResult.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_RESPONSE_CODES } from '../DNS-core/constants/DNS_RESPONSE_CODES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
@@ -21,20 +21,8 @@ import { TXT_Record } from '../DNS-core/resource-records/TXT_Record.js';
 import { Cursor } from './Cursor.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
-export interface DNSParserResultSuccess<T> {
-  success: true;
-  data: T;
-}
-
-export interface DNSParserResultFailure {
-  success: false;
-  rCode: DNS_RESPONSE_CODES;
-}
-
-type DNSParserResult<T> = DNSParserResultSuccess<T> | DNSParserResultFailure;
-
 export class DNSParser {
-  parse(rawPacket: CursorBuffer): DNSParserResult<DNSPacket> {
+  parse(rawPacket: CursorBuffer): ReturnResult<DNSPacket> {
     const headerResult = this.parseHeader(rawPacket);
     if (!headerResult.success) {
       return { success: false, rCode: headerResult.rCode };
@@ -72,7 +60,7 @@ export class DNSParser {
     };
   }
 
-  private parseHeader(rawPacket: CursorBuffer): DNSParserResult<DNSHeader> {
+  private parseHeader(rawPacket: CursorBuffer): ReturnResult<DNSHeader> {
     const id = rawPacket.readNextUint16();
 
     const flags = rawPacket.readNextUint16();
@@ -106,7 +94,7 @@ export class DNSParser {
     };
   }
 
-  private parseQuestions(rawPacket: CursorBuffer, header: DNSHeader): DNSParserResult<DNSQuestion[]> {
+  private parseQuestions(rawPacket: CursorBuffer, header: DNSHeader): ReturnResult<DNSQuestion[]> {
     const questions: DNSQuestion[] = [];
 
     for (let i = 0; i < header.questionCount; i++) {
@@ -130,7 +118,7 @@ export class DNSParser {
   private parseResourceRecord(
     rawPacket: CursorBuffer,
     rrCount: number
-  ): DNSParserResult<ResourceRecord<RDataMap[DNS_TYPES]>[]> {
+  ): ReturnResult<ResourceRecord<RDataMap[DNS_TYPES]>[]> {
     const resourceRecords: ResourceRecord<RDataMap[DNS_TYPES]>[] = [];
 
     for (let i = 0; i < rrCount; i++) {
@@ -258,8 +246,14 @@ export class DNSParser {
           resourceRecords.push(
             new OPT_Record(name.data, type, ttl, RR_class, rdLength, rData.data, extendedRCode, ednsVersion)
           );
+          break;
         }
-        // FIXME: a default block should generate a FormErr (RCODE 1)
+        default: {
+          return {
+            success: false,
+            rCode: DNS_RESPONSE_CODES.NOT_IMPLEMENTED,
+          };
+        }
       }
     }
 
@@ -272,7 +266,7 @@ export class DNSParser {
   private parseDomainName(
     rawPacket: CursorBuffer,
     visitedPointers: Set<number> = new Set<number>()
-  ): DNSParserResult<string> {
+  ): ReturnResult<string> {
     const nameLabels: string[] = [];
 
     while (true) {
@@ -325,14 +319,17 @@ export class DNSParser {
     };
   }
 
-  private parseCharString(rawPacket: CursorBuffer): string {
+  private parseCharString(rawPacket: CursorBuffer): ReturnResult<string> {
     const length = rawPacket.readNextUint8();
 
     if (length + 1 > 256) {
-      throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`); // TODO: return FORMATERR(1)
+      return {
+        success: false,
+        rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+      };
     }
 
-    return rawPacket.nextSubarray(length).toString('ascii');
+    return { success: true, data: rawPacket.nextSubarray(length).toString('ascii') };
   }
 
   private decodePointer(buffer: Buffer, position: number): Cursor {
@@ -347,7 +344,7 @@ export class DNSParser {
     rrType: RRType,
     rdLength: number,
     rawRData: Buffer
-  ): DNSParserResult<RDataMap[RRType]> {
+  ): ReturnResult<RDataMap[RRType]> {
     const rDataCursorBuffer = new CursorBuffer(rawRData);
     const rawPacketClone = rawPacket.clone();
 
@@ -380,7 +377,20 @@ export class DNSParser {
       }
       case DNS_TYPES.HINFO: {
         const cpu = this.parseCharString(rDataCursorBuffer);
+        if (!cpu.success) {
+          return {
+            success: false,
+            rCode: cpu.rCode,
+          };
+        }
+
         const os = this.parseCharString(rDataCursorBuffer);
+        if (!os.success) {
+          return {
+            success: false,
+            rCode: os.rCode,
+          };
+        }
 
         return { success: true, data: { cpu, os } as RDataMap[RRType] };
       }
@@ -457,7 +467,15 @@ export class DNSParser {
         const charStrings: string[] = [];
 
         while (rDataCursorBuffer.getCursorPosition() < rdLength) {
-          charStrings.push(this.parseCharString(rDataCursorBuffer));
+          const charStringResult = this.parseCharString(rDataCursorBuffer);
+          if (!charStringResult.success) {
+            return {
+              success: false,
+              rCode: charStringResult.rCode,
+            };
+          }
+
+          charStrings.push(charStringResult.data);
         }
 
         return { success: true, data: charStrings as RDataMap[RRType] };

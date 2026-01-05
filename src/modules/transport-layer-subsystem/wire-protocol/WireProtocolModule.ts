@@ -1,5 +1,6 @@
 import type { ConfigManager } from '../../../config/ConfigManager.js';
 import type { Logger } from '../../../logging/Logger.js';
+import type { ReturnResult } from '../../../types/ReturnResult.js';
 import { Module } from '../../Module.js';
 import { DNSPacket } from './DNS-core/DNSPacket.js';
 import { CursorBuffer } from './parser/CursorBuffer.js';
@@ -14,10 +15,21 @@ export class WireProtocolModule extends Module {
     this.parser = new DNSParser();
   }
 
-  decode(buffer: Buffer): DNSPacket {
+  decode(buffer: Buffer): ReturnResult<DNSPacket> {
     const rawPacketCursorBuffer = new CursorBuffer(buffer);
 
-    return this.parser.parse(rawPacketCursorBuffer);
+    const parseResult = this.parser.parse(rawPacketCursorBuffer);
+    if (!parseResult.success) {
+      return {
+        success: false,
+        rCode: parseResult.rCode,
+      };
+    }
+
+    return {
+      success: true,
+      data: parseResult.data,
+    };
   }
 
   encode(_dnsPacket: DNSPacket): Buffer {
