@@ -6,16 +6,18 @@ import { CursorBuffer } from './parser/CursorBuffer.js';
 import { DNSParser } from './parser/DNSParser.js';
 
 export class WireProtocolModule extends Module {
+  private parser: DNSParser;
+
   constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
+
+    this.parser = new DNSParser();
   }
 
   decode(buffer: Buffer): DNSPacket {
-    const parser = new DNSParser();
-
     const rawPacketCursorBuffer = new CursorBuffer(buffer);
 
-    return parser.parse(rawPacketCursorBuffer);
+    return this.parser.parse(rawPacketCursorBuffer);
   }
 
   encode(_dnsPacket: DNSPacket): Buffer {

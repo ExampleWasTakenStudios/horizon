@@ -11,6 +11,7 @@ import { CNAME_Record } from '../DNS-core/resource-records/CNAME_Record.js';
 import { HINFO_Record } from '../DNS-core/resource-records/HINFO_Record.js';
 import { MX_Record } from '../DNS-core/resource-records/MX_Record.js';
 import { NS_Record } from '../DNS-core/resource-records/NS_Record.js';
+import { OPT_Record } from '../DNS-core/resource-records/OPT_Record.js';
 import { PTR_Record } from '../DNS-core/resource-records/PTR_Record.js';
 import type { RDataMap } from '../DNS-core/resource-records/RDataMap.js';
 import type { ResourceRecord } from '../DNS-core/resource-records/ResourceRecord.js';
@@ -127,6 +128,21 @@ export class DNSParser {
           resourceRecords.push(new TXT_Record(name, type, RR_class, ttl, rdLength, rData));
           break;
         }
+        case DNS_TYPES.OPT: {
+          // At the moment, this call is actually unecessary, since 'parseRData()' just returns 'rawRData' but to
+          // keep the data flow identical between all types of RRs we pass it to the method anyway.
+          const rData = this.parseRData<typeof type>(rawPacket, type, rdLength, rawRData);
+
+          const extendedRCode = (ttl >>> 24) & 0xff;
+          const ednsVersion = (ttl >>> 16) & 0x00ff;
+
+          if (ednsVersion !== 0) {
+            // TODO: trigger a BADVERS(16) response
+          }
+
+          resourceRecords.push(new OPT_Record(name, type, ttl, RR_class, rdLength, rData, extendedRCode, ednsVersion));
+        }
+        // FIXME: a default block should generate a FormErr (RCODE 1)
       }
     }
 
@@ -262,6 +278,10 @@ export class DNSParser {
         }
 
         return charStrings as RDataMap[RRType];
+      }
+      case DNS_TYPES.OPT: {
+        // We do not support any RDATA in the OPT RR at the moment so we just return it back, thereby effectively ignoring it.
+        return rawRData as RDataMap[RRType];
       }
     }
   }

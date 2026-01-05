@@ -30,7 +30,7 @@ export class DownstreamModule extends Module {
    * @throws Illegal port error when a port < 0 || > 65535 is passed.
    */
   send(msg: Buffer, address: string, port: number): void {
-    if (IP_ADDRESS_REGEX.test(address)) {
+    if (!IP_ADDRESS_REGEX.test(address)) {
       throw new Error(`Illegal IP address received: ${address}`);
     }
 

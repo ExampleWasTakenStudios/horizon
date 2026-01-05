@@ -7,6 +7,7 @@ export enum DNS_TYPES {
   HINFO = 13,
   MX = 15,
   TXT = 16,
+  OPT = 41,
 }
 
 export enum DNS_QTYPES {
