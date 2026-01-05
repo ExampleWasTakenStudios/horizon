@@ -1,5 +1,4 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { PointerLoopError } from '../../../../errors/PointerLoopError.js';
 import type { ReturnResult } from '../../../../types/ReturnResult.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_RESPONSE_CODES } from '../DNS-core/constants/DNS_RESPONSE_CODES.js';
@@ -21,6 +20,13 @@ import { TXT_Record } from '../DNS-core/resource-records/TXT_Record.js';
 import { Cursor } from './Cursor.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
+/**
+ * TODO: A note on logging
+ * Any negative returns should probably be logged. However, currenty logging infrastructure doesn't
+ * allow injecting a logger instance in this class because the super class centrally enabling injecting
+ * a logger instance is the {@link Module} or {@link Subsystem}.
+ * The fact that both contain indentical implementations, speaks to the fact that a refactor is required.
+ */
 export class DNSParser {
   parse(rawPacket: CursorBuffer): ReturnResult<DNSPacket> {
     const headerResult = this.parseHeader(rawPacket);
@@ -102,7 +108,7 @@ export class DNSParser {
       if (!qNameLabels.success) {
         return {
           success: false,
-          rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+          rCode: qNameLabels.rCode,
         };
       }
 
@@ -124,7 +130,7 @@ export class DNSParser {
     for (let i = 0; i < rrCount; i++) {
       const name = this.parseDomainName(rawPacket);
       if (!name.success) {
-        return { success: false, rCode: DNS_RESPONSE_CODES.FORMAT_ERROR };
+        return { success: false, rCode: name.rCode };
       }
 
       const type: DNS_TYPES = rawPacket.readNextUint16();
@@ -139,7 +145,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new A_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -150,7 +156,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new CNAME_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -161,7 +167,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new HINFO_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -172,7 +178,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new MX_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -183,7 +189,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new NS_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -194,7 +200,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new PTR_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -205,7 +211,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new SOA_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -216,7 +222,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
           resourceRecords.push(new TXT_Record(name.data, type, RR_class, ttl, rdLength, rData.data));
@@ -229,7 +235,7 @@ export class DNSParser {
           if (!rData.success) {
             return {
               success: false,
-              rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+              rCode: rData.rCode,
             };
           }
 
@@ -278,7 +284,10 @@ export class DNSParser {
 
         // Check if the pointer has been visited before
         if (visitedPointers.has(pointer.getPosition())) {
-          throw new PointerLoopError(`Pointer loop detected for pointer ${pointer.getPosition().toString(16)}.`);
+          return {
+            success: false,
+            rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+          };
         }
 
         // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
@@ -290,7 +299,7 @@ export class DNSParser {
         if (!domainNameResult.success) {
           return {
             success: false,
-            rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,
+            rCode: domainNameResult.rCode,
           };
         }
 
@@ -322,7 +331,7 @@ export class DNSParser {
   private parseCharString(rawPacket: CursorBuffer): ReturnResult<string> {
     const length = rawPacket.readNextUint8();
 
-    if (length + 1 > 256) {
+    if (length > 255) {
       return {
         success: false,
         rCode: DNS_RESPONSE_CODES.FORMAT_ERROR,

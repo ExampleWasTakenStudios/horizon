@@ -1,5 +1,5 @@
 import type { DNS_TYPES } from './constants/DNS_TYPES.js';
-import type { DNSHeader } from './DNSHeader.js';
+import { DNSHeader } from './DNSHeader.js';
 import type { DNSQuestion } from './DNSQuestion.js';
 import type { RDataMap } from './resource-records/RDataMap.js';
 import type { ResourceRecord } from './resource-records/ResourceRecord.js';
