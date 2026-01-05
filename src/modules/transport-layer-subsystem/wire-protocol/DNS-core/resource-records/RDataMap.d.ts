@@ -9,6 +9,10 @@ export interface RDataMap {
   [DNS_TYPES.HINFO]: HINFO_Type;
   [DNS_TYPES.TXT]: string[];
   [DNS_TYPES.MX]: MX_Type;
+  /**
+   * We are not supporting any RDATA format at the moment - hence this is unknown and we simply skip RDLENGTH bytes.
+   */
+  [DNS_TYPES.OPT]: unknown;
 }
 
 export interface SOA_Type {

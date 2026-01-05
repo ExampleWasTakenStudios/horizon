@@ -1,5 +1,5 @@
 import type { DNS_OP_CODES } from './constants/DNS_OP_CODES.js';
-import type { DNS_RESPONSE_CODES } from './constants/DNS_REPONSE_CODES.js';
+import type { DNS_RESPONSE_CODES } from './constants/DNS_RESPONSE_CODES.js';
 
 export class DNSHeader {
   /**

@@ -30,12 +30,12 @@ export class DownstreamModule extends Module {
    * @throws Illegal port error when a port < 0 || > 65535 is passed.
    */
   send(msg: Buffer, address: string, port: number): void {
-    if (IP_ADDRESS_REGEX.test(address)) {
+    if (!IP_ADDRESS_REGEX.test(address)) {
       throw new Error(`Illegal IP address received: ${address}`);
     }
 
     if (port < 0 || port > 65535) {
-      throw new Error('Illegal port received. Must be between 0-65535');
+      throw new Error(`Illegal port received: ${port}. Must be between 0-65535`);
     }
 
     this.socket.send(msg, 0, msg.length, port, address);

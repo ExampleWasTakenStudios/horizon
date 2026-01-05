@@ -1,5 +1,6 @@
 import type { DNS_CLASSES } from '../constants/DNS_CLASSES.js';
 import type { DNS_TYPES } from '../constants/DNS_TYPES.js';
+import type { RDataMap } from './RDataMap.js';
 
 export interface ResourceRecord<T> {
   /**
@@ -36,4 +37,13 @@ export interface ResourceRecord<T> {
     the RDATA field is a 4 octet ARPA Internet address.
    */
   readonly rData: T;
+}
+
+/**
+ * Interface defining and OPT RR.
+ */
+export interface I_OPT_Record extends ResourceRecord<RDataMap[DNS_TYPES.OPT]> {
+  RR_class: number;
+  extendedRCode: number;
+  ednsVersion: number;
 }
