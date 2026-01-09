@@ -18,11 +18,12 @@ export class CursorBuffer {
   }
 
   /**
-   * Clones this instance to a new, indpendent `CursorBuffer`.
-   * @returns A new, independent `CursorBuffer`.
+   * Creates a shallow copy of this instance.
+   * Meaning a new {@link CursorBuffer} instance using the same buffer reference than the original one but an independent cursor.
+   * @returns A shallow clone of this `CursorBuffer` instance.
    */
   clone(): CursorBuffer {
-    return new CursorBuffer(Buffer.from(this.buffer), this.cursor.getPosition());
+    return new CursorBuffer(this.buffer, this.cursor.getPosition());
   }
 
   /**
