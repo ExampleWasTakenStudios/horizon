@@ -273,7 +273,7 @@ export class DNSParser {
         const pointer = this.decodePointer(buffer.cloneBuffer(), buffer.getCursorPosition());
         // Check for pointer loop
         if (visitedPointers.has(pointer)) {
-          return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+          return err(DNS_RESPONSE_CODES.FORMERR);
         }
 
         visitedPointers.add(pointer);
@@ -294,7 +294,7 @@ export class DNSParser {
       // currentByte must be a length label
       const length = currentByte;
       if (length > buffer.getCursorPosition()) {
-        return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+        return err(DNS_RESPONSE_CODES.FORMERR);
       }
 
       const label = punycode.toUnicode(buffer.nextSubarray(length).toString('ascii'));
@@ -308,7 +308,7 @@ export class DNSParser {
   private parseCharString(buffer: CursorBuffer): ReturnResult<string> {
     const length = buffer.readNextUint8();
     if (length > buffer.getRemaining()) {
-      return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+      return err(DNS_RESPONSE_CODES.FORMERR);
     }
 
     const text = buffer.nextSubarray(length);
@@ -320,7 +320,7 @@ export class DNSParser {
     const extendedRcode = (ttl >> 24) & 0xff;
     const version = (ttl >> 16) & 0xff;
     if (version !== 0) {
-      return err(DNS_RESPONSE_CODES.BAD_VERSION);
+      return err(DNS_RESPONSE_CODES.BADVERS);
     }
 
     const doBit = !!((ttl >> 15) & 0xff);
@@ -331,7 +331,7 @@ export class DNSParser {
       const optionCode = buffer.readNextUint16();
       const optionLength = buffer.readNextUint16();
       if (optionLength > buffer.getRemaining()) {
-        return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+        return err(DNS_RESPONSE_CODES.FORMERR);
       }
       const optionData = buffer.nextSubarray(optionLength);
 
@@ -351,13 +351,13 @@ export class DNSParser {
 
     // Check that rdLength is no longer than the buffer
     if (buffer.getRemaining() < rdLength) {
-      return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+      return err(DNS_RESPONSE_CODES.FORMERR);
     }
 
     switch (rrType) {
       case DNS_TYPES.A: {
         if (rdLength !== 4) {
-          return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+          return err(DNS_RESPONSE_CODES.FORMERR);
         }
 
         const slice = buffer.nextSubarray(4);
@@ -421,10 +421,10 @@ export class DNSParser {
 
   private computeExtendedRCode(baseRCode: number, extendedRCode: number): ReturnResult<DNS_RESPONSE_CODES> {
     if (baseRCode < 0 || baseRCode > 15) {
-      return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+      return err(DNS_RESPONSE_CODES.FORMERR);
     }
     if (extendedRCode < 0 || extendedRCode > 255) {
-      return err(DNS_RESPONSE_CODES.FORMAT_ERROR);
+      return err(DNS_RESPONSE_CODES.FORMERR);
     }
 
     return ok((extendedRCode << 4) | baseRCode);
