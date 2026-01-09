@@ -270,14 +270,14 @@ export class DNSParser {
 
       // Check if current byte is a pointer
       if ((currentByte & 0xc0) === 0xc0) {
-        const pointer = this.decodePointer(buffer.cloneBuffer(), buffer.getCursorPosition());
+        const pointer = this.decodePointer(buffer.getBuffer(), buffer.getCursorPosition());
         // Check for pointer loop
         if (visitedPointers.has(pointer)) {
           return err(DNS_RESPONSE_CODES.FORMERR);
         }
 
         visitedPointers.add(pointer);
-        const labelResult = this.parseLabels(buffer.clone(), visitedPointers);
+        const labelResult = this.parseLabels(buffer.fork(pointer.getPosition()), visitedPointers);
         if (!labelResult.success) {
           return err(labelResult.rCode);
         }

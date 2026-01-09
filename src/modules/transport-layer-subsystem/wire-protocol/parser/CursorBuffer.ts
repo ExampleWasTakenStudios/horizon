@@ -18,12 +18,12 @@ export class CursorBuffer {
   }
 
   /**
-   * Creates a shallow copy of this instance.
-   * Meaning a new {@link CursorBuffer} instance using the same buffer reference than the original one but an independent cursor.
-   * @returns A shallow clone of this `CursorBuffer` instance.
+   * Forks the `CursorBuffer` by creating a shallow copy of the buffer and a cursor set to `position`.
+   * @param position The position of the cursor.
+   * @returns A new `CursorBuffer`.
    */
-  clone(): CursorBuffer {
-    return new CursorBuffer(this.buffer, this.cursor.getPosition());
+  fork(position: number): CursorBuffer {
+    return new CursorBuffer(this.buffer, position);
   }
 
   /**
@@ -35,22 +35,19 @@ export class CursorBuffer {
   }
 
   /**
-   * Allocates a new {@link Buffer<ArrayBufferLike>} and returns it.
+   * Returns new `Buffer` that references the same memory as the original (shallow copy), but offset and cropped by the current cursor position and `length`.
    * @param length Number of bytes that should be parsed, starting from the current cursor position.
    * @returns A new {@link Buffer<ArrayBufferLike>} containing the requested section of the original buffer.
    */
   nextSubarray(length: number): Buffer<ArrayBufferLike> {
-    const array = Buffer.from(this.buffer.subarray(this.cursor.getPosition(), this.cursor.getPosition() + length));
+    const array = this.buffer.subarray(this.cursor.getPosition(), this.cursor.getPosition() + length);
     this.cursor.advance(length);
 
     return array;
   }
 
-  /**
-   * Creates a clone of the buffer of the cursor, by allocating a new buffer from the buffer of this instance.
-   */
-  cloneBuffer(): Buffer {
-    return Buffer.from(this.buffer);
+  getBuffer(): Buffer {
+    return this.buffer;
   }
 
   getRemaining(): number {
