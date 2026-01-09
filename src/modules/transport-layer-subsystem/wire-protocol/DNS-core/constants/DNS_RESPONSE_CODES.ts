@@ -8,5 +8,7 @@ export enum DNS_RESPONSE_CODES {
   NAME_ERROR = 3,
   NOT_IMPLEMENTED = 4,
   REFUSED = 5,
+
+  // EDNS(0)
   BAD_VERSION = 16,
 }
