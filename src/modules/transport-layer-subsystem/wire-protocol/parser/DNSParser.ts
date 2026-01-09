@@ -293,7 +293,7 @@ export class DNSParser {
 
       // currentByte must be a length label
       const length = currentByte;
-      if (length > buffer.getCursorPosition()) {
+      if (length > buffer.getRemaining()) {
         return err(DNS_RESPONSE_CODES.FORMERR);
       }
 
