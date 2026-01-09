@@ -8,6 +8,7 @@ export interface ReturnSuccess<T> {
 export interface ReturnFailure {
   success: false;
   rCode: DNS_RESPONSE_CODES;
+  debugInfo: unknown;
 }
 
 export type ReturnResult<T> = ReturnSuccess<T> | ReturnFailure;

@@ -15,18 +15,7 @@ export class WireProtocolModule extends Module {
   }
 
   decode(buffer: Buffer): ReturnResult<DNSMessage> {
-    const parseResult = this.parser.parse(buffer);
-    if (!parseResult.success) {
-      return {
-        success: false,
-        rCode: parseResult.rCode,
-      };
-    }
-
-    return {
-      success: true,
-      data: parseResult.data,
-    };
+    return this.parser.parse(buffer);
   }
 
   encode(_dnsPacket: DNSMessage): Buffer {

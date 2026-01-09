@@ -11,12 +11,18 @@ export const ok = <T>(data: T): ReturnSuccess<T> => {
   };
 };
 
+interface ErrArgs {
+  rCode: DNS_RESPONSE_CODES;
+  debugInfo: unknown;
+}
+
 /**
  * Constructs a {@link ReturnFailure} object.
  */
-export const err = (rCode: DNS_RESPONSE_CODES): ReturnFailure => {
+export const err = ({ rCode, debugInfo }: ErrArgs): ReturnFailure => {
   return {
     success: false,
     rCode: rCode,
+    debugInfo: debugInfo,
   };
 };
