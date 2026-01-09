@@ -39,7 +39,7 @@ export class CursorBuffer {
    * @param length Number of bytes that should be parsed, starting from the current cursor position.
    * @returns A new {@link Buffer<ArrayBufferLike>} containing the requested section of the original buffer.
    */
-  nextSubarray(length: number): Buffer<ArrayBufferLike> {
+  nextSubarray(length: number): Buffer {
     const array = this.buffer.subarray(this.cursor.getPosition(), this.cursor.getPosition() + length);
     this.cursor.advance(length);
 
