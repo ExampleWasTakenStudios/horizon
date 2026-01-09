@@ -8,6 +8,7 @@
     "type": "module",
     "scripts": {
         "dev": "tsx watch ./src/index.ts",
+        "compile": "tsc -p ./tsconfig.json --noEmit",
         "ts": "tsc -p ./tsconfig.json --watch",
         "node": "node --watch ./dist/index.js",
         "build": "tsc -p ./tsconfig.json",
