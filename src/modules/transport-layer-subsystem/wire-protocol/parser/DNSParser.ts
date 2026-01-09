@@ -15,7 +15,6 @@ import { RawData } from '../DNS-core/resource-records/RDATA/RawData.js';
 import type { RecordData } from '../DNS-core/resource-records/RDATA/RecordData.js';
 import { SOA_Data } from '../DNS-core/resource-records/RDATA/SOA_Data.js';
 import { TxtData } from '../DNS-core/resource-records/RDATA/TxtData.js';
-import { Cursor } from './Cursor.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
 export class DNSParser {
@@ -262,22 +261,26 @@ export class DNSParser {
     return ok(resourceRecords);
   }
 
-  private parseLabels(buffer: CursorBuffer, visitedPointers: Set<Cursor> = new Set()): ReturnResult<string[]> {
+  private parseLabels(buffer: CursorBuffer, visitedPointers: Set<number> = new Set()): ReturnResult<string[]> {
     const labels: string[] = [];
+
+    if (buffer.getRemaining() < 1) {
+      return err(DNS_RESPONSE_CODES.FORMERR);
+    }
 
     while (true) {
       const currentByte = buffer.readNextUint8();
 
       // Check if current byte is a pointer
       if ((currentByte & 0xc0) === 0xc0) {
-        const pointer = this.decodePointer(buffer.getBuffer(), buffer.getCursorPosition());
+        const pointer = this.decodePointer(currentByte, buffer.readNextUint8());
         // Check for pointer loop
         if (visitedPointers.has(pointer)) {
           return err(DNS_RESPONSE_CODES.FORMERR);
         }
 
         visitedPointers.add(pointer);
-        const labelResult = this.parseLabels(buffer.fork(pointer.getPosition()), visitedPointers);
+        const labelResult = this.parseLabels(buffer.fork(pointer), visitedPointers);
         if (!labelResult.success) {
           return err(labelResult.rCode);
         }
@@ -412,11 +415,8 @@ export class DNSParser {
     }
   }
 
-  private decodePointer(buffer: Buffer, position: number): Cursor {
-    const highByte = buffer.readUint8(position);
-    const lowByte = buffer.readUint8(position + 1);
-
-    return new Cursor(((highByte & 0x3f) << 8) | lowByte);
+  private decodePointer(highByte: number, lowByte: number): number {
+    return ((highByte & 0x3f) << 8) | lowByte;
   }
 
   private computeExtendedRCode(baseRCode: number, extendedRCode: number): ReturnResult<DNS_RESPONSE_CODES> {
