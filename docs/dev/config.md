@@ -1,6 +1,6 @@
 # Configuration
 
-This section only refers to the configuration of the application. It does not cover configurating DNS related settings.
+This section only refers to the configuration of the application. It does not cover configuring DNS related settings.
 
 At the center of Horizon's configuration is the ConfigManager class that manages the config file.
 
@@ -20,7 +20,7 @@ Once a config file has either been created or read the configuration data is loa
 The config is stored in different locations based on the NODE_ENV env var:
 
 - `dev`: `process.cwd()/.config/Horizon/config.json5`
-- `prod`: `os.homedir()/.coinfg/Horizon/config.json5`
+- `prod`: `os.homedir()/.config/Horizon/config.json5`
 
 ---
 
@@ -29,4 +29,4 @@ The config is stored in different locations based on the NODE_ENV env var:
 The following requirements exist for hot reloading functionality:
 
 1. The process must be fully atomic and asynchronous.
-2. Any failures occuring during hot reloading MUST be handled and result in the previous config being used. -> Crashes due to invalid configs are not acceptable.
+2. Any failures occurring during hot reloading MUST be handled and result in the previous config being used. -> Crashes due to invalid configs are not acceptable.

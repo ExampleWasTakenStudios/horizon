@@ -32,4 +32,4 @@ The following software is required to develop Horizon:
 - [pnpm](https://pnpm.io)
   - Our packet manager.
 - [authbind](https://manpages.ubuntu.com/manpages/xenial/man1/authbind.1.html)
-  - Used to allow the node process to bind to priviledged ports.
+  - Used to allow the node process to bind to privileged ports.
