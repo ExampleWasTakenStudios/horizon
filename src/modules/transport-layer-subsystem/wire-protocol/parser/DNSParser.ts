@@ -1,5 +1,6 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { err, ok, type ReturnResult } from '../../../../utils/result-pattern.js';
+import { DNSParseError } from '../../../../errors/result/DNSParseError.js';
+import { Result, type TResult } from '../../../../result/Result.js';
 import { DNS_RESPONSE_CODES } from '../DNS-core/constants/DNS_RESPONSE_CODES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
 import { DNSHeader } from '../DNS-core/DNSHeader.js';
@@ -17,50 +18,50 @@ import { TxtData } from '../DNS-core/resource-records/RDATA/TxtData.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
 export class DNSParser {
-  parse(message: Buffer): ReturnResult<DNSMessage, DNS_RESPONSE_CODES> {
+  parse(message: Buffer): TResult<DNSMessage, DNSParseError> {
     const buffer = new CursorBuffer(message);
 
-    // Parse Header
+    /* --- Parse Header --- */
 
-    /**
+    /*
      * This is only the initial header as, at this point, we don't know if the message includes an EDNS OPT record that extends the RCODE field.
      * Once the message is fully parsed, a new header is instantiated that receives all values of the received header, plus the extended RCODE.
      */
     const initialHeaderResult = this.parseHeader(buffer);
-    if (initialHeaderResult.err) {
-      return err(initialHeaderResult.addDebugInfo('Failed to parse DNS Header.'));
+    if (initialHeaderResult.isFailure()) {
+      return initialHeaderResult;
     }
 
-    const questionsResult = this.parseQuestions(buffer, initialHeaderResult.data.questionCount);
-    if (questionsResult.err) {
-      return err(questionsResult.addDebugInfo('Failed to parse DNS Questions.'));
+    const questionsResult = this.parseQuestions(buffer, initialHeaderResult.value.questionCount);
+    if (questionsResult.isFailure()) {
+      return questionsResult;
     }
 
-    const answersResult = this.parseResourceRecord(buffer, initialHeaderResult.data.answerCount);
-    if (answersResult.err) {
-      return err(answersResult.addDebugInfo('Failed to parse DNS Answers.'));
+    const answersResult = this.parseResourceRecord(buffer, initialHeaderResult.value.answerCount);
+    if (answersResult.isFailure()) {
+      return answersResult;
     }
 
-    const authoritativeResult = this.parseResourceRecord(buffer, initialHeaderResult.data.authoritativeCount);
-    if (authoritativeResult.err) {
-      return err(authoritativeResult.addDebugInfo('Failed to parse DNS Authoritatives.'));
+    const authoritativeResult = this.parseResourceRecord(buffer, initialHeaderResult.value.authoritativeCount);
+    if (authoritativeResult.isFailure()) {
+      return authoritativeResult;
     }
 
-    const additionalResult = this.parseResourceRecord(buffer, initialHeaderResult.data.additionalCount);
-    if (additionalResult.err) {
-      return err(additionalResult.addDebugInfo('Failed to parse DNS Addtionals.'));
+    const additionalResult = this.parseResourceRecord(buffer, initialHeaderResult.value.additionalCount);
+    if (additionalResult.isFailure()) {
+      return additionalResult;
     }
 
     // Check if the received message supports EDNS -> if yet, use extended RCODE directly
-    const optRecord = additionalResult.data.find((record) => record.type === DNS_TYPES.OPT);
+    const optRecord = additionalResult.value.find((record) => record.type === DNS_TYPES.OPT);
     let finalHeader: DNSHeader;
     if (optRecord) {
-      const header = initialHeaderResult.data;
+      const header = initialHeaderResult.value;
       const optData = optRecord.data as OptData;
-      const computedRcode = this.computeExtendedRCode(header.responseCode, optData.extendedRcode);
+      const computedRcodeResult = this.computeExtendedRCode(header.responseCode, optData.extendedRcode);
 
-      if (computedRcode.err) {
-        return err(computedRcode.addDebugInfo('Failed to compute extended RCODE.'));
+      if (computedRcodeResult.isFailure()) {
+        return computedRcodeResult;
       }
 
       finalHeader = new DNSHeader(
@@ -72,28 +73,28 @@ export class DNSParser {
         header.isRecursionDesired,
         header.isRecursionAvailable,
         header.z,
-        computedRcode.data,
+        computedRcodeResult.value,
         header.questionCount,
         header.answerCount,
         header.authoritativeCount,
         header.additionalCount
       );
     } else {
-      finalHeader = initialHeaderResult.data;
+      finalHeader = initialHeaderResult.value;
     }
 
     const dnsMessage = new DNSMessage(
       finalHeader,
-      questionsResult.data,
-      answersResult.data,
-      authoritativeResult.data,
-      additionalResult.data
+      questionsResult.value,
+      answersResult.value,
+      authoritativeResult.value,
+      additionalResult.value
     );
 
-    return ok(dnsMessage);
+    return Result.ok(dnsMessage);
   }
 
-  private parseHeader(buffer: CursorBuffer): ReturnResult<DNSHeader, DNS_RESPONSE_CODES> {
+  private parseHeader(buffer: CursorBuffer): TResult<DNSHeader, DNSParseError> {
     const id = buffer.readNextUint16();
     const flags = buffer.readNextUint16();
 
@@ -191,7 +192,7 @@ export class DNSParser {
     const authoritativeCount = buffer.readNextUint16();
     const additionalCount = buffer.readNextUint16();
 
-    return ok(
+    return Result.ok(
       new DNSHeader(
         id,
         !qr,
@@ -210,35 +211,32 @@ export class DNSParser {
     );
   }
 
-  private parseQuestions(buffer: CursorBuffer, questionCount: number): ReturnResult<DNSQuestion[], DNS_RESPONSE_CODES> {
+  private parseQuestions(buffer: CursorBuffer, questionCount: number): TResult<DNSQuestion[], DNSParseError> {
     const questions: DNSQuestion[] = [];
 
     for (let i = 0; i < questionCount; i++) {
-      const qName = this.parseLabels(buffer);
+      const qNameResult = this.parseLabels(buffer);
 
-      if (qName.err) {
-        return err(qName.addDebugInfo('Failed to parse QNAME.'));
+      if (qNameResult.isFailure()) {
+        return qNameResult;
       }
 
       const qType = buffer.readNextUint16();
       const qClass = buffer.readNextUint16();
 
-      questions.push(new DNSQuestion(qName.data, qType, qClass));
+      questions.push(new DNSQuestion(qNameResult.value, qType, qClass));
     }
 
-    return ok(questions);
+    return Result.ok(questions);
   }
 
-  private parseResourceRecord(
-    buffer: CursorBuffer,
-    resourceRecordCount: number
-  ): ReturnResult<DNSRecord[], DNS_RESPONSE_CODES> {
+  private parseResourceRecord(buffer: CursorBuffer, resourceRecordCount: number): TResult<DNSRecord[], DNSParseError> {
     const resourceRecords: DNSRecord[] = [];
 
     for (let i = 0; i < resourceRecordCount; i++) {
-      const name = this.parseLabels(buffer);
-      if (name.err) {
-        return err(name.addDebugInfo('Failed to parse labels of resource record.'));
+      const nameResult = this.parseLabels(buffer);
+      if (nameResult.isFailure()) {
+        return nameResult;
       }
 
       const rrType = buffer.readNextUint16();
@@ -246,34 +244,31 @@ export class DNSParser {
       const ttl = buffer.readNextUint32();
       const rdLength = buffer.readNextUint16();
 
-      let data: ReturnResult<RecordData, DNS_RESPONSE_CODES>;
+      let value: TResult<RecordData, DNSParseError>;
       if (rrType === (DNS_TYPES.OPT as number)) {
-        data = this.parseOptData(buffer, rdLength, ttl, rrClass);
+        value = this.parseOptData(buffer, rdLength, ttl, rrClass);
       } else {
-        data = this.parseRData(buffer, rdLength, rrType);
+        value = this.parseRData(buffer, rdLength, rrType);
       }
 
-      if (data.err) {
-        return err(data);
+      if (value.isFailure()) {
+        return value;
       }
 
-      resourceRecords.push(new DNSRecord(name.data, rrType, rrClass, ttl, rdLength, data.data));
+      resourceRecords.push(new DNSRecord(nameResult.value, rrType, rrClass, ttl, rdLength, value.value));
     }
 
-    return ok(resourceRecords);
+    return Result.ok(resourceRecords);
   }
 
   private parseLabels(
     buffer: CursorBuffer,
     visitedPointers: Set<number> = new Set()
-  ): ReturnResult<string[], DNS_RESPONSE_CODES> {
+  ): TResult<string[], DNSParseError> {
     const labels: string[] = [];
 
     if (buffer.getRemaining() < 1) {
-      return err({
-        error: DNS_RESPONSE_CODES.FORMERR,
-        debugInfo: ['Less than one byte remaining in buffer. Buffer: ', buffer],
-      });
+      return Result.fail(new DNSParseError('Less than one byte remaining in buffer.', DNS_RESPONSE_CODES.FORMERR));
     }
 
     while (true) {
@@ -284,19 +279,16 @@ export class DNSParser {
         const pointer = this.decodePointer(currentByte, buffer.readNextUint8());
         // Check for pointer loop
         if (visitedPointers.has(pointer)) {
-          return err({
-            error: DNS_RESPONSE_CODES.FORMERR,
-            debugInfo: ['Pointer loop in buffer ', buffer, ' Pointer: ', pointer],
-          });
+          return Result.fail(new DNSParseError('Pointer loop detected.', DNS_RESPONSE_CODES.FORMERR));
         }
 
         visitedPointers.add(pointer);
         const labelResult = this.parseLabels(buffer.fork(pointer), visitedPointers);
-        if (labelResult.err) {
-          return err(labelResult.addDebugInfo('Failed to parse labels recursively.'));
+        if (labelResult.isFailure()) {
+          return labelResult;
         }
 
-        labels.push(...labelResult.data);
+        labels.push(...labelResult.value);
         break;
       }
 
@@ -308,7 +300,7 @@ export class DNSParser {
       // currentByte must be a length label
       const length = currentByte;
       if (length > buffer.getRemaining()) {
-        return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['Name label length exceeds buffer length'] });
+        return Result.fail(new DNSParseError('Name label length exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
       }
 
       const label = punycode.toUnicode(buffer.nextSubarray(length).toString('ascii'));
@@ -316,18 +308,18 @@ export class DNSParser {
       labels.push(label);
     }
 
-    return ok(labels);
+    return Result.ok(labels);
   }
 
-  private parseCharString(buffer: CursorBuffer): ReturnResult<string, DNS_RESPONSE_CODES> {
+  private parseCharString(buffer: CursorBuffer): TResult<string, DNSParseError> {
     const length = buffer.readNextUint8();
     if (length > buffer.getRemaining()) {
-      return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['Char string length exceeds buffer length.'] });
+      return Result.fail(new DNSParseError('Char string length exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
     }
 
     const text = buffer.nextSubarray(length);
 
-    return ok(punycode.toUnicode(text.toString('ascii')));
+    return Result.ok(punycode.toUnicode(text.toString('ascii')));
   }
 
   private parseOptData(
@@ -335,11 +327,13 @@ export class DNSParser {
     rdLength: number,
     ttl: number,
     rrClass: number
-  ): ReturnResult<OptData, DNS_RESPONSE_CODES> {
+  ): TResult<OptData, DNSParseError> {
     const extendedRcode = (ttl >> 24) & 0xff;
     const version = (ttl >> 16) & 0xff;
     if (version !== 0) {
-      return err({ error: DNS_RESPONSE_CODES.BADVERS, debugInfo: ['Received EDNS version ', version] });
+      return Result.fail(
+        new DNSParseError(`Received unsupported EDNS version ${version}.`, DNS_RESPONSE_CODES.BADVERS)
+      );
     }
 
     const doBit = !!((ttl >> 15) & 0xff);
@@ -350,58 +344,58 @@ export class DNSParser {
       const optionCode = buffer.readNextUint16();
       const optionLength = buffer.readNextUint16();
       if (optionLength > buffer.getRemaining()) {
-        return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['EDNS Option Data exceeds buffer length.'] });
+        return Result.fail(new DNSParseError('EDNS Option Data exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
       }
       const optionData = buffer.nextSubarray(optionLength);
 
       options.push({ code: optionCode, data: optionData });
     }
 
-    return ok(new OptData(rrClass, extendedRcode, version, doBit, options));
+    return Result.ok(new OptData(rrClass, extendedRcode, version, doBit, options));
   }
 
   private parseRData(
     buffer: CursorBuffer,
     rdLength: number,
     rrType: DNS_TYPES
-  ): ReturnResult<AData | DomainName_Data | MxData | RawData | SOA_Data | TxtData, DNS_RESPONSE_CODES> {
+  ): TResult<AData | DomainName_Data | MxData | RawData | SOA_Data | TxtData, DNSParseError> {
     // Declare start position of RDATA to ensure we don't read more than defined as RDLENGTH.
     const startCursorPosition = buffer.getCursorPosition();
 
     // Check that rdLength is no longer than the buffer
     if (buffer.getRemaining() < rdLength) {
-      return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['RDLENGTH exceeds buffer length.'] });
+      return Result.fail(new DNSParseError('RDLENGTH exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
     }
 
     switch (rrType) {
       case DNS_TYPES.A: {
         if (rdLength !== 4) {
-          return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ["RDLENGTH of RRs of type 'A' must be 4."] });
+          return Result.fail(new DNSParseError("RDLENGTH of RRs of type 'A' must be 4.", DNS_RESPONSE_CODES.FORMERR));
         }
 
         const slice = buffer.nextSubarray(4);
-        return ok(new AData(`${slice[0]}.${slice[1]}.${slice[2]}.${slice[3]}`));
+        return Result.ok(new AData(`${slice[0]}.${slice[1]}.${slice[2]}.${slice[3]}`));
       }
       case DNS_TYPES.CNAME:
       case DNS_TYPES.NS:
       case DNS_TYPES.MX: {
         const preference = buffer.readNextUint16();
-        const exchange = this.parseLabels(buffer);
-        if (exchange.err) {
-          return err(exchange.addDebugInfo('Failed to parse MX exchange.'));
+        const exchangeResult = this.parseLabels(buffer);
+        if (exchangeResult.isFailure()) {
+          return exchangeResult;
         }
 
-        return ok(new MxData(preference, exchange.data));
+        return Result.ok(new MxData(preference, exchangeResult.value));
       }
       case DNS_TYPES.SOA: {
-        const mName = this.parseLabels(buffer);
-        if (mName.err) {
-          return err(mName.addDebugInfo('Failed to parse MNAME of SOA record.'));
+        const mNameResult = this.parseLabels(buffer);
+        if (mNameResult.isFailure()) {
+          return mNameResult;
         }
 
-        const rName = this.parseLabels(buffer);
-        if (rName.err) {
-          return err(rName.addDebugInfo('Failed to parse RNAME of SOA record.'));
+        const rNameResult = this.parseLabels(buffer);
+        if (rNameResult.isFailure()) {
+          return rNameResult;
         }
 
         const serial = buffer.readNextUint32();
@@ -410,23 +404,23 @@ export class DNSParser {
         const expire = buffer.readNextUint32();
         const minimum = buffer.readNextUint32();
 
-        return ok(new SOA_Data(mName.data, rName.data, serial, refresh, retry, expire, minimum));
+        return Result.ok(new SOA_Data(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
       }
       case DNS_TYPES.TXT: {
         const text: string[] = [];
         do {
-          const parsedText = this.parseCharString(buffer);
-          if (parsedText.err) {
-            return err(parsedText.addDebugInfo('Failed to parse character string of TXT record.'));
+          const parsedTextResult = this.parseCharString(buffer);
+          if (parsedTextResult.isFailure()) {
+            return parsedTextResult;
           }
 
-          text.push(parsedText.data);
+          text.push(parsedTextResult.value);
         } while (buffer.getCursorPosition() <= startCursorPosition + rdLength);
 
-        return ok(new TxtData(text));
+        return Result.ok(new TxtData(text));
       }
       default: {
-        return ok(new RawData(rrType, buffer.nextSubarray(rdLength)));
+        return Result.ok(new RawData(rrType, buffer.nextSubarray(rdLength)));
       }
     }
   }
@@ -435,17 +429,14 @@ export class DNSParser {
     return ((highByte & 0x3f) << 8) | lowByte;
   }
 
-  private computeExtendedRCode(
-    baseRCode: number,
-    extendedRCode: number
-  ): ReturnResult<DNS_RESPONSE_CODES, DNS_RESPONSE_CODES> {
+  private computeExtendedRCode(baseRCode: number, extendedRCode: number): TResult<DNS_RESPONSE_CODES, DNSParseError> {
     if (baseRCode < 0 || baseRCode > 15) {
-      return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['Base RCODE must be 0-15'] });
+      return Result.fail(new DNSParseError('Base RCODE must be between 0-15.', DNS_RESPONSE_CODES.FORMERR));
     }
     if (extendedRCode < 0 || extendedRCode > 255) {
-      return err({ error: DNS_RESPONSE_CODES.FORMERR, debugInfo: ['Extended RCODE must be 0-255'] });
+      return Result.fail(new DNSParseError('Extended RCODE must be between 0-255.', DNS_RESPONSE_CODES.FORMERR));
     }
 
-    return ok((extendedRCode << 4) | baseRCode);
+    return Result.ok((extendedRCode << 4) | baseRCode);
   }
 }
