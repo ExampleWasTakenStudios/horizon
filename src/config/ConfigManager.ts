@@ -39,7 +39,7 @@ export class ConfigManager {
     const parsedContents = this.parse(fileContent);
 
     if (!parsedContents.success) {
-      this.logger.fatal('Zod Error occured while trying to parse config. ', parsedContents.error);
+      this.logger.fatal('Zod Error occurred while trying to parse config. ', parsedContents.error);
       throw parsedContents.error;
     }
 
