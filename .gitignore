@@ -1,3 +1,6 @@
+# Ignore all *.ignore.* files
+**/*.ignore.*
+
 # Directories
 node_modules/
 .vscode/
