@@ -1,3 +1,4 @@
+import { PromiseRejectError } from '../errors/result/PromiseRejectError.js';
 import type { ResultError } from '../errors/result/ResultError.js';
 
 export type TResult<T, E extends ResultError> = Success<T, never> | Failure<never, E>;
@@ -5,6 +6,14 @@ export type TResult<T, E extends ResultError> = Success<T, never> | Failure<neve
 export abstract class Result<T, E extends ResultError> {
   abstract isSuccess(): this is Success<T, never>;
   abstract isFailure(): this is Failure<never, E>;
+
+  static async fromPromise<T>(promise: Promise<T>): Promise<TResult<T, PromiseRejectError>> {
+    try {
+      return Result.ok(await promise);
+    } catch (err) {
+      return Result.fail(new PromiseRejectError(err));
+    }
+  }
 
   static ok<T, E extends never>(value: T): Success<T, E> {
     return new Success(value);
