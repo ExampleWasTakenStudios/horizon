@@ -6,7 +6,7 @@ import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportL
 export class HeadModule extends Module {
   private readonly transportLayerSubsystem: TransportLayerSubsystem;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
     this.transportLayerSubsystem = new TransportLayerSubsystem(
       this.logger.spawnSubLogger('TRANSPORT LAYER SUBSYSTEM'),

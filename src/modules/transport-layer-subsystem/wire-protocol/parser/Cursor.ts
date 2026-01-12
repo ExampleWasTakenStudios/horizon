@@ -6,7 +6,7 @@
 export class Cursor {
   private cursor: number;
 
-  constructor(cursor = 0) {
+  public constructor(cursor = 0) {
     this.cursor = Math.round(cursor);
   }
 
@@ -14,15 +14,15 @@ export class Cursor {
    * Advance the cursor by {@link n} integer values.
    * @param n Amount that is added to the cursor.
    */
-  advance(n: number): void {
+  public advance(n: number): void {
     this.cursor += Math.round(n);
   }
 
-  clone(): Cursor {
+  public clone(): Cursor {
     return new Cursor(this.cursor);
   }
 
-  getPosition(): number {
+  public getPosition(): number {
     return this.cursor;
   }
 }

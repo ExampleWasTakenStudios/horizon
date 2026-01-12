@@ -12,7 +12,7 @@ export class DownstreamModule extends Module {
   private readonly socket: Socket;
   private readonly wireProtocolModule: WireProtocolModule;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.socket = dgram.createSocket({ type: 'udp4' });
@@ -37,7 +37,7 @@ export class DownstreamModule extends Module {
    * @throws Illegal IP address error when an invalid IP address is passed.
    * @throws Illegal port error when a port < 0 || > 65535 is passed.
    */
-  send(msg: Buffer, address: string, port: number): void {
+  public send(msg: Buffer, address: string, port: number): void {
     if (!IP_ADDRESS_REGEX.test(address)) {
       throw new Error(`Illegal IP address received: ${address}`);
     }
@@ -49,17 +49,17 @@ export class DownstreamModule extends Module {
     this.socket.send(msg, 0, msg.length, port, address);
   }
 
-  bind(): void {
+  public bind(): void {
     const address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPAddress;
     this.socket.bind(53, address);
     this.logger.info('Bound to ', address, ':53');
   }
 
-  close(): void {
+  public close(): void {
     this.socket.close();
   }
 
-  getAddressInfo(): AddressInfo {
+  public getAddressInfo(): AddressInfo {
     return this.socket.address();
   }
 

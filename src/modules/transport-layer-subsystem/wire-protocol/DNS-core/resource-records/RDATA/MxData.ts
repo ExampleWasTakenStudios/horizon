@@ -3,11 +3,11 @@ import { DNS_TYPES } from '../../constants/DNS_TYPES.js';
 import { RecordData } from './RecordData.js';
 
 export class MxData extends RecordData {
-  override readonly type: DNS_TYPES.MX;
-  readonly preference: uint16;
-  readonly exchange: string[];
+  public override readonly type: DNS_TYPES.MX;
+  public readonly preference: uint16;
+  public readonly exchange: string[];
 
-  constructor(preference: uint16, exchange: string[]) {
+  public constructor(preference: uint16, exchange: string[]) {
     super();
     this.type = DNS_TYPES.MX;
     this.preference = preference;

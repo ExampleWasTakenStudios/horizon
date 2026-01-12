@@ -80,7 +80,7 @@ export class ConfigManager {
     return process.env.NODE_ENV === 'dev' ? devPath : prodPath;
   }
 
-  getConfig(): HorizonConfig {
+  public getConfig(): HorizonConfig {
     return this.config;
   }
 }

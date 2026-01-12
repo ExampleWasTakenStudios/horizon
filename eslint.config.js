@@ -18,8 +18,8 @@ export default tseslint.config(
     rules: {
       'prettier/prettier': ['error', {}, { usePrettierrc: true }],
 
-      'max-lines-per-function': ['error', 60],
-      complexity: ['error', 10],
+      'max-lines-per-function': ['error', { max: 60, skipBlankLines: true, skipComments: true }],
+      complexity: ['error', { max: 10, variant: 'modified' }],
 
       'no-await-in-loop': 'error',
       'no-constructor-return': 'error',
@@ -29,11 +29,9 @@ export default tseslint.config(
 
       /* The following block contains ESLint Rules that are extended by @typescript-eslint and are therefore disabled. */
       'no-unused-vars': 'off',
-      'init-declarations': 'off',
       'init-loop-func': 'off',
       'no-shadow': 'off',
       'no-unused-private-class-members': 'off',
-      'no-use-before-define': 'off',
 
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -49,7 +47,7 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': [
         'error',
         {
-          allowTypedFunctionExpressions: false,
+          allowExpressions: true,
           allowHigherOrderFunctions: false,
           allowDirectConstAssertionInArrowFunctions: false,
         },
@@ -59,7 +57,6 @@ export default tseslint.config(
         'error',
         { allowHigherOrderFunctions: false, allowTypedFunctionExpressions: false },
       ],
-      '@typescript-eslint/init-declarations': ['error', 'never', { ignoreForLoopInit: true }],
       // '@typescript-eslint/member-ordering': ['error', ] // TODO: this requires extensive configuration but can help greatly with consistent code style
       '@typescript-eslint/method-signature-style': ['error', 'method'],
       //'@typescript-eslint/naming-convention': ['error'] // TODO: this requires extensive configuration but can help greatly with consistent code style
@@ -68,12 +65,11 @@ export default tseslint.config(
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/no-unnecessary-qualifier': 'error',
       '@typescript-eslint/no-unsafe-type-assertion': 'error',
-      '@typescript-eslint/no-use-before-define': 'error',
       '@typescript-eslint/no-useless-empty-export': 'error',
       '@typescript-eslint/parameter-properties': ['error', { allow: [], prefer: 'class-property' }],
       '@typescript-eslint/prefer-readonly': 'error',
       '@typescript-eslint/require-array-sort-compare': 'error',
-      '@typescript-eslint/switch-exhaustiveness-check': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': ['error', { considerDefaultExhaustiveForUnions: true }],
     },
   },
   {

@@ -38,7 +38,7 @@ export class RotatingFileTransport implements BaseTransport {
 
   private maxLevel: LogLevel;
 
-  constructor(
+  public constructor(
     filename: string,
     settings: RotatingFileTransportSettings,
     maxLevel: LogLevel,
@@ -57,15 +57,15 @@ export class RotatingFileTransport implements BaseTransport {
     this.stream = createStream(filename + '.json', settings);
   }
 
-  log(logEntry: LogEntry): void {
+  public log(logEntry: LogEntry): void {
     this.stream.write(JSON.stringify(logEntry, jsonReplacer) + '\n');
   }
 
-  getMaxLevel(): Readonly<LogLevel> {
+  public getMaxLevel(): Readonly<LogLevel> {
     return this.maxLevel;
   }
 
-  setMaxLevel(level: LogLevel): void {
+  public setMaxLevel(level: LogLevel): void {
     this.maxLevel = level;
   }
 }

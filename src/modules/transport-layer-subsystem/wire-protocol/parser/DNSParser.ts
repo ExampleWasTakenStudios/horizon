@@ -18,7 +18,7 @@ import { TxtData } from '../DNS-core/resource-records/RDATA/TxtData.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
 export class DNSParser {
-  parse(message: Buffer): TResult<DNSMessage, DNSParseError> {
+  public parse(message: Buffer): TResult<DNSMessage, DNSParseError> {
     const buffer = new CursorBuffer(message);
 
     /* --- Parse Header --- */
@@ -57,6 +57,9 @@ export class DNSParser {
     let finalHeader: DNSHeader;
     if (optRecord) {
       const header = initialHeaderResult.value;
+
+      // This can safely disabled as `optRecord` is guaranteed to be of type OPT since it is the requirement specified in the predicate of the find function above.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
       const optData = optRecord.data as OptData;
       const computedRcodeResult = this.computeExtendedRCode(header.responseCode, optData.extendedRcode);
 
@@ -261,17 +264,14 @@ export class DNSParser {
     return Result.ok(resourceRecords);
   }
 
-  private parseLabels(
-    buffer: CursorBuffer,
-    visitedPointers: Set<number> = new Set()
-  ): TResult<string[], DNSParseError> {
+  private parseLabels(buffer: CursorBuffer, visitedPointers = new Set<number>()): TResult<string[], DNSParseError> {
     const labels: string[] = [];
 
     if (buffer.getRemaining() < 1) {
       return Result.fail(new DNSParseError('Less than one byte remaining in buffer.', DNS_RESPONSE_CODES.FORMERR));
     }
 
-    while (true) {
+    for (;;) {
       const currentByte = buffer.readNextUint8();
 
       // Check if current byte is a pointer
@@ -332,7 +332,7 @@ export class DNSParser {
     const version = (ttl >> 16) & 0xff;
     if (version !== 0) {
       return Result.fail(
-        new DNSParseError(`Received unsupported EDNS version ${version}.`, DNS_RESPONSE_CODES.BADVERS)
+        new DNSParseError(`Received unsupported EDNS version ${version.toString()}.`, DNS_RESPONSE_CODES.BADVERS)
       );
     }
 
@@ -359,9 +359,6 @@ export class DNSParser {
     rdLength: number,
     rrType: DNS_TYPES
   ): TResult<AData | DomainName_Data | MxData | RawData | SOA_Data | TxtData, DNSParseError> {
-    // Declare start position of RDATA to ensure we don't read more than defined as RDLENGTH.
-    const startCursorPosition = buffer.getCursorPosition();
-
     // Check that rdLength is no longer than the buffer
     if (buffer.getRemaining() < rdLength) {
       return Result.fail(new DNSParseError('RDLENGTH exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
@@ -369,60 +366,97 @@ export class DNSParser {
 
     switch (rrType) {
       case DNS_TYPES.A: {
-        if (rdLength !== 4) {
-          return Result.fail(new DNSParseError("RDLENGTH of RRs of type 'A' must be 4.", DNS_RESPONSE_CODES.FORMERR));
-        }
-
-        const slice = buffer.nextSubarray(4);
-        return Result.ok(new AData(`${slice[0]}.${slice[1]}.${slice[2]}.${slice[3]}`));
+        return this.handleAData(rdLength, buffer);
       }
       case DNS_TYPES.CNAME:
-      case DNS_TYPES.NS:
+      case DNS_TYPES.NS: {
+        return this.handleDomainNameData(rrType, buffer);
+      }
       case DNS_TYPES.MX: {
-        const preference = buffer.readNextUint16();
-        const exchangeResult = this.parseLabels(buffer);
-        if (exchangeResult.isFailure()) {
-          return exchangeResult;
-        }
-
-        return Result.ok(new MxData(preference, exchangeResult.value));
+        return this.handleMxData(buffer);
       }
       case DNS_TYPES.SOA: {
-        const mNameResult = this.parseLabels(buffer);
-        if (mNameResult.isFailure()) {
-          return mNameResult;
-        }
-
-        const rNameResult = this.parseLabels(buffer);
-        if (rNameResult.isFailure()) {
-          return rNameResult;
-        }
-
-        const serial = buffer.readNextUint32();
-        const refresh = buffer.readNextUint32();
-        const retry = buffer.readNextUint32();
-        const expire = buffer.readNextUint32();
-        const minimum = buffer.readNextUint32();
-
-        return Result.ok(new SOA_Data(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
+        return this.handleSoaData(buffer);
       }
       case DNS_TYPES.TXT: {
-        const text: string[] = [];
-        do {
-          const parsedTextResult = this.parseCharString(buffer);
-          if (parsedTextResult.isFailure()) {
-            return parsedTextResult;
-          }
-
-          text.push(parsedTextResult.value);
-        } while (buffer.getCursorPosition() <= startCursorPosition + rdLength);
-
-        return Result.ok(new TxtData(text));
+        return this.handleTxtData(rdLength, buffer);
       }
+      case DNS_TYPES.OPT: // Technically redundant but added for clarity
       default: {
         return Result.ok(new RawData(rrType, buffer.nextSubarray(rdLength)));
       }
     }
+  }
+
+  private handleAData(rdLength: number, buffer: CursorBuffer): TResult<AData, DNSParseError> {
+    if (rdLength !== 4) {
+      return Result.fail(new DNSParseError("RDLENGTH of RRs of type 'A' must be 4.", DNS_RESPONSE_CODES.FORMERR));
+    }
+
+    const [b0 = undefined, b1 = undefined, b2 = undefined, b3 = undefined] = buffer.nextSubarray(4);
+    if (b0 === undefined || b1 === undefined || b2 === undefined || b3 === undefined) {
+      return Result.fail(
+        new DNSParseError('One or more octets were `undefined` in RDATA of A RR.', DNS_RESPONSE_CODES.FORMERR)
+      );
+    }
+
+    return Result.ok(new AData(`${b0.toString()}.${b1.toString()}.${b2.toString()}.${b3.toString()}`));
+  }
+
+  private handleDomainNameData(type: DNS_TYPES, buffer: CursorBuffer): TResult<DomainName_Data, DNSParseError> {
+    const labelResult = this.parseLabels(buffer);
+    if (labelResult.isFailure()) {
+      return labelResult;
+    }
+
+    return Result.ok(new DomainName_Data(type, labelResult.value));
+  }
+
+  private handleMxData(buffer: CursorBuffer): TResult<MxData, DNSParseError> {
+    const preference = buffer.readNextUint16();
+    const exchangeResult = this.parseLabels(buffer);
+    if (exchangeResult.isFailure()) {
+      return exchangeResult;
+    }
+
+    return Result.ok(new MxData(preference, exchangeResult.value));
+  }
+
+  private handleSoaData(buffer: CursorBuffer): TResult<SOA_Data, DNSParseError> {
+    const mNameResult = this.parseLabels(buffer);
+    if (mNameResult.isFailure()) {
+      return mNameResult;
+    }
+
+    const rNameResult = this.parseLabels(buffer);
+    if (rNameResult.isFailure()) {
+      return rNameResult;
+    }
+
+    const serial = buffer.readNextUint32();
+    const refresh = buffer.readNextUint32();
+    const retry = buffer.readNextUint32();
+    const expire = buffer.readNextUint32();
+    const minimum = buffer.readNextUint32();
+
+    return Result.ok(new SOA_Data(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
+  }
+
+  private handleTxtData(rdLength: number, buffer: CursorBuffer): TResult<TxtData, DNSParseError> {
+    // Declare start position of RDATA to ensure we don't read more than defined as RDLENGTH.
+    const startCursorPosition = buffer.getCursorPosition();
+
+    const text: string[] = [];
+    do {
+      const parsedTextResult = this.parseCharString(buffer);
+      if (parsedTextResult.isFailure()) {
+        return parsedTextResult;
+      }
+
+      text.push(parsedTextResult.value);
+    } while (buffer.getCursorPosition() <= startCursorPosition + rdLength);
+
+    return Result.ok(new TxtData(text));
   }
 
   private decodePointer(highByte: number, lowByte: number): number {

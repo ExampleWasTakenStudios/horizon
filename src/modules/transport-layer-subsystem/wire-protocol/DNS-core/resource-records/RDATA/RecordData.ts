@@ -7,33 +7,33 @@ import type { SOA_Data } from './SOA_Data.js';
 import type { TxtData } from './TxtData.js';
 
 export abstract class RecordData {
-  abstract readonly type: DNS_TYPES;
+  public abstract readonly type: DNS_TYPES;
 
-  isAData(): this is AData {
+  public isAData(): this is AData {
     return this.type === DNS_TYPES.A;
   }
 
-  isNsData(): this is DomainName_Data {
+  public isNsData(): this is DomainName_Data {
     return this.type === DNS_TYPES.NS;
   }
 
-  isCNameData(): this is DomainName_Data {
+  public isCNameData(): this is DomainName_Data {
     return this.type === DNS_TYPES.CNAME;
   }
 
-  isSoaData(): this is SOA_Data {
+  public isSoaData(): this is SOA_Data {
     return this.type === DNS_TYPES.SOA;
   }
 
-  isMxData(): this is MxData {
+  public isMxData(): this is MxData {
     return this.type === DNS_TYPES.MX;
   }
 
-  isTxtData(): this is TxtData {
+  public isTxtData(): this is TxtData {
     return this.type === DNS_TYPES.TXT;
   }
 
-  isOptData(): this is OptData {
+  public isOptData(): this is OptData {
     return this.type === DNS_TYPES.OPT;
   }
 }

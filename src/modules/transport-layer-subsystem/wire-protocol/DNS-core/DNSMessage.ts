@@ -9,7 +9,7 @@ export class DNSMessage {
   private readonly authority: DNSRecord[];
   private readonly additional: DNSRecord[];
 
-  constructor(
+  public constructor(
     header: DNSHeader,
     questions: DNSQuestion[],
     answers: DNSRecord[],
@@ -23,23 +23,23 @@ export class DNSMessage {
     this.additional = additional;
   }
 
-  getHeader(): Readonly<DNSHeader> {
+  public getHeader(): Readonly<DNSHeader> {
     return this.header;
   }
 
-  getQuestions(): Readonly<DNSQuestion[]> {
+  public getQuestions(): readonly DNSQuestion[] {
     return this.questions;
   }
 
-  getAnswers(): Readonly<DNSRecord[]> {
+  public getAnswers(): readonly DNSRecord[] {
     return this.answers;
   }
 
-  getAuthority(): Readonly<DNSRecord[]> {
+  public getAuthority(): readonly DNSRecord[] {
     return this.authority;
   }
 
-  getAdditional(): Readonly<DNSRecord[]> {
+  public getAdditional(): readonly DNSRecord[] {
     return this.additional;
   }
 }

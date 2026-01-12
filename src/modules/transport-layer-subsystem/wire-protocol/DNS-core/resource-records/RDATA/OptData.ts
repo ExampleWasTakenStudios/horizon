@@ -7,14 +7,20 @@ export interface EDNSOption {
 }
 
 export class OptData extends RecordData {
-  override readonly type: DNS_TYPES.OPT;
-  readonly udpPayloadSize: number;
-  readonly extendedRcode: number;
-  readonly version: number;
-  readonly doBit: boolean;
-  readonly options: EDNSOption[];
+  public override readonly type: DNS_TYPES.OPT;
+  public readonly udpPayloadSize: number;
+  public readonly extendedRcode: number;
+  public readonly version: number;
+  public readonly doBit: boolean;
+  public readonly options: EDNSOption[];
 
-  constructor(udpPayloadSize: number, extendedRcode: number, version: number, doBit: boolean, options: EDNSOption[]) {
+  public constructor(
+    udpPayloadSize: number,
+    extendedRcode: number,
+    version: number,
+    doBit: boolean,
+    options: EDNSOption[]
+  ) {
     super();
     this.type = DNS_TYPES.OPT;
     this.udpPayloadSize = udpPayloadSize;

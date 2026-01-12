@@ -12,7 +12,7 @@ export class CursorBuffer {
 
   private readonly buffer: Buffer;
 
-  constructor(buffer: Buffer, startPosition = 0) {
+  public constructor(buffer: Buffer, startPosition = 0) {
     this.buffer = buffer;
     this.cursor = new Cursor(startPosition);
   }
@@ -22,7 +22,7 @@ export class CursorBuffer {
    * @param position The position of the cursor.
    * @returns A new `CursorBuffer`.
    */
-  fork(position: number): CursorBuffer {
+  public fork(position: number): CursorBuffer {
     return new CursorBuffer(this.buffer, position);
   }
 
@@ -30,7 +30,7 @@ export class CursorBuffer {
    * Gets the current cursor position.
    * @returns A number, indicating the current cursor position.
    */
-  getCursorPosition(): number {
+  public getCursorPosition(): number {
     return this.cursor.getPosition();
   }
 
@@ -39,57 +39,57 @@ export class CursorBuffer {
    * @param length Number of bytes that should be parsed, starting from the current cursor position.
    * @returns A new {@link Buffer<ArrayBufferLike>} containing the requested section of the original buffer.
    */
-  nextSubarray(length: number): Buffer {
+  public nextSubarray(length: number): Buffer {
     const array = this.buffer.subarray(this.cursor.getPosition(), this.cursor.getPosition() + length);
     this.cursor.advance(length);
 
     return array;
   }
 
-  getBuffer(): Buffer {
+  public getBuffer(): Buffer {
     return this.buffer;
   }
 
-  getRemaining(): number {
+  public getRemaining(): number {
     return this.buffer.length - this.cursor.getPosition();
   }
 
-  readNextUint8(): uint8 {
+  public readNextUint8(): uint8 {
     const u_int8 = this.buffer.readUint8(this.cursor.getPosition());
     this.cursor.advance(1);
 
     return u_int8;
   }
 
-  readNextUint16(): uint16 {
+  public readNextUint16(): uint16 {
     const u_int16 = this.buffer.readUint16BE(this.cursor.getPosition());
     this.cursor.advance(2);
 
     return u_int16;
   }
 
-  readNextUint32(): uint32 {
+  public readNextUint32(): uint32 {
     const u_int32 = this.buffer.readUint32BE(this.cursor.getPosition());
     this.cursor.advance(4);
 
     return u_int32;
   }
 
-  readNextInt8(): int8 {
+  public readNextInt8(): int8 {
     const int8 = this.buffer.readInt8(this.cursor.getPosition());
     this.cursor.advance(1);
 
     return int8;
   }
 
-  readNextInt16(): int16 {
+  public readNextInt16(): int16 {
     const int16 = this.buffer.readInt16BE(this.cursor.getPosition());
     this.cursor.advance(2);
 
     return int16;
   }
 
-  readNextInt32(): int32 {
+  public readNextInt32(): int32 {
     const int32 = this.buffer.readInt32BE(this.cursor.getPosition());
     this.cursor.advance(4);
 

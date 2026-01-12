@@ -6,9 +6,9 @@ export class Logger {
   private readonly name: string;
   private readonly transports: Set<BaseTransport>;
 
-  constructor(name: string, transports?: Set<BaseTransport>) {
+  public constructor(name: string, transports?: Set<BaseTransport>) {
     this.name = name;
-    this.transports = transports ? transports : new Set();
+    this.transports = transports ?? new Set();
   }
 
   private write(level: LogLevel, message: string, ...data: unknown[]): void {
@@ -16,15 +16,13 @@ export class Logger {
 
     for (const transport of this.transports) {
       if (level <= transport.getMaxLevel()) {
-        if (!logEntry) {
-          logEntry = {
-            timestamp: new Date(),
-            level,
-            message,
-            source: this.name,
-            data,
-          };
-        }
+        logEntry ??= {
+          timestamp: new Date(),
+          level,
+          message,
+          source: this.name,
+          data,
+        };
 
         transport.log(logEntry);
       }
@@ -33,39 +31,39 @@ export class Logger {
 
   // --- Public API ---
 
-  fatal(message: string, ...data: unknown[]): void {
+  public fatal(message: string, ...data: unknown[]): void {
     this.write(LogLevel.FATAL, message, ...data);
   }
 
-  error(message: string, ...data: unknown[]): void {
+  public error(message: string, ...data: unknown[]): void {
     this.write(LogLevel.ERROR, message, ...data);
   }
 
-  warn(message: string, ...data: unknown[]): void {
+  public warn(message: string, ...data: unknown[]): void {
     this.write(LogLevel.WARN, message, ...data);
   }
 
-  info(message: string, ...data: unknown[]): void {
+  public info(message: string, ...data: unknown[]): void {
     this.write(LogLevel.INFO, message, ...data);
   }
 
-  verbose(message: string, ...data: unknown[]): void {
+  public verbose(message: string, ...data: unknown[]): void {
     this.write(LogLevel.VERBOSE, message, ...data);
   }
 
-  debug(message: string, ...data: unknown[]): void {
+  public debug(message: string, ...data: unknown[]): void {
     this.write(LogLevel.DEBUG, message, ...data);
   }
 
-  addTransport(transport: BaseTransport): void {
+  public addTransport(transport: BaseTransport): void {
     this.transports.add(transport);
   }
 
-  removeTransport(transport: BaseTransport): boolean {
+  public removeTransport(transport: BaseTransport): boolean {
     return this.transports.delete(transport);
   }
 
-  getTransports(): Readonly<Set<BaseTransport>> {
+  public getTransports(): Readonly<Set<BaseTransport>> {
     return this.transports;
   }
 
@@ -74,7 +72,7 @@ export class Logger {
    * @param name The name of this sublogger. Will be appended to the name of the parent logger -> <parentName>:<name>
    * @param transports The transports that should be added to the logger. Defaults to the transports of the parent logger. If none are wanted, pass an empty Set.
    */
-  spawnSubLogger(name: string, transports: Set<BaseTransport> = this.transports): Logger {
+  public spawnSubLogger(name: string, transports: Set<BaseTransport> = this.transports): Logger {
     return new Logger(`${this.name}>${name.replace(/\s/g, '_')}`, new Set(transports));
   }
 }

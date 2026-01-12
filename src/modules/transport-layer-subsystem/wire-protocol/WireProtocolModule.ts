@@ -9,17 +9,17 @@ import { DNSParser } from './parser/DNSParser.js';
 export class WireProtocolModule extends Module {
   private readonly parser: DNSParser;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.parser = new DNSParser();
   }
 
-  decode(buffer: Buffer): TResult<DNSMessage, DNSParseError> {
+  public decode(buffer: Buffer): TResult<DNSMessage, DNSParseError> {
     return this.parser.parse(buffer);
   }
 
-  encode(_dnsPacket: DNSMessage): Buffer {
+  public encode(_dnsPacket: DNSMessage): Buffer {
     // TODO: implement DNS packet encoder
     return Buffer.from('');
   }

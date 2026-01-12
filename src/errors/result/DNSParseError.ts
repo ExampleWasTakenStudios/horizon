@@ -2,9 +2,9 @@ import type { DNS_RESPONSE_CODES } from '../../modules/transport-layer-subsystem
 import { ResultError } from './ResultError.js';
 
 export class DNSParseError extends ResultError {
-  readonly rCode: DNS_RESPONSE_CODES;
+  public readonly rCode: DNS_RESPONSE_CODES;
 
-  constructor(message: string, rCode: DNS_RESPONSE_CODES) {
+  public constructor(message: string, rCode: DNS_RESPONSE_CODES) {
     super(message);
     this.rCode = rCode;
   }

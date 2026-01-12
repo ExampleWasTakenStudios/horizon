@@ -7,11 +7,11 @@ import type { BaseTransport } from './BaseTransport.js';
 export class ConsoleTransport implements BaseTransport {
   private maxLevel: LogLevel;
 
-  constructor(maxLevel: LogLevel) {
+  public constructor(maxLevel: LogLevel) {
     this.maxLevel = maxLevel;
   }
 
-  log(logEntry: LogEntry): void {
+  public log(logEntry: LogEntry): void {
     let out: typeof stdout | typeof stderr;
     if (logEntry.level <= LogLevel.ERROR) {
       out = stderr;
@@ -25,14 +25,14 @@ export class ConsoleTransport implements BaseTransport {
     const message = this.colorize(logEntry.level, logEntry.message);
     const data = logEntry.data ? this.colorize(logEntry.level, this.processData(...logEntry.data)) : null;
 
-    out.write(`${timestamp} ${source} ${level} ${message}${data ? data : ''}\n`);
+    out.write(`${timestamp} ${source} ${level} ${message}${data ?? ''}\n`);
   }
 
-  getMaxLevel(): Readonly<LogLevel> {
+  public getMaxLevel(): Readonly<LogLevel> {
     return this.maxLevel;
   }
 
-  setMaxLevel(level: LogLevel): void {
+  public setMaxLevel(level: LogLevel): void {
     this.maxLevel = level;
   }
 
@@ -41,7 +41,7 @@ export class ConsoleTransport implements BaseTransport {
 
     for (const current of data) {
       if (current instanceof Error) {
-        str += `\n${current.stack || current.message}`;
+        str += `\n${current.stack ?? current.message}`;
         continue;
       }
 

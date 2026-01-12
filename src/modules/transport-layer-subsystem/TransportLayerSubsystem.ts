@@ -10,7 +10,7 @@ export class TransportLayerSubsystem extends Subsystem {
   private readonly downstreamModule: DownstreamModule;
   private readonly upstreamModule: UpstreamModule;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'), config);
@@ -25,11 +25,11 @@ export class TransportLayerSubsystem extends Subsystem {
     this.downstreamModule.bind();
   }
 
-  getDownstreamModule(): DownstreamModule {
+  public getDownstreamModule(): DownstreamModule {
     return this.downstreamModule;
   }
 
-  getUpstreamModule(): UpstreamModule {
+  public getUpstreamModule(): UpstreamModule {
     return this.upstreamModule;
   }
 

@@ -3,14 +3,21 @@ import type { DNS_TYPES } from '../constants/DNS_TYPES.js';
 import type { RecordData } from './RDATA/RecordData.js';
 
 export class DNSRecord {
-  readonly name: string[];
-  readonly type: DNS_TYPES;
-  readonly rrClass: DNS_CLASSES;
-  readonly ttl: number;
-  readonly rdLength: number;
-  readonly data: RecordData;
+  public readonly name: string[];
+  public readonly type: DNS_TYPES;
+  public readonly rrClass: DNS_CLASSES;
+  public readonly ttl: number;
+  public readonly rdLength: number;
+  public readonly data: RecordData;
 
-  constructor(name: string[], type: DNS_TYPES, rrClass: DNS_CLASSES, ttl: number, rdLength: number, data: RecordData) {
+  public constructor(
+    name: string[],
+    type: DNS_TYPES,
+    rrClass: DNS_CLASSES,
+    ttl: number,
+    rdLength: number,
+    data: RecordData
+  ) {
     this.name = name;
     this.type = type;
     this.rrClass = rrClass;
