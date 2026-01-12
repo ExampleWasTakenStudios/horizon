@@ -6,7 +6,7 @@
 export class Cursor {
   private cursor: number;
 
-  constructor(cursor: number = 0) {
+  constructor(cursor = 0) {
     this.cursor = Math.round(cursor);
   }
 

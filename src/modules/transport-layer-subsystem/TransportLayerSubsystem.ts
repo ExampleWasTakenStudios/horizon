@@ -7,8 +7,8 @@ import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';
 
 export class TransportLayerSubsystem extends Subsystem {
-  private downstreamModule: DownstreamModule;
-  private upstreamModule: UpstreamModule;
+  private readonly downstreamModule: DownstreamModule;
+  private readonly upstreamModule: UpstreamModule;
 
   constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);

@@ -18,6 +18,8 @@ import { HeadModule } from './modules/head-module/HeadModule.js';
 
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
+  // This format is required by the library
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   size: `${100 * 1024 * 1024}B`, // 100 Mib
   maxFiles: 14,
   intervalUTC: true,
@@ -56,9 +58,13 @@ process.on('unhandledRejection', (reason, promise) => {
   mainLogger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
 });
 
-process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
+process.on('warning', (warning) => {
+  mainLogger.warn('Node warning: ', warning);
+});
 
-process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
+process.on('exit', (code) => {
+  mainLogger.info('Exiting with exit code ', code);
+});
 
 const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
 const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);

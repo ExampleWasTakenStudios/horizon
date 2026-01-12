@@ -25,7 +25,7 @@ export class ConsoleTransport implements BaseTransport {
     const message = this.colorize(logEntry.level, logEntry.message);
     const data = logEntry.data ? this.colorize(logEntry.level, this.processData(...logEntry.data)) : null;
 
-    out.write(`${timestamp} ${source} ${level} ${message}${data}\n`);
+    out.write(`${timestamp} ${source} ${level} ${message}${data ? data : ''}\n`);
   }
 
   getMaxLevel(): Readonly<LogLevel> {
@@ -37,7 +37,7 @@ export class ConsoleTransport implements BaseTransport {
   }
 
   private processData(...data: unknown[]): string {
-    let str: string = '';
+    let str = '';
 
     for (const current of data) {
       if (current instanceof Error) {

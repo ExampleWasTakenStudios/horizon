@@ -34,7 +34,7 @@ export interface RotatingFileTransportSettings extends RFSOptions {
 }
 
 export class RotatingFileTransport implements BaseTransport {
-  private stream: RotatingFileStream;
+  private readonly stream: RotatingFileStream;
 
   private maxLevel: LogLevel;
 

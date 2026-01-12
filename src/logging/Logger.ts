@@ -4,7 +4,7 @@ import type { BaseTransport } from './transports/BaseTransport.js';
 
 export class Logger {
   private readonly name: string;
-  private transports: Set<BaseTransport>;
+  private readonly transports: Set<BaseTransport>;
 
   constructor(name: string, transports?: Set<BaseTransport>) {
     this.name = name;

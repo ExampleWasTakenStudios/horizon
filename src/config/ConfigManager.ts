@@ -8,14 +8,14 @@ import { DefaultConfig } from './DefaultConfig.js';
 import { HorizonConfigSchema, type HorizonConfig } from './HorizonConfig.js';
 
 export class ConfigManager {
-  private logger: Logger;
+  private readonly logger: Logger;
 
   private readonly path: string;
   private readonly filename: string;
 
-  private config: HorizonConfig;
+  private readonly config: HorizonConfig;
 
-  constructor(logger: Logger) {
+  public constructor(logger: Logger) {
     this.logger = logger;
 
     this.filename = 'config.json5';

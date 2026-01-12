@@ -1,6 +1,4 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { IllegalCharStringError } from '../../../../errors/IllegalCharStringError.js';
-import { PointerLoopError } from '../../../../errors/PointerLoopError.js';
 import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
 import { DNSHeader } from '../DNS-core/DNSHeader.js';
@@ -152,7 +150,7 @@ export class DNSParser {
   private parseDomainName(rawPacket: CursorBuffer, visitedPointers: Set<number> = new Set<number>()): string {
     const nameLabels: string[] = [];
 
-    while (true) {
+    for (;;) {
       const currentByte = rawPacket.readNextUint8();
 
       // Check if currentByte is a pointer
@@ -161,7 +159,7 @@ export class DNSParser {
 
         // Check if the pointer has been visited before
         if (visitedPointers.has(pointer.getPosition())) {
-          throw new PointerLoopError(`Pointer loop detected for pointer ${pointer.getPosition().toString(16)}.`);
+          throw new Error(`Pointer loop detected for pointer ${pointer.getPosition().toString(16)}.`);
         }
 
         // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
@@ -169,7 +167,7 @@ export class DNSParser {
         const lookupPacket = new CursorBuffer(rawPacket.cloneBuffer(), pointer.getPosition());
 
         visitedPointers.add(pointer.getPosition());
-        nameLabels.push(...this.parseDomainName(lookupPacket, visitedPointers));
+        nameLabels.push(...this.parseDomainName(lookupPacket, visitedPointers)); // FIXME: this needs investigation as to whether or not it is relevant here
 
         break;
       }
@@ -195,7 +193,7 @@ export class DNSParser {
     const length = rawPacket.readNextUint8();
 
     if (length + 1 > 256) {
-      throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`);
+      throw new Error(`Got ${(length + 1).toString()} bytes. Must be <= 256.`);
     }
 
     return rawPacket.nextSubarray(length).toString('ascii');

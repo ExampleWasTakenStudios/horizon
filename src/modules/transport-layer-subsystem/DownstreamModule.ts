@@ -9,18 +9,26 @@ const IP_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
 export class DownstreamModule extends Module {
-  private socket: Socket;
-  private wireProtocolModule: WireProtocolModule;
+  private readonly socket: Socket;
+  private readonly wireProtocolModule: WireProtocolModule;
 
   constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.socket = dgram.createSocket({ type: 'udp4' });
 
-    this.socket.on('error', (error) => this.onError(error));
-    this.socket.on('close', () => this.onClose());
-    this.socket.on('listening', () => this.onListening());
-    this.socket.on('message', (msg, rinfo) => this.onMessage(msg, rinfo));
+    this.socket.on('error', (error) => {
+      this.onError(error);
+    });
+    this.socket.on('close', () => {
+      this.onClose();
+    });
+    this.socket.on('listening', () => {
+      this.onListening();
+    });
+    this.socket.on('message', (msg, rinfo) => {
+      this.onMessage(msg, rinfo);
+    });
 
     this.wireProtocolModule = new WireProtocolModule(logger, config);
   }
@@ -35,7 +43,7 @@ export class DownstreamModule extends Module {
     }
 
     if (port < 0 || port > 65535) {
-      throw new Error(`Illegal port received: ${port}. Must be between 0-65535`);
+      throw new Error(`Illegal port received: ${port.toString()}. Must be between 0-65535`);
     }
 
     this.socket.send(msg, 0, msg.length, port, address);
@@ -62,7 +70,7 @@ export class DownstreamModule extends Module {
 
   private onListening(): void {
     const address = this.socket.address();
-    this.logger.info(`Server listening on ${address.address}:${address.port}.`);
+    this.logger.info(`Server listening on ${address.address}:${address.port.toString()}.`);
   }
 
   private onClose(): void {

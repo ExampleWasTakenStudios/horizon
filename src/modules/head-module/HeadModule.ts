@@ -4,7 +4,7 @@ import { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule extends Module {
-  private transportLayerSubsystem: TransportLayerSubsystem;
+  private readonly transportLayerSubsystem: TransportLayerSubsystem;
 
   constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
