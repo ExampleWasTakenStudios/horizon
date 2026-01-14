@@ -20,7 +20,6 @@ export default tseslint.config(
 
       'max-lines-per-function': ['error', { max: 60, skipBlankLines: true, skipComments: true }],
       complexity: ['error', { max: 10, variant: 'modified' }],
-
       'no-await-in-loop': 'error',
       'no-constructor-return': 'error',
       'no-self-compare': 'error',
@@ -32,7 +31,6 @@ export default tseslint.config(
       'init-loop-func': 'off',
       'no-shadow': 'off',
       'no-unused-private-class-members': 'off',
-
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
