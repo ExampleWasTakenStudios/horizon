@@ -4,11 +4,12 @@ import { Module } from '../Module.js';
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule extends Module {
-  private readonly transportLayerSubsystem: TransportLayerSubsystem;
+  // @ts-expect-error Unused variable necessary for architecture.
+  private readonly _transportLayerSubsystem: TransportLayerSubsystem;
 
   public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
-    this.transportLayerSubsystem = new TransportLayerSubsystem(
+    this._transportLayerSubsystem = new TransportLayerSubsystem(
       this.logger.spawnSubLogger('TRANSPORT LAYER SUBSYSTEM'),
       config
     );

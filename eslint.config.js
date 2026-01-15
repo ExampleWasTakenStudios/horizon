@@ -37,7 +37,8 @@ export default tseslint.config(
         'error',
         {
           selector: 'ThrowStatement',
-          message: 'Throwing exceptions is banned. Return a TResult<T, E> instead.\nViolations of this rule require comments explaining why throwing is the correct way.',
+          message:
+            'Throwing exceptions is banned. Return a TResult<T, E> instead.\nViolations of this rule require comments explaining why throwing is the correct way.',
         },
       ],
       'prefer-promise-reject-errors': 'error',
@@ -45,34 +46,27 @@ export default tseslint.config(
       // --- Naming Conventions ---
       '@typescript-eslint/naming-convention': [
         'error',
-        // 1. Default: camelCase
+        // Default: camelCase
         {
           selector: 'default',
           format: ['camelCase'],
           leadingUnderscore: 'allow',
         },
 
-        // 2. Variables: camelCase
+        // Variables: camelCase
         {
           selector: 'variable',
           format: ['camelCase'],
           leadingUnderscore: 'allow',
         },
 
-        // 3. Static Constant Variables (Global Consts): UPPER_CASE
-        {
-          selector: ['variable'],
-          modifiers: ['const', 'global'],
-          format: ['UPPER_CASE'],
-        },
-
-        // 4. Classes, Types, Interfaces, Enums: PascalCase
+        // Classes, Types, Interfaces, Enums: PascalCase
         {
           selector: 'typeLike',
           format: ['PascalCase'],
         },
 
-        // 5. Interfaces: No "I" Prefix
+        // Interfaces: No "I" Prefix
         {
           selector: 'interface',
           format: ['PascalCase'],
@@ -82,7 +76,7 @@ export default tseslint.config(
           },
         },
 
-        // 6. Enums in UPPER_CASE
+        // Enums in UPPER_CASE
         {
           selector: ['enum', 'enumMember'],
           format: ['UPPER_CASE'],

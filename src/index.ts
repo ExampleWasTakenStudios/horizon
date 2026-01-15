@@ -67,4 +67,5 @@ process.on('exit', (code) => {
 });
 
 const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
+// @ts-expect-error Unused variable necessary for architecture.
 const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
