@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 const env = dotenv.config({ quiet: true });
 
 if (env.error) {
+  // As we are only starting here, throwing is actually required to prevent Horizon from loading without valid env vars set.
+  // eslint-disable-next-line no-restricted-syntax
   throw env.error;
 }
 
@@ -16,6 +18,8 @@ import {
 } from './logging/transports/RotatingFileTransport.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
+// This is a global const, using UPPER_CASE as indication.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
   // This format is required by the library
