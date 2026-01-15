@@ -8,7 +8,7 @@
         // Environment Settings
         // See also https://aka.ms/tsconfig/module
         "module": "nodenext",
-        "target": "esnext",
+        "target": "ESNext",
         "types": ["node"],
         "lib": ["ESNext"],
         "paths": {
@@ -16,9 +16,10 @@
         },
 
         // Other Outputs
-        "inlineSourceMap": true,
+        /* "inlineSourceMap": true,
         "declaration": true,
-        "declarationMap": true,
+        "declarationMap": true, */
+        "removeComments": true,
 
         // Static analysis
         "strict": true,
