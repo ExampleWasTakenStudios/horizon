@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import recommendedConfig from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -10,6 +11,7 @@ export default tseslint.config(
   {
     name: 'Main Config',
     languageOptions: {
+      globals: globals.builtin,
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
@@ -17,6 +19,23 @@ export default tseslint.config(
     },
     rules: {
       'prettier/prettier': ['error', {}, { usePrettierrc: true }],
+
+      /* UNICORN CONFIG START */
+      'better-regex': 'error',
+      'filename-case': ['error', { cases: { PascalCase: true, kebabCase: true } }],
+      'no-abusive-eslint-disable': 'error',
+      'no-new-buffer': 'error',
+      /* UNICORN CONFIG END */
+
+      /* BAN THROW */
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ThrowStatement',
+          message: 'Throwing exceptions is banned. Return a TResult<T, E> instead.',
+        },
+      ],
+      'prefer-promise-reject-errors': 'error',
 
       'max-lines-per-function': ['error', { max: 60, skipBlankLines: true, skipComments: true }],
       complexity: ['error', { max: 10, variant: 'modified' }],
@@ -68,6 +87,79 @@ export default tseslint.config(
       '@typescript-eslint/prefer-readonly': 'error',
       '@typescript-eslint/require-array-sort-compare': 'error',
       '@typescript-eslint/switch-exhaustiveness-check': ['error', { considerDefaultExhaustiveForUnions: true }],
+      '@typescript-eslint/naming-convention': [
+        'error',
+        // 1. Default: camelCase
+        {
+          selector: 'default',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+
+        // 2. Variables: camelCase
+        {
+          selector: 'variable',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+
+        // 3. Static Constant Variables (Global Consts): UPPER_CASE
+        {
+          selector: 'variable',
+          modifiers: ['const', 'global'],
+          format: ['UPPER_CASE'],
+        },
+        // (Optional) Class Static Readonly properties often act as constants too
+        {
+          selector: 'classProperty',
+          modifiers: ['static', 'readonly'],
+          format: ['UPPER_CASE'],
+        },
+
+        // 4. Classes, Types, Interfaces, Enums: PascalCase
+        {
+          selector: 'typeLike',
+          format: ['PascalCase'],
+        },
+
+        // 5. Interfaces: No "I" Prefix
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+          custom: {
+            regex: '^I[A-Z]',
+            match: false,
+          },
+        },
+      ],
+      '@typescript-eslint/member-ordering': [
+        'error',
+        {
+          default: [
+            // Fields: Private -> Protected -> Public
+            'private-static-field',
+            'protected-static-field',
+            'public-static-field',
+
+            'private-instance-field',
+            'protected-instance-field',
+            'public-instance-field',
+
+            // Constructor
+            'constructor',
+
+            // Methods: Instance (Public -> Protected -> Private)
+            'public-instance-method',
+            'protected-instance-method',
+            'private-instance-method',
+
+            // Methods: Static (Public -> Protected -> Private)
+            'public-static-method',
+            'protected-static-method',
+            'private-static-method',
+          ],
+        },
+      ]
     },
   },
   {
