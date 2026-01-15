@@ -55,24 +55,24 @@ export class CursorBuffer {
   }
 
   public readNextUint8(): uint8 {
-    const u_int8 = this.buffer.readUint8(this.cursor.getPosition());
+    const uint8 = this.buffer.readUint8(this.cursor.getPosition());
     this.cursor.advance(1);
 
-    return u_int8;
+    return uint8;
   }
 
   public readNextUint16(): uint16 {
-    const u_int16 = this.buffer.readUint16BE(this.cursor.getPosition());
+    const uint16 = this.buffer.readUint16BE(this.cursor.getPosition());
     this.cursor.advance(2);
 
-    return u_int16;
+    return uint16;
   }
 
   public readNextUint32(): uint32 {
-    const u_int32 = this.buffer.readUint32BE(this.cursor.getPosition());
+    const uint32 = this.buffer.readUint32BE(this.cursor.getPosition());
     this.cursor.advance(4);
 
-    return u_int32;
+    return uint32;
   }
 
   public readNextInt8(): int8 {

@@ -2,7 +2,7 @@ import type { uint32 } from '../../../../../../types/number-types.js';
 import { DNS_TYPES } from '../../constants/DNS_TYPES.js';
 import { RecordData } from './RecordData.js';
 
-export class SOA_Data extends RecordData {
+export class SoaData extends RecordData {
   public override readonly type: DNS_TYPES.SOA;
   public readonly mName: string[];
   public readonly rName: string[];

@@ -8,12 +8,12 @@ import { DNSMessage } from '../DNS-core/DNSMessage.js';
 import { DNSQuestion } from '../DNS-core/DNSQuestion.js';
 import { DNSRecord } from '../DNS-core/resource-records/DNSRecord.js';
 import { AData } from '../DNS-core/resource-records/RDATA/AData.js';
-import { DomainName_Data } from '../DNS-core/resource-records/RDATA/DomainNameData.js';
+import { DomainNameData } from '../DNS-core/resource-records/RDATA/DomainNameData.js';
 import { MxData } from '../DNS-core/resource-records/RDATA/MxData.js';
 import { OptData, type EDNSOption } from '../DNS-core/resource-records/RDATA/OptData.js';
 import { RawData } from '../DNS-core/resource-records/RDATA/RawData.js';
 import type { RecordData } from '../DNS-core/resource-records/RDATA/RecordData.js';
-import { SOA_Data } from '../DNS-core/resource-records/RDATA/SOA_Data.js';
+import { SoaData } from '../DNS-core/resource-records/RDATA/SoaData.js';
 import { TxtData } from '../DNS-core/resource-records/RDATA/TxtData.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
@@ -358,7 +358,7 @@ export class DNSParser {
     buffer: CursorBuffer,
     rdLength: number,
     rrType: DNS_TYPES
-  ): TResult<AData | DomainName_Data | MxData | RawData | SOA_Data | TxtData, DNSParseError> {
+  ): TResult<AData | DomainNameData | MxData | RawData | SoaData | TxtData, DNSParseError> {
     // Check that rdLength is no longer than the buffer
     if (buffer.getRemaining() < rdLength) {
       return Result.fail(new DNSParseError('RDLENGTH exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
@@ -403,13 +403,13 @@ export class DNSParser {
     return Result.ok(new AData(`${b0.toString()}.${b1.toString()}.${b2.toString()}.${b3.toString()}`));
   }
 
-  private handleDomainNameData(type: DNS_TYPES, buffer: CursorBuffer): TResult<DomainName_Data, DNSParseError> {
+  private handleDomainNameData(type: DNS_TYPES, buffer: CursorBuffer): TResult<DomainNameData, DNSParseError> {
     const labelResult = this.parseLabels(buffer);
     if (labelResult.isFailure()) {
       return labelResult;
     }
 
-    return Result.ok(new DomainName_Data(type, labelResult.value));
+    return Result.ok(new DomainNameData(type, labelResult.value));
   }
 
   private handleMxData(buffer: CursorBuffer): TResult<MxData, DNSParseError> {
@@ -422,7 +422,7 @@ export class DNSParser {
     return Result.ok(new MxData(preference, exchangeResult.value));
   }
 
-  private handleSoaData(buffer: CursorBuffer): TResult<SOA_Data, DNSParseError> {
+  private handleSoaData(buffer: CursorBuffer): TResult<SoaData, DNSParseError> {
     const mNameResult = this.parseLabels(buffer);
     if (mNameResult.isFailure()) {
       return mNameResult;
@@ -439,7 +439,7 @@ export class DNSParser {
     const expire = buffer.readNextUint32();
     const minimum = buffer.readNextUint32();
 
-    return Result.ok(new SOA_Data(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
+    return Result.ok(new SoaData(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
   }
 
   private handleTxtData(rdLength: number, buffer: CursorBuffer): TResult<TxtData, DNSParseError> {

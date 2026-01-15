@@ -31,6 +31,94 @@ export default tseslint.config(
       'init-loop-func': 'off',
       'no-shadow': 'off',
       'no-unused-private-class-members': 'off',
+
+      // --- BAN THROW (Functional Style Only) ---
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ThrowStatement',
+          message: 'Throwing exceptions is banned. Return a TResult<T, E> instead.\nViolations of this rule require comments explaining why throwing is the correct way.',
+        },
+      ],
+      'prefer-promise-reject-errors': 'error',
+
+      // --- Naming Conventions ---
+      '@typescript-eslint/naming-convention': [
+        'error',
+        // 1. Default: camelCase
+        {
+          selector: 'default',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+
+        // 2. Variables: camelCase
+        {
+          selector: 'variable',
+          format: ['camelCase'],
+          leadingUnderscore: 'allow',
+        },
+
+        // 3. Static Constant Variables (Global Consts): UPPER_CASE
+        {
+          selector: ['variable'],
+          modifiers: ['const', 'global'],
+          format: ['UPPER_CASE'],
+        },
+
+        // 4. Classes, Types, Interfaces, Enums: PascalCase
+        {
+          selector: 'typeLike',
+          format: ['PascalCase'],
+        },
+
+        // 5. Interfaces: No "I" Prefix
+        {
+          selector: 'interface',
+          format: ['PascalCase'],
+          custom: {
+            regex: '^I[A-Z]',
+            match: false,
+          },
+        },
+
+        // 6. Enums in UPPER_CASE
+        {
+          selector: ['enum', 'enumMember'],
+          format: ['UPPER_CASE'],
+        },
+      ],
+
+      // --- Member Ordering ---
+      '@typescript-eslint/member-ordering': [
+        'error',
+        {
+          default: [
+            // Fields: Private -> Protected -> Public
+            'private-static-field',
+            'protected-static-field',
+            'public-static-field',
+
+            'private-instance-field',
+            'protected-instance-field',
+            'public-instance-field',
+
+            // Constructor
+            'constructor',
+
+            // Methods: Instance (Public -> Protected -> Private)
+            'public-instance-method',
+            'protected-instance-method',
+            'private-instance-method',
+
+            // Methods: Static (Public -> Protected -> Private)
+            'public-static-method',
+            'protected-static-method',
+            'private-static-method',
+          ],
+        },
+      ],
+
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -55,9 +143,7 @@ export default tseslint.config(
         'error',
         { allowHigherOrderFunctions: false, allowTypedFunctionExpressions: false },
       ],
-      // '@typescript-eslint/member-ordering': ['error', ] // TODO: this requires extensive configuration but can help greatly with consistent code style
       '@typescript-eslint/method-signature-style': ['error', 'method'],
-      //'@typescript-eslint/naming-convention': ['error'] // TODO: this requires extensive configuration but can help greatly with consistent code style
       '@typescript-eslint/no-import-type-side-effects': 'error',
       '@typescript-eslint/no-loop-func': 'error',
       '@typescript-eslint/no-shadow': 'error',

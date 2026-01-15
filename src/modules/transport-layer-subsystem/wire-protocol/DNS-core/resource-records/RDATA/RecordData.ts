@@ -1,9 +1,9 @@
 import { DNS_TYPES } from '../../constants/DNS_TYPES.js';
 import type { AData } from './AData.js';
-import type { DomainName_Data } from './DomainNameData.js';
+import type { DomainNameData } from './DomainNameData.js';
 import type { MxData } from './MxData.js';
 import type { OptData } from './OptData.js';
-import type { SOA_Data } from './SOA_Data.js';
+import type { SoaData } from './SoaData.js';
 import type { TxtData } from './TxtData.js';
 
 export abstract class RecordData {
@@ -13,15 +13,15 @@ export abstract class RecordData {
     return this.type === DNS_TYPES.A;
   }
 
-  public isNsData(): this is DomainName_Data {
+  public isNsData(): this is DomainNameData {
     return this.type === DNS_TYPES.NS;
   }
 
-  public isCNameData(): this is DomainName_Data {
+  public isCNameData(): this is DomainNameData {
     return this.type === DNS_TYPES.CNAME;
   }
 
-  public isSoaData(): this is SOA_Data {
+  public isSoaData(): this is SoaData {
     return this.type === DNS_TYPES.SOA;
   }
 
