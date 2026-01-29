@@ -1,8 +1,8 @@
-import type { LogLevel } from './LogLevel.js';
+import type { LOG_LEVEL } from './LogLevel.js';
 
 export interface LogEntry {
   timestamp: Date;
-  level: LogLevel;
+  level: LOG_LEVEL;
   source: string;
   message: string;
   data?: unknown[];

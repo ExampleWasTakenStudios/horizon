@@ -24,6 +24,10 @@ export class ConfigManager {
     this.config = this.initialize();
   }
 
+  public getConfig(): HorizonConfig {
+    return this.config;
+  }
+
   private initialize(): HorizonConfig {
     this.logger.info('Starting initialization. Using config path ', this.path);
 
@@ -40,6 +44,9 @@ export class ConfigManager {
 
     if (!parsedContents.success) {
       this.logger.fatal('Zod Error occurred while trying to parse config. ', parsedContents.error);
+
+      // This is initialization code that is explicitly supposed to crash upon invalid states to prevent UB.
+      // eslint-disable-next-line no-restricted-syntax
       throw parsedContents.error;
     }
 
@@ -78,9 +85,5 @@ export class ConfigManager {
     const devPath = path.join(process.cwd(), '.config', 'Horizon', 'config.json5');
     const prodPath = path.join(os.homedir(), '.config', 'Horizon', this.filename);
     return process.env.NODE_ENV === 'dev' ? devPath : prodPath;
-  }
-
-  public getConfig(): HorizonConfig {
-    return this.config;
   }
 }

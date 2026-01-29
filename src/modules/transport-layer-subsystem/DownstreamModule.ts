@@ -1,7 +1,9 @@
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
 import type { AddressInfo } from 'node:net';
 import type { ConfigManager } from '../../config/ConfigManager.js';
+import { IllegalAddressError } from '../../errors/result/IllegalAddressError.js';
 import type { Logger } from '../../logging/Logger.js';
+import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
 import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
@@ -37,16 +39,17 @@ export class DownstreamModule extends Module {
    * @throws Illegal IP address error when an invalid IP address is passed.
    * @throws Illegal port error when a port < 0 || > 65535 is passed.
    */
-  public send(msg: Buffer, address: string, port: number): void {
+  public send(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
     if (!IP_ADDRESS_REGEX.test(address)) {
-      throw new Error(`Illegal IP address received: ${address}`);
+      return Result.fail(new IllegalAddressError(`${address} is not a valid IPv4 address.`));
     }
 
     if (port < 0 || port > 65535) {
-      throw new Error(`Illegal port received: ${port.toString()}. Must be between 0-65535`);
+      return Result.fail(new IllegalAddressError(`Illegal port received: ${port.toString()}. Must be between 0-65535`));
     }
 
     this.socket.send(msg, 0, msg.length, port, address);
+    return Result.ok(undefined);
   }
 
   public bind(): void {

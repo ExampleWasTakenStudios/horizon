@@ -1,5 +1,5 @@
 import type { LogEntry } from './LogEntry.js';
-import { LogLevel } from './LogLevel.js';
+import { LOG_LEVEL } from './LogLevel.js';
 import type { BaseTransport } from './transports/BaseTransport.js';
 
 export class Logger {
@@ -11,48 +11,30 @@ export class Logger {
     this.transports = transports ?? new Set();
   }
 
-  private write(level: LogLevel, message: string, ...data: unknown[]): void {
-    let logEntry: LogEntry | undefined;
-
-    for (const transport of this.transports) {
-      if (level <= transport.getMaxLevel()) {
-        logEntry ??= {
-          timestamp: new Date(),
-          level,
-          message,
-          source: this.name,
-          data,
-        };
-
-        transport.log(logEntry);
-      }
-    }
-  }
-
   // --- Public API ---
 
   public fatal(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.FATAL, message, ...data);
+    this.write(LOG_LEVEL.FATAL, message, ...data);
   }
 
   public error(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.ERROR, message, ...data);
+    this.write(LOG_LEVEL.ERROR, message, ...data);
   }
 
   public warn(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.WARN, message, ...data);
+    this.write(LOG_LEVEL.WARN, message, ...data);
   }
 
   public info(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.INFO, message, ...data);
+    this.write(LOG_LEVEL.INFO, message, ...data);
   }
 
   public verbose(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.VERBOSE, message, ...data);
+    this.write(LOG_LEVEL.VERBOSE, message, ...data);
   }
 
   public debug(message: string, ...data: unknown[]): void {
-    this.write(LogLevel.DEBUG, message, ...data);
+    this.write(LOG_LEVEL.DEBUG, message, ...data);
   }
 
   public addTransport(transport: BaseTransport): void {
@@ -74,5 +56,23 @@ export class Logger {
    */
   public spawnSubLogger(name: string, transports: Set<BaseTransport> = this.transports): Logger {
     return new Logger(`${this.name}>${name.replace(/\s/g, '_')}`, new Set(transports));
+  }
+
+  private write(level: LOG_LEVEL, message: string, ...data: unknown[]): void {
+    let logEntry: LogEntry | undefined;
+
+    for (const transport of this.transports) {
+      if (level <= transport.getMaxLevel()) {
+        logEntry ??= {
+          timestamp: new Date(),
+          level,
+          message,
+          source: this.name,
+          data,
+        };
+
+        transport.log(logEntry);
+      }
+    }
   }
 }

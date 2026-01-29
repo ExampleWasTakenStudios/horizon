@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createStream, type Options as RFSOptions, type RotatingFileStream } from 'rotating-file-stream';
 import type { LogEntry } from '../LogEntry.js';
-import { LogLevel } from '../LogLevel.js';
+import { LOG_LEVEL } from '../LogLevel.js';
 import type { BaseTransport } from './BaseTransport.js';
 
 /**
@@ -36,12 +36,13 @@ export interface RotatingFileTransportSettings extends RFSOptions {
 export class RotatingFileTransport implements BaseTransport {
   private readonly stream: RotatingFileStream;
 
-  private maxLevel: LogLevel;
+  private maxLevel: LOG_LEVEL;
 
   public constructor(
     filename: string,
     settings: RotatingFileTransportSettings,
-    maxLevel: LogLevel,
+    maxLevel: LOG_LEVEL,
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     DEV_DO_NOT_USE_IN_PROD_clearLogsOnStartup?: boolean
   ) {
     this.maxLevel = maxLevel;
@@ -61,11 +62,11 @@ export class RotatingFileTransport implements BaseTransport {
     this.stream.write(JSON.stringify(logEntry, jsonReplacer) + '\n');
   }
 
-  public getMaxLevel(): Readonly<LogLevel> {
+  public getMaxLevel(): Readonly<LOG_LEVEL> {
     return this.maxLevel;
   }
 
-  public setMaxLevel(level: LogLevel): void {
+  public setMaxLevel(level: LOG_LEVEL): void {
     this.maxLevel = level;
   }
 }
