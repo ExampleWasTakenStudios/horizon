@@ -36,10 +36,13 @@ export class DownstreamModule extends Module {
   }
 
   /**
-   * @throws Illegal IP address error when an invalid IP address is passed.
-   * @throws Illegal port error when a port < 0 || > 65535 is passed.
+   * Send a message as buffer to a specified address and port.
+   * @param msg Message to be sent as buffer.
+   * @param address The address to send the message to.
+   * @param port The port to send the message to.
+   * @returns {@link TResult<void, IllegalAddressError>}
    */
-  public send(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
+  public sendIPv4(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
     if (!IP_ADDRESS_REGEX.test(address)) {
       return Result.fail(new IllegalAddressError(`${address} is not a valid IPv4 address.`));
     }
