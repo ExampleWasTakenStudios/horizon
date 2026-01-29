@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 const env = dotenv.config({ quiet: true });
 
 if (env.error) {
+  // As we are only starting here, throwing is actually required to prevent Horizon from loading without valid env vars set.
+  // eslint-disable-next-line no-restricted-syntax
   throw env.error;
 }
 
@@ -16,8 +18,12 @@ import {
 } from './logging/transports/RotatingFileTransport.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
+// This is a global const, using UPPER_CASE as indication.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
+  // This format is required by the library
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   size: `${100 * 1024 * 1024}B`, // 100 Mib
   maxFiles: 14,
   intervalUTC: true,
@@ -56,9 +62,14 @@ process.on('unhandledRejection', (reason, promise) => {
   mainLogger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
 });
 
-process.on('warning', (warning) => mainLogger.warn('Node warning: ', warning));
+process.on('warning', (warning) => {
+  mainLogger.warn('Node warning: ', warning);
+});
 
-process.on('exit', (code) => mainLogger.info('Exiting with exit code ', code));
+process.on('exit', (code) => {
+  mainLogger.info('Exiting with exit code ', code);
+});
 
 const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
+// @ts-expect-error Unused variable necessary for architecture.
 const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);

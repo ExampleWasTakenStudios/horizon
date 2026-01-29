@@ -1,9 +1,9 @@
 import { ResultError } from './ResultError.js';
 
 export class PromiseRejectError extends ResultError {
-  readonly err: unknown;
+  public readonly err: unknown;
 
-  constructor(err: unknown) {
+  public constructor(err: unknown) {
     super('Promise rejected.');
     this.err = err;
   }

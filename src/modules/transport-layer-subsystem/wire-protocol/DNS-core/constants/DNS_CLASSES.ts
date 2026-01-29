@@ -8,5 +8,5 @@ export enum DNS_QCLASSES {
   IN = 1,
   CH = 3,
   HS = 4,
-  '*' = 255,
+  WILDCARD = 255,
 }

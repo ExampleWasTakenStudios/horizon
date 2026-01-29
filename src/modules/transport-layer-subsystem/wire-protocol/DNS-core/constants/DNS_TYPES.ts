@@ -16,5 +16,5 @@ export enum DNS_QTYPES {
   MX = 15,
   TXT = 16,
   AXFR = 252,
-  '*' = 255,
+  WILDCARD = 255,
 }

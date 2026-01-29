@@ -8,12 +8,12 @@ export class DNSHeader {
     the corresponding reply and can be used by the requester
     to match up replies to outstanding queries.
    */
-  readonly id: number;
+  public readonly id: number;
   /**
     A one bit field that specifies whether this message is a
     query (0), or a response (1).
    */
-  readonly isQuery: boolean;
+  public readonly isQuery: boolean;
   /**
     A four bit field that specifies kind of query in this
     message.  This value is set by the originator of a query
@@ -24,7 +24,7 @@ export class DNSHeader {
     2       a server status request (STATUS)
     3-15    reserved for future use
    */
-  readonly opCode: DNS_OP_CODES;
+  public readonly opCode: DNS_OP_CODES;
   /**
     Authoritative Answer - this bit is valid in responses,
     and specifies that the responding name server is an
@@ -35,31 +35,31 @@ export class DNSHeader {
     corresponds to the name which matches the query name, or
     the first owner name in the answer section.
    */
-  readonly isAuthoritative: boolean;
+  public readonly isAuthoritative: boolean;
   /**
     TrunCation - specifies that this message was truncated
     due to length greater than that permitted on the
     transmission channel.
    */
-  readonly isTruncated: boolean;
+  public readonly isTruncated: boolean;
   /**
     Recursion Desired - this bit may be set in a query and
     is copied into the response.  If RD is set, it directs
     the name server to pursue the query recursively.
     Recursive query support is optional.
    */
-  readonly isRecursionDesired: boolean;
+  public readonly isRecursionDesired: boolean;
   /**
     Recursion Available - this be is set or cleared in a
     response, and denotes whether recursive query support is
     available in the name server.
    */
-  readonly isRecursionAvailable: boolean;
+  public readonly isRecursionAvailable: boolean;
   /**
     Reserved for future use.  Must be zero in all queries
     and responses.
    */
-  readonly z: number;
+  public readonly z: number;
   /**
     Response code - this 4 bit field is set as part of
     responses.  The values have the following
@@ -87,30 +87,30 @@ export class DNSHeader {
          transfer) for particular data.
     6-15 Reserved for future use.
    */
-  readonly responseCode: DNS_RESPONSE_CODES;
+  public readonly responseCode: DNS_RESPONSE_CODES;
   /**
     An unsigned 16 bit integer specifying the number of
     entries in the question section.
    */
-  readonly questionCount: number;
+  public readonly questionCount: number;
   /**
     An unsigned 16 bit integer specifying the number of
     entries in the answer section.
    */
-  readonly answerCount: number;
+  public readonly answerCount: number;
   /**
     An unsigned 16 bit integer specifying the number of name
     server resource records in the authority records
     section.
    */
-  readonly authoritativeCount: number;
+  public readonly authoritativeCount: number;
   /**
     An unsigned 16 bit integer specifying the number of
     resource records in the additional records section.
    */
-  readonly additionalCount: number;
+  public readonly additionalCount: number;
 
-  constructor(
+  public constructor(
     id: number,
     isQuery: boolean,
     opCode: number,

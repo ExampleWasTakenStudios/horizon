@@ -2,17 +2,17 @@ import type { uint32 } from '../../../../../../types/number-types.js';
 import { DNS_TYPES } from '../../constants/DNS_TYPES.js';
 import { RecordData } from './RecordData.js';
 
-export class SOA_Data extends RecordData {
-  override readonly type: DNS_TYPES.SOA;
-  readonly mName: string[];
-  readonly rName: string[];
-  readonly serial: uint32;
-  readonly refresh: uint32;
-  readonly retry: uint32;
-  readonly expire: uint32;
-  readonly minimum: uint32;
+export class SoaData extends RecordData {
+  public override readonly type: DNS_TYPES.SOA;
+  public readonly mName: string[];
+  public readonly rName: string[];
+  public readonly serial: uint32;
+  public readonly refresh: uint32;
+  public readonly retry: uint32;
+  public readonly expire: uint32;
+  public readonly minimum: uint32;
 
-  constructor(
+  public constructor(
     mName: string[],
     rName: string[],
     serial: uint32,

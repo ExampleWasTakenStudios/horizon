@@ -4,10 +4,10 @@ import type { ResultError } from '../errors/result/ResultError.js';
 export type TResult<T, E extends ResultError> = Success<T, never> | Failure<never, E>;
 
 export abstract class Result<T, E extends ResultError> {
-  abstract isSuccess(): this is Success<T, never>;
-  abstract isFailure(): this is Failure<never, E>;
+  public abstract isSuccess(): this is Success<T, never>;
+  public abstract isFailure(): this is Failure<never, E>;
 
-  static async fromPromise<T>(promise: Promise<T>): Promise<TResult<T, PromiseRejectError>> {
+  public static async fromPromise<T>(promise: Promise<T>): Promise<TResult<T, PromiseRejectError>> {
     try {
       return Result.ok(await promise);
     } catch (err) {
@@ -15,44 +15,45 @@ export abstract class Result<T, E extends ResultError> {
     }
   }
 
-  static ok<T, E extends never>(value: T): Success<T, E> {
+  public static ok<T, E extends never>(value: T): Success<T, E> {
     return new Success(value);
   }
 
-  static fail<T extends never, E extends ResultError>(error: E): Failure<T, E> {
+  public static fail<T extends never, E extends ResultError>(error: E): Failure<T, E> {
     return new Failure<T, E>(error);
   }
 }
 
 export class Failure<T extends never, E extends ResultError> extends Result<T, E> {
-  readonly error: E;
+  public readonly error: E;
 
-  constructor(error: E) {
+  public constructor(error: E) {
     super();
     this.error = error;
   }
 
-  override isSuccess(): this is Success<T, never> {
+  public override isSuccess(): this is Success<T, never> {
     return false;
   }
-  override isFailure(): this is Failure<never, E> {
+
+  public override isFailure(): this is Failure<never, E> {
     return true;
   }
 }
 
 export class Success<T, E extends never> extends Result<T, E> {
-  readonly value: T;
+  public readonly value: T;
 
-  constructor(value: T) {
+  public constructor(value: T) {
     super();
     this.value = value;
   }
 
-  override isSuccess(): this is Success<T, never> {
+  public override isSuccess(): this is Success<T, never> {
     return true;
   }
 
-  override isFailure(): this is Failure<never, E> {
+  public override isFailure(): this is Failure<never, E> {
     return false;
   }
 }
