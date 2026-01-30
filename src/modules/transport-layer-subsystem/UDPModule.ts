@@ -5,12 +5,10 @@ import { IllegalAddressError } from '../../errors/result/IllegalAddressError.js'
 import type { Logger } from '../../logging/Logger.js';
 import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
+import { IP_ADDRESS_REGEX } from './TransportLayerSubsystem.js';
 import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
-const IP_ADDRESS_REGEX =
-  /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-
-export class DownstreamModule extends Module {
+export class UDPSocket extends Module {
   private readonly socket: Socket;
   private readonly wireProtocolModule: WireProtocolModule;
 
