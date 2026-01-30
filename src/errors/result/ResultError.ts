@@ -1,4 +1,4 @@
-export abstract class ResultError {
+export class ResultError {
   public readonly message: string;
   public readonly cause: ResultError | undefined;
 
