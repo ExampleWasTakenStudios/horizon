@@ -1,8 +1,8 @@
 import type { LogEntry } from '../LogEntry.js';
-import type { LogLevel } from '../LogLevel.js';
+import type { LOG_LEVEL } from '../LogLevel.js';
 
 export interface BaseTransport {
   log(logEntry: LogEntry): void;
-  getMaxLevel(): Readonly<LogLevel>;
-  setMaxLevel(level: LogLevel): void;
+  getMaxLevel(): Readonly<LOG_LEVEL>;
+  setMaxLevel(level: LOG_LEVEL): void;
 }

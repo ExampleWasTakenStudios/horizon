@@ -1,7 +1,9 @@
 import dgram, { Socket, type RemoteInfo } from 'node:dgram';
 import type { AddressInfo } from 'node:net';
 import type { ConfigManager } from '../../config/ConfigManager.js';
+import { IllegalAddressError } from '../../errors/result/IllegalAddressError.js';
 import type { Logger } from '../../logging/Logger.js';
+import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
 import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
@@ -9,49 +11,61 @@ const IP_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
 export class DownstreamModule extends Module {
-  private socket: Socket;
-  private wireProtocolModule: WireProtocolModule;
+  private readonly socket: Socket;
+  private readonly wireProtocolModule: WireProtocolModule;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.socket = dgram.createSocket({ type: 'udp4' });
 
-    this.socket.on('error', (error) => this.onError(error));
-    this.socket.on('close', () => this.onClose());
-    this.socket.on('listening', () => this.onListening());
-    this.socket.on('message', (msg, rinfo) => this.onMessage(msg, rinfo));
+    this.socket.on('error', (error) => {
+      this.onError(error);
+    });
+    this.socket.on('close', () => {
+      this.onClose();
+    });
+    this.socket.on('listening', () => {
+      this.onListening();
+    });
+    this.socket.on('message', (msg, rinfo) => {
+      this.onMessage(msg, rinfo);
+    });
 
     this.wireProtocolModule = new WireProtocolModule(logger, config);
   }
 
   /**
-   * @throws Illegal IP address error when an invalid IP address is passed.
-   * @throws Illegal port error when a port < 0 || > 65535 is passed.
+   * Send a message as buffer to a specified address and port.
+   * @param msg Message to be sent as buffer.
+   * @param address The address to send the message to.
+   * @param port The port to send the message to.
+   * @returns {@link TResult<void, IllegalAddressError>}
    */
-  send(msg: Buffer, address: string, port: number): void {
+  public sendIPv4(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
     if (!IP_ADDRESS_REGEX.test(address)) {
-      throw new Error(`Illegal IP address received: ${address}`);
+      return Result.fail(new IllegalAddressError(`${address} is not a valid IPv4 address.`));
     }
 
     if (port < 0 || port > 65535) {
-      throw new Error(`Illegal port received: ${port}. Must be between 0-65535`);
+      return Result.fail(new IllegalAddressError(`Illegal port received: ${port.toString()}. Must be between 0-65535`));
     }
 
     this.socket.send(msg, 0, msg.length, port, address);
+    return Result.ok(undefined);
   }
 
-  bind(): void {
+  public bind(): void {
     const address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPAddress;
     this.socket.bind(53, address);
     this.logger.info('Bound to ', address, ':53');
   }
 
-  close(): void {
+  public close(): void {
     this.socket.close();
   }
 
-  getAddressInfo(): AddressInfo {
+  public getAddressInfo(): AddressInfo {
     return this.socket.address();
   }
 
@@ -62,7 +76,7 @@ export class DownstreamModule extends Module {
 
   private onListening(): void {
     const address = this.socket.address();
-    this.logger.info(`Server listening on ${address.address}:${address.port}.`);
+    this.logger.info(`Server listening on ${address.address}:${address.port.toString()}.`);
   }
 
   private onClose(): void {

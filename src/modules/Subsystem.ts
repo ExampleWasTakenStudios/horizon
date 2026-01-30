@@ -5,7 +5,7 @@ export abstract class Subsystem {
   protected logger: Logger;
   protected config: ConfigManager;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     this.logger = logger;
     this.config = config;
   }

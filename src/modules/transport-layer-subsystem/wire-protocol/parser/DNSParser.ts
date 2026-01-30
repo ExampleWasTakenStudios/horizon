@@ -1,176 +1,294 @@
 import punycode from '@dcoffey-zengenti/punynode';
-import { IllegalCharStringError } from '../../../../errors/IllegalCharStringError.js';
-import { PointerLoopError } from '../../../../errors/PointerLoopError.js';
-import { DNS_CLASSES } from '../DNS-core/constants/DNS_CLASSES.js';
+import { DNSParseError } from '../../../../errors/result/DNSParseError.js';
+import { Result, type TResult } from '../../../../result/Result.js';
+import { DNS_RESPONSE_CODES } from '../DNS-core/constants/DNS_RESPONSE_CODES.js';
 import { DNS_TYPES } from '../DNS-core/constants/DNS_TYPES.js';
 import { DNSHeader } from '../DNS-core/DNSHeader.js';
-import { DNSPacket } from '../DNS-core/DNSPacket.js';
+import { DNSMessage } from '../DNS-core/DNSMessage.js';
 import { DNSQuestion } from '../DNS-core/DNSQuestion.js';
-import { A_Record } from '../DNS-core/resource-records/A_Record.js';
-import { CNAME_Record } from '../DNS-core/resource-records/CNAME_Record.js';
-import { HINFO_Record } from '../DNS-core/resource-records/HINFO_Record.js';
-import { MX_Record } from '../DNS-core/resource-records/MX_Record.js';
-import { NS_Record } from '../DNS-core/resource-records/NS_Record.js';
-import { OPT_Record } from '../DNS-core/resource-records/OPT_Record.js';
-import { PTR_Record } from '../DNS-core/resource-records/PTR_Record.js';
-import type { RDataMap } from '../DNS-core/resource-records/RDataMap.js';
-import type { ResourceRecord } from '../DNS-core/resource-records/ResourceRecord.js';
-import { SOA_Record } from '../DNS-core/resource-records/SOA_Record.js';
-import { TXT_Record } from '../DNS-core/resource-records/TXT_Record.js';
-import { Cursor } from './Cursor.js';
+import { DNSRecord } from '../DNS-core/resource-records/DNSRecord.js';
+import { AData } from '../DNS-core/resource-records/RDATA/AData.js';
+import { DomainNameData } from '../DNS-core/resource-records/RDATA/DomainNameData.js';
+import { MxData } from '../DNS-core/resource-records/RDATA/MxData.js';
+import { OptData, type EDNSOption } from '../DNS-core/resource-records/RDATA/OptData.js';
+import { RawData } from '../DNS-core/resource-records/RDATA/RawData.js';
+import type { RecordData } from '../DNS-core/resource-records/RDATA/RecordData.js';
+import { SoaData } from '../DNS-core/resource-records/RDATA/SoaData.js';
+import { TxtData } from '../DNS-core/resource-records/RDATA/TxtData.js';
 import { CursorBuffer } from './CursorBuffer.js';
 
 export class DNSParser {
-  parse(rawPacket: CursorBuffer): DNSPacket {
-    const header = this.parseHeader(rawPacket);
-    const questions = this.parseQuestions(rawPacket, header);
-    const answers = this.parseResourceRecord(rawPacket, header.answerCount);
-    const authoritative = this.parseResourceRecord(rawPacket, header.authoritativeCount);
-    const additional = this.parseResourceRecord(rawPacket, header.additionalCount);
+  public parse(message: Buffer): TResult<DNSMessage, DNSParseError> {
+    const buffer = new CursorBuffer(message);
 
-    return new DNSPacket(header, questions, answers, authoritative, additional);
+    /* --- Parse Header --- */
+
+    /*
+     * This is only the initial header as, at this point, we don't know if the message includes an EDNS OPT record that extends the RCODE field.
+     * Once the message is fully parsed, a new header is instantiated that receives all values of the received header, plus the extended RCODE.
+     */
+    const initialHeaderResult = this.parseHeader(buffer);
+    if (initialHeaderResult.isFailure()) {
+      return initialHeaderResult;
+    }
+
+    const questionsResult = this.parseQuestions(buffer, initialHeaderResult.value.questionCount);
+    if (questionsResult.isFailure()) {
+      return questionsResult;
+    }
+
+    const answersResult = this.parseResourceRecord(buffer, initialHeaderResult.value.answerCount);
+    if (answersResult.isFailure()) {
+      return answersResult;
+    }
+
+    const authoritativeResult = this.parseResourceRecord(buffer, initialHeaderResult.value.authoritativeCount);
+    if (authoritativeResult.isFailure()) {
+      return authoritativeResult;
+    }
+
+    const additionalResult = this.parseResourceRecord(buffer, initialHeaderResult.value.additionalCount);
+    if (additionalResult.isFailure()) {
+      return additionalResult;
+    }
+
+    // Check if the received message supports EDNS -> if yet, use extended RCODE directly
+    const optRecord = additionalResult.value.find((record) => record.type === DNS_TYPES.OPT);
+    let finalHeader: DNSHeader;
+    if (optRecord) {
+      const header = initialHeaderResult.value;
+
+      // This can safely disabled as `optRecord` is guaranteed to be of type OPT since it is the requirement specified in the predicate of the find function above.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      const optData = optRecord.data as OptData;
+      const computedRcodeResult = this.computeExtendedRCode(header.responseCode, optData.extendedRcode);
+
+      if (computedRcodeResult.isFailure()) {
+        return computedRcodeResult;
+      }
+
+      finalHeader = new DNSHeader(
+        header.id,
+        header.isQuery,
+        header.opCode,
+        header.isAuthoritative,
+        header.isTruncated,
+        header.isRecursionDesired,
+        header.isRecursionAvailable,
+        header.z,
+        computedRcodeResult.value,
+        header.questionCount,
+        header.answerCount,
+        header.authoritativeCount,
+        header.additionalCount
+      );
+    } else {
+      finalHeader = initialHeaderResult.value;
+    }
+
+    const dnsMessage = new DNSMessage(
+      finalHeader,
+      questionsResult.value,
+      answersResult.value,
+      authoritativeResult.value,
+      additionalResult.value
+    );
+
+    return Result.ok(dnsMessage);
   }
 
-  private parseHeader(rawPacket: CursorBuffer): DNSHeader {
-    const id = rawPacket.readNextUint16();
+  private parseHeader(buffer: CursorBuffer): TResult<DNSHeader, DNSParseError> {
+    const id = buffer.readNextUint16();
+    const flags = buffer.readNextUint16();
 
-    const flags = rawPacket.readNextUint16();
+    /**
+      A one bit field that specifies whether this message is a query (0), or a response (1).
+     */
+    const qr = Boolean((flags & 0b1000000000000000) >> 15);
 
-    // Extract flag bits
-    // prettier-ignore
-    const qr =     (flags & 0b1000000000000000) >> 15;
-    // prettier-ignore
+    /**
+      A four bit field that specifies kind of query in this
+      message.  This value is set by the originator of a query
+      and copied into the response.  The values are:
+      0               a standard query (QUERY)
+      1               an inverse query (IQUERY)
+      2               a server status request (STATUS)
+      3-15            reserved for future use
+     */
     const opCode = (flags & 0b0111100000000000) >> 11;
-    // prettier-ignore
-    const aa =     (flags & 0b0000010000000000) >> 10;
-    // prettier-ignore
-    const tc =     (flags & 0b0000001000000000) >> 9;
-    // prettier-ignore
-    const rd =     (flags & 0b0000000100000000) >> 8;
-    // prettier-ignore
-    const ra =     (flags & 0b0000000010000000) >> 7;
-    // prettier-ignore
-    const z =      (flags & 0b0000000001110000) >> 4;
-    // prettier-ignore
-    const rCode =  (flags & 0b0000000000001111);
+    /**
+      Authoritative Answer - this bit is valid in responses,
+      and specifies that the responding name server is an
+      authority for the domain name in question section.
 
-    const qdCount = rawPacket.readNextUint16();
-    const anCount = rawPacket.readNextInt16();
-    const nsCount = rawPacket.readNextInt16();
-    const arCount = rawPacket.readNextInt16();
+      Note that the contents of the answer section may have
+      multiple owner names because of aliases.  The AA bit
+      corresponds to the name which matches the query name, or
+      the first owner name in the answer section.
+     */
+    const aa = Boolean((flags & 0b0000010000000000) >> 10);
 
-    return new DNSHeader(id, !qr, opCode, !!aa, !!tc, !!rd, !!ra, z, rCode, qdCount, anCount, nsCount, arCount);
+    /**
+      TrunCation - specifies that this message was truncated
+      due to length greater than that permitted on the
+      transmission channel.
+     */
+    const tc = Boolean((flags & 0b0000001000000000) >> 9);
+
+    /**
+      Recursion Desired - this bit may be set in a query and
+      is copied into the response.  If RD is set, it directs
+      the name server to pursue the query recursively.
+      Recursive query support is optional.
+     */
+    const rd = Boolean((flags & 0b0000000100000000) >> 8);
+
+    /*
+      Recursion Available - this be is set or cleared in a
+      response, and denotes whether recursive query support is
+      available in the name server.
+    */
+    const ra = Boolean((flags & 0b0000000010000000) >> 7);
+
+    /**
+      Reserved for future use.  Must be zero in all queries
+      and responses.
+     */
+    const z = (flags & 0b0000000001110000) >> 4;
+
+    /**
+      Response code - this 4 bit field is set as part of
+      responses.  The values have the following
+      interpretation:
+
+      0               No error condition
+
+      1               Format error - The name server was
+                      unable to interpret the query.
+
+      2               Server failure - The name server was
+                      unable to process this query due to a
+                      problem with the name server.
+
+      3               Name Error - Meaningful only for
+                      responses from an authoritative name
+                      server, this code signifies that the
+                      domain name referenced in the query does
+                      not exist.
+
+      4               Not Implemented - The name server does
+                      not support the requested kind of query.
+
+      5               Refused - The name server refuses to
+                      perform the specified operation for
+                      policy reasons.  For example, a name
+                      server may not wish to provide the
+                      information to the particular requester,
+                      or a name server may not wish to perform
+                      a particular operation (e.g., zone
+
+     */
+    const rCode = flags & 0b0000000000001111;
+
+    const questionCount = buffer.readNextUint16();
+    const answerCount = buffer.readNextUint16();
+    const authoritativeCount = buffer.readNextUint16();
+    const additionalCount = buffer.readNextUint16();
+
+    return Result.ok(
+      new DNSHeader(
+        id,
+        !qr,
+        opCode,
+        aa,
+        tc,
+        rd,
+        ra,
+        z,
+        rCode,
+        questionCount,
+        answerCount,
+        authoritativeCount,
+        additionalCount
+      )
+    );
   }
 
-  private parseQuestions(rawPacket: CursorBuffer, header: DNSHeader): DNSQuestion[] {
+  private parseQuestions(buffer: CursorBuffer, questionCount: number): TResult<DNSQuestion[], DNSParseError> {
     const questions: DNSQuestion[] = [];
 
-    for (let i = 0; i < header.questionCount; i++) {
-      const qNameLabels = this.parseDomainName(rawPacket);
-      const qType = rawPacket.readNextUint16();
-      const qClass = rawPacket.readNextUint16();
+    for (let i = 0; i < questionCount; i++) {
+      const qNameResult = this.parseLabels(buffer);
 
-      questions.push(new DNSQuestion(qNameLabels, qType, qClass));
-    }
-
-    return questions;
-  }
-
-  private parseResourceRecord(rawPacket: CursorBuffer, rrCount: number): ResourceRecord<RDataMap[DNS_TYPES]>[] {
-    const resourceRecords: ResourceRecord<RDataMap[DNS_TYPES]>[] = [];
-
-    for (let i = 0; i < rrCount; i++) {
-      const name = this.parseDomainName(rawPacket);
-      const type: DNS_TYPES = rawPacket.readNextUint16();
-      const RR_class: DNS_CLASSES = rawPacket.readNextUint16();
-      const ttl = rawPacket.readNextUint32();
-      const rdLength = rawPacket.readNextUint16();
-      const rawRData = rawPacket.nextSubarray(rdLength);
-
-      switch (type) {
-        case DNS_TYPES.A: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new A_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.CNAME: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new CNAME_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.HINFO: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new HINFO_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.MX: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new MX_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.NS: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new NS_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.PTR: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new PTR_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.SOA: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new SOA_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.TXT: {
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-          resourceRecords.push(new TXT_Record(name, type, RR_class, ttl, rdLength, rData));
-          break;
-        }
-        case DNS_TYPES.OPT: {
-          // At the moment, this call is actually unecessary, since 'parseRData()' just returns 'rawRData' but to
-          // keep the data flow identical between all types of RRs we pass it to the method anyway.
-          const rData = this.parseRData(rawPacket, type, rdLength, rawRData);
-
-          const extendedRCode = (ttl >>> 24) & 0xff;
-          const ednsVersion = (ttl >>> 16) & 0x00ff;
-
-          if (ednsVersion !== 0) {
-            // TODO: signal a BADVERS(16)
-          }
-
-          resourceRecords.push(new OPT_Record(name, type, ttl, RR_class, rdLength, rData, extendedRCode, ednsVersion));
-        }
-        // FIXME: a default block should generate a FormErr (RCODE 1)
+      if (qNameResult.isFailure()) {
+        return qNameResult;
       }
+
+      const qType = buffer.readNextUint16();
+      const qClass = buffer.readNextUint16();
+
+      questions.push(new DNSQuestion(qNameResult.value, qType, qClass));
     }
 
-    return resourceRecords;
+    return Result.ok(questions);
   }
 
-  private parseDomainName(rawPacket: CursorBuffer, visitedPointers: Set<number> = new Set<number>()): string {
-    const nameLabels: string[] = [];
+  private parseResourceRecord(buffer: CursorBuffer, resourceRecordCount: number): TResult<DNSRecord[], DNSParseError> {
+    const resourceRecords: DNSRecord[] = [];
 
-    while (true) {
-      const currentByte = rawPacket.readNextUint8();
+    for (let i = 0; i < resourceRecordCount; i++) {
+      const nameResult = this.parseLabels(buffer);
+      if (nameResult.isFailure()) {
+        return nameResult;
+      }
 
-      // Check if currentByte is a pointer
-      if ((currentByte & 0xc0) == 0xc0) {
-        const pointer = this.decodePointer(rawPacket.cloneBuffer(), currentByte);
+      const rrType = buffer.readNextUint16();
+      const rrClass = buffer.readNextUint16();
+      const ttl = buffer.readNextUint32();
+      const rdLength = buffer.readNextUint16();
 
-        // Check if the pointer has been visited before
-        if (visitedPointers.has(pointer.getPosition())) {
-          throw new PointerLoopError(`Pointer loop detected for pointer ${pointer.getPosition().toString(16)}.`);
+      let value: TResult<RecordData, DNSParseError>;
+      if (rrType === (DNS_TYPES.OPT as number)) {
+        value = this.parseOptData(buffer, rdLength, ttl, rrClass);
+      } else {
+        value = this.parseRData(buffer, rdLength, rrType);
+      }
+
+      if (value.isFailure()) {
+        return value;
+      }
+
+      resourceRecords.push(new DNSRecord(nameResult.value, rrType, rrClass, ttl, rdLength, value.value));
+    }
+
+    return Result.ok(resourceRecords);
+  }
+
+  private parseLabels(buffer: CursorBuffer, visitedPointers = new Set<number>()): TResult<string[], DNSParseError> {
+    const labels: string[] = [];
+
+    if (buffer.getRemaining() < 1) {
+      return Result.fail(new DNSParseError('Less than one byte remaining in buffer.', DNS_RESPONSE_CODES.FORMERR));
+    }
+
+    for (;;) {
+      const currentByte = buffer.readNextUint8();
+
+      // Check if current byte is a pointer
+      if ((currentByte & 0xc0) === 0xc0) {
+        const pointer = this.decodePointer(currentByte, buffer.readNextUint8());
+        // Check for pointer loop
+        if (visitedPointers.has(pointer)) {
+          return Result.fail(new DNSParseError('Pointer loop detected.', DNS_RESPONSE_CODES.FORMERR));
         }
 
-        // Because this is just a lookup, we clone the rawPacket and use it to resolve the pointer.
-        // This way, we don't advance the pointer of rawPacket, that is used to parse the original DNS message.
-        const lookupPacket = new CursorBuffer(rawPacket.cloneBuffer(), pointer.getPosition());
+        visitedPointers.add(pointer);
+        const labelResult = this.parseLabels(buffer.fork(pointer), visitedPointers);
+        if (labelResult.isFailure()) {
+          return labelResult;
+        }
 
-        visitedPointers.add(pointer.getPosition());
-        nameLabels.push(...this.parseDomainName(lookupPacket, visitedPointers));
-
+        labels.push(...labelResult.value);
         break;
       }
 
@@ -179,110 +297,180 @@ export class DNSParser {
         break;
       }
 
-      // currentByte is a length label
+      // currentByte must be a length label
       const length = currentByte;
-      const asciiString = rawPacket.nextSubarray(length).toString('ascii');
+      if (length > buffer.getRemaining()) {
+        return Result.fail(new DNSParseError('Name label length exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
+      }
 
-      const label = asciiString.startsWith('xn--') ? punycode.toUnicode(asciiString) : asciiString;
+      const label = punycode.toUnicode(buffer.nextSubarray(length).toString('ascii'));
 
-      nameLabels.push(label);
+      labels.push(label);
     }
 
-    return nameLabels.join('.');
+    return Result.ok(labels);
   }
 
-  private parseCharString(rawPacket: CursorBuffer): string {
-    const length = rawPacket.readNextUint8();
-
-    if (length + 1 > 256) {
-      throw new IllegalCharStringError(`Got ${length + 1} bytes. Must be <= 256.`);
+  private parseCharString(buffer: CursorBuffer): TResult<string, DNSParseError> {
+    const length = buffer.readNextUint8();
+    if (length > buffer.getRemaining()) {
+      return Result.fail(new DNSParseError('Char string length exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
     }
 
-    return rawPacket.nextSubarray(length).toString('ascii');
+    const text = buffer.nextSubarray(length);
+
+    return Result.ok(punycode.toUnicode(text.toString('ascii')));
   }
 
-  private decodePointer(buffer: Buffer, position: number): Cursor {
-    const high = (buffer.readUint8(position) & 0x3f) << 8;
-    const low = buffer.readUint8(position + 1);
-
-    return new Cursor(high | low);
-  }
-
-  private parseRData<RRType extends DNS_TYPES>(
-    rawPacket: CursorBuffer,
-    rrType: RRType,
+  private parseOptData(
+    buffer: CursorBuffer,
     rdLength: number,
-    rawRData: Buffer
-  ): RDataMap[RRType] {
-    const rDataCursorBuffer = new CursorBuffer(rawRData);
-    const rawPacketClone = rawPacket.clone();
+    ttl: number,
+    rrClass: number
+  ): TResult<OptData, DNSParseError> {
+    const extendedRcode = (ttl >> 24) & 0xff;
+    const version = (ttl >> 16) & 0xff;
+    if (version !== 0) {
+      return Result.fail(
+        new DNSParseError(`Received unsupported EDNS version ${version.toString()}.`, DNS_RESPONSE_CODES.BADVERS)
+      );
+    }
+
+    const doBit = !!((ttl >> 15) & 0xff);
+
+    // Parse OPT-Data (RDATA)
+    const options: EDNSOption[] = [];
+    while (buffer.getCursorPosition() < rdLength) {
+      const optionCode = buffer.readNextUint16();
+      const optionLength = buffer.readNextUint16();
+      if (optionLength > buffer.getRemaining()) {
+        return Result.fail(new DNSParseError('EDNS Option Data exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
+      }
+      const optionData = buffer.nextSubarray(optionLength);
+
+      options.push({ code: optionCode, data: optionData });
+    }
+
+    return Result.ok(new OptData(rrClass, extendedRcode, version, doBit, options));
+  }
+
+  private parseRData(
+    buffer: CursorBuffer,
+    rdLength: number,
+    rrType: DNS_TYPES
+  ): TResult<AData | DomainNameData | MxData | RawData | SoaData | TxtData, DNSParseError> {
+    // Check that rdLength is no longer than the buffer
+    if (buffer.getRemaining() < rdLength) {
+      return Result.fail(new DNSParseError('RDLENGTH exceeds buffer length.', DNS_RESPONSE_CODES.FORMERR));
+    }
 
     switch (rrType) {
       case DNS_TYPES.A: {
-        const octets: string[] = [];
-
-        for (let i = 0; i < 4; i++) {
-          octets.push(rDataCursorBuffer.readNextUint8().toString());
-        }
-
-        return octets.join('.') as RDataMap[RRType];
+        return this.handleAData(rdLength, buffer);
       }
-      case DNS_TYPES.CNAME: {
-        return this.parseDomainName(rDataCursorBuffer) as RDataMap[RRType];
-      }
-      case DNS_TYPES.HINFO: {
-        const cpu = this.parseCharString(rDataCursorBuffer);
-        const os = this.parseCharString(rDataCursorBuffer);
-
-        return { cpu, os } as RDataMap[RRType];
+      case DNS_TYPES.CNAME:
+      case DNS_TYPES.NS: {
+        return this.handleDomainNameData(rrType, buffer);
       }
       case DNS_TYPES.MX: {
-        const preference = rDataCursorBuffer.readNextInt16();
-        const exchange = this.parseDomainName(rawPacketClone);
-
-        return {
-          preference,
-          exchange,
-        } as RDataMap[RRType];
-      }
-      case DNS_TYPES.NS: {
-        return this.parseDomainName(rawPacketClone) as RDataMap[RRType];
-      }
-      case DNS_TYPES.PTR: {
-        return this.parseDomainName(rawPacketClone) as RDataMap[RRType];
+        return this.handleMxData(buffer);
       }
       case DNS_TYPES.SOA: {
-        const mName = this.parseDomainName(rawPacketClone);
-        const rName = this.parseDomainName(rawPacketClone);
-        const serial = rawPacketClone.readNextUint32();
-        const refresh = rawPacketClone.readNextInt32();
-        const retry = rawPacketClone.readNextInt32();
-        const expire = rawPacketClone.readNextInt32();
-        const minimum = rawPacketClone.readNextUint32();
-
-        return {
-          mName,
-          rName,
-          serial,
-          refresh,
-          retry,
-          expire,
-          minimum,
-        } as RDataMap[RRType];
+        return this.handleSoaData(buffer);
       }
       case DNS_TYPES.TXT: {
-        const charStrings: string[] = [];
-
-        while (rDataCursorBuffer.getCursorPosition() < rdLength) {
-          charStrings.push(this.parseCharString(rDataCursorBuffer));
-        }
-
-        return charStrings as RDataMap[RRType];
+        return this.handleTxtData(rdLength, buffer);
       }
-      case DNS_TYPES.OPT: {
-        // We do not support any RDATA in the OPT RR at the moment so we just return it back, thereby effectively ignoring it.
-        return rawRData as RDataMap[RRType];
+      case DNS_TYPES.OPT: // Technically redundant but added for clarity
+      default: {
+        return Result.ok(new RawData(rrType, buffer.nextSubarray(rdLength)));
       }
     }
+  }
+
+  private handleAData(rdLength: number, buffer: CursorBuffer): TResult<AData, DNSParseError> {
+    if (rdLength !== 4) {
+      return Result.fail(new DNSParseError("RDLENGTH of RRs of type 'A' must be 4.", DNS_RESPONSE_CODES.FORMERR));
+    }
+
+    const [b0 = undefined, b1 = undefined, b2 = undefined, b3 = undefined] = buffer.nextSubarray(4);
+    if (b0 === undefined || b1 === undefined || b2 === undefined || b3 === undefined) {
+      return Result.fail(
+        new DNSParseError('One or more octets were `undefined` in RDATA of A RR.', DNS_RESPONSE_CODES.FORMERR)
+      );
+    }
+
+    return Result.ok(new AData(`${b0.toString()}.${b1.toString()}.${b2.toString()}.${b3.toString()}`));
+  }
+
+  private handleDomainNameData(type: DNS_TYPES, buffer: CursorBuffer): TResult<DomainNameData, DNSParseError> {
+    const labelResult = this.parseLabels(buffer);
+    if (labelResult.isFailure()) {
+      return labelResult;
+    }
+
+    return Result.ok(new DomainNameData(type, labelResult.value));
+  }
+
+  private handleMxData(buffer: CursorBuffer): TResult<MxData, DNSParseError> {
+    const preference = buffer.readNextUint16();
+    const exchangeResult = this.parseLabels(buffer);
+    if (exchangeResult.isFailure()) {
+      return exchangeResult;
+    }
+
+    return Result.ok(new MxData(preference, exchangeResult.value));
+  }
+
+  private handleSoaData(buffer: CursorBuffer): TResult<SoaData, DNSParseError> {
+    const mNameResult = this.parseLabels(buffer);
+    if (mNameResult.isFailure()) {
+      return mNameResult;
+    }
+
+    const rNameResult = this.parseLabels(buffer);
+    if (rNameResult.isFailure()) {
+      return rNameResult;
+    }
+
+    const serial = buffer.readNextUint32();
+    const refresh = buffer.readNextUint32();
+    const retry = buffer.readNextUint32();
+    const expire = buffer.readNextUint32();
+    const minimum = buffer.readNextUint32();
+
+    return Result.ok(new SoaData(mNameResult.value, rNameResult.value, serial, refresh, retry, expire, minimum));
+  }
+
+  private handleTxtData(rdLength: number, buffer: CursorBuffer): TResult<TxtData, DNSParseError> {
+    // Declare start position of RDATA to ensure we don't read more than defined as RDLENGTH.
+    const startCursorPosition = buffer.getCursorPosition();
+
+    const text: string[] = [];
+    do {
+      const parsedTextResult = this.parseCharString(buffer);
+      if (parsedTextResult.isFailure()) {
+        return parsedTextResult;
+      }
+
+      text.push(parsedTextResult.value);
+    } while (buffer.getCursorPosition() <= startCursorPosition + rdLength);
+
+    return Result.ok(new TxtData(text));
+  }
+
+  private decodePointer(highByte: number, lowByte: number): number {
+    return ((highByte & 0x3f) << 8) | lowByte;
+  }
+
+  private computeExtendedRCode(baseRCode: number, extendedRCode: number): TResult<DNS_RESPONSE_CODES, DNSParseError> {
+    if (baseRCode < 0 || baseRCode > 15) {
+      return Result.fail(new DNSParseError('Base RCODE must be between 0-15.', DNS_RESPONSE_CODES.FORMERR));
+    }
+    if (extendedRCode < 0 || extendedRCode > 255) {
+      return Result.fail(new DNSParseError('Extended RCODE must be between 0-255.', DNS_RESPONSE_CODES.FORMERR));
+    }
+
+    return Result.ok((extendedRCode << 4) | baseRCode);
   }
 }

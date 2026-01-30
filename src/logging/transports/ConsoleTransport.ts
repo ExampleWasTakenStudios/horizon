@@ -1,19 +1,19 @@
 import chalk from 'chalk';
 import { stderr, stdout } from 'process';
 import type { LogEntry } from '../LogEntry.js';
-import { LogLevel } from '../LogLevel.js';
+import { LOG_LEVEL } from '../LogLevel.js';
 import type { BaseTransport } from './BaseTransport.js';
 
 export class ConsoleTransport implements BaseTransport {
-  private maxLevel: LogLevel;
+  private maxLevel: LOG_LEVEL;
 
-  constructor(maxLevel: LogLevel) {
+  public constructor(maxLevel: LOG_LEVEL) {
     this.maxLevel = maxLevel;
   }
 
-  log(logEntry: LogEntry): void {
+  public log(logEntry: LogEntry): void {
     let out: typeof stdout | typeof stderr;
-    if (logEntry.level <= LogLevel.ERROR) {
+    if (logEntry.level <= LOG_LEVEL.ERROR) {
       out = stderr;
     } else {
       out = stdout;
@@ -21,27 +21,27 @@ export class ConsoleTransport implements BaseTransport {
 
     const timestamp = chalk.whiteBright(`[${chalk.white(logEntry.timestamp.toISOString())}]`);
     const source = chalk.whiteBright(`[${logEntry.source}]`);
-    const level = chalk.whiteBright(`[${this.colorize(logEntry.level, LogLevel[logEntry.level])}]`);
+    const level = chalk.whiteBright(`[${this.colorize(logEntry.level, LOG_LEVEL[logEntry.level])}]`);
     const message = this.colorize(logEntry.level, logEntry.message);
     const data = logEntry.data ? this.colorize(logEntry.level, this.processData(...logEntry.data)) : null;
 
-    out.write(`${timestamp} ${source} ${level} ${message}${data}\n`);
+    out.write(`${timestamp} ${source} ${level} ${message}${data ?? ''}\n`);
   }
 
-  getMaxLevel(): Readonly<LogLevel> {
+  public getMaxLevel(): Readonly<LOG_LEVEL> {
     return this.maxLevel;
   }
 
-  setMaxLevel(level: LogLevel): void {
+  public setMaxLevel(level: LOG_LEVEL): void {
     this.maxLevel = level;
   }
 
   private processData(...data: unknown[]): string {
-    let str: string = '';
+    let str = '';
 
     for (const current of data) {
       if (current instanceof Error) {
-        str += `\n${current.stack || current.message}`;
+        str += `\n${current.stack ?? current.message}`;
         continue;
       }
 
@@ -66,25 +66,25 @@ export class ConsoleTransport implements BaseTransport {
     return str;
   }
 
-  private colorize(level: LogLevel, input: string): string {
+  private colorize(level: LOG_LEVEL, input: string): string {
     switch (level) {
-      case LogLevel.FATAL: {
+      case LOG_LEVEL.FATAL: {
         return chalk.red(input);
       }
-      case LogLevel.ERROR: {
+      case LOG_LEVEL.ERROR: {
         return chalk.red(chalk.bold(input));
       }
-      case LogLevel.WARN: {
+      case LOG_LEVEL.WARN: {
         const orange = chalk.hex('#FFA500');
         return orange(input);
       }
-      case LogLevel.INFO: {
+      case LOG_LEVEL.INFO: {
         return chalk.greenBright(input);
       }
-      case LogLevel.VERBOSE: {
+      case LOG_LEVEL.VERBOSE: {
         return chalk.cyan(input);
       }
-      case LogLevel.DEBUG: {
+      case LOG_LEVEL.DEBUG: {
         return chalk.white(input);
       }
     }

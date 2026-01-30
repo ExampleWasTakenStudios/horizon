@@ -8,35 +8,46 @@
         // Environment Settings
         // See also https://aka.ms/tsconfig/module
         "module": "nodenext",
-        "target": "esnext",
+        "target": "ESNext",
         "types": ["node"],
         "lib": ["ESNext"],
+        "paths": {
+            "@src/*": ["./src"]
+        },
 
         // Other Outputs
-        "inlineSourceMap": true,
+        /* "inlineSourceMap": true,
         "declaration": true,
-        "declarationMap": true,
+        "declarationMap": true, */
+        "removeComments": true,
 
-        // Stricter Typechecking Options
-        "noEmitOnError": true,
-        "noErrorTruncation": true,
-        "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-
-        // Style Options
+        // Static analysis
+        "strict": true,
+        "allowJs": false,
+        "allowArbitraryExtensions": false,
+        "allowImportingTsExtensions": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "alwaysStrict": true,
         "noImplicitAny": true,
         "noImplicitThis": true,
-        "noImplicitReturns": true,
         "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noUncheckedIndexedAccess": true,
         "noFallthroughCasesInSwitch": true,
+        "noUncheckedSideEffectImports": true,
         "noPropertyAccessFromIndexSignature": true,
+        "exactOptionalPropertyTypes": true,
+        "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "forceConsistentCasingInFileNames": true,
+        "verbatimModuleSyntax": true,
 
         // Recommended Options
-        "strict": true,
         "jsx": "react-jsx",
-        "verbatimModuleSyntax": true,
+        "noEmitOnError": true,
+        "noErrorTruncation": true,
         "isolatedModules": true,
-        "noUncheckedSideEffectImports": true,
         "moduleDetection": "force",
         "skipLibCheck": true
     }

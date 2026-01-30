@@ -7,10 +7,10 @@ import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';
 
 export class TransportLayerSubsystem extends Subsystem {
-  private downstreamModule: DownstreamModule;
-  private upstreamModule: UpstreamModule;
+  private readonly downstreamModule: DownstreamModule;
+  private readonly upstreamModule: UpstreamModule;
 
-  constructor(logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.downstreamModule = new DownstreamModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'), config);
@@ -25,11 +25,11 @@ export class TransportLayerSubsystem extends Subsystem {
     this.downstreamModule.bind();
   }
 
-  getDownstreamModule(): DownstreamModule {
+  public getDownstreamModule(): DownstreamModule {
     return this.downstreamModule;
   }
 
-  getUpstreamModule(): UpstreamModule {
+  public getUpstreamModule(): UpstreamModule {
     return this.upstreamModule;
   }
 

@@ -10,21 +10,21 @@ export class DNSQuestion {
     that this field may be an odd number of octets; no
     padding is used.
    */
-  qName: string;
+  public readonly qName: string[];
   /**
     A two octet code which specifies the type of the query.
     The values for this field include all codes valid for a
     TYPE field, together with some more general codes which
     can match more than one type of RR.
    */
-  qType: DNS_QTYPES;
+  public readonly qType: DNS_QTYPES;
   /**
     A two octet code that specifies the class of the query.
     For example, the QCLASS field is IN for the Internet.
    */
-  qClass: DNS_QCLASSES;
+  public readonly qClass: DNS_QCLASSES;
 
-  constructor(qName: string, qType: DNS_QTYPES, qClass: DNS_QCLASSES) {
+  public constructor(qName: string[], qType: DNS_QTYPES, qClass: DNS_QCLASSES) {
     this.qName = qName;
     this.qType = qType;
     this.qClass = qClass;
