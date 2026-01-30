@@ -14,7 +14,7 @@ export const DefaultConfig: HorizonConfig = {
   },
   transportLayerSubsystem: {
     upstreamModule: {
-      dnsIPv4Address: '',
+      dnsIPv4Address: '0.0.0.0',
       dnsIPv4Port: 1313,
     },
     downstreamModule: {
