@@ -13,9 +13,12 @@ export const DefaultConfig: HorizonConfig = {
     zoneAuthorityModule: {},
   },
   transportLayerSubsystem: {
-    upstreamModule: {},
+    upstreamModule: {
+      dnsIPv4Address: '0.0.0.0',
+      dnsIPv4Port: 1313,
+    },
     downstreamModule: {
-      dnsIPAddress: '0.0.0.0',
+      dnsIPv4Address: '0.0.0.0',
     },
     wireProtocolModule: {},
   },
