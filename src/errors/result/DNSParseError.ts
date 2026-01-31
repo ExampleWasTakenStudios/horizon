@@ -1,4 +1,4 @@
-import type { DNS_RESPONSE_CODES } from '../../modules/transport-layer-subsystem/wire-protocol/DNS-core/constants/DNS_RESPONSE_CODES.js';
+import type { DNS_RESPONSE_CODES } from '../../modules/resolution-subsystem/wire-protocol-module/DNS-core/constants/DNS_RESPONSE_CODES.js';
 import { ResultError } from './ResultError.js';
 
 export class DNSParseError extends ResultError {
