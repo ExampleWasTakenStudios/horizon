@@ -6,7 +6,9 @@ import { ResultError } from '../../errors/result/ResultError.js';
 import type { Logger } from '../../logging/Logger.js';
 import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
-import { IPv4_ADDRESS_REGEX } from './TransportLayerSubsystem.js';
+
+export const IPv4_ADDRESS_REGEX =
+  /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
 export class NetworkModule extends Module {
   private readonly udpSocket: Socket;
@@ -57,7 +59,6 @@ export class NetworkModule extends Module {
    * @param callback The callback to execute when data is received.
    */
   public onReceiveUDP4(callback: (payload: Buffer, rinfo: RemoteInfo) => void): void {
-    this.logger.debug('RECEIVING DATA');
     this.udpSocket.on('message', (msg, rinfo) => {
       callback(msg, rinfo);
     });
