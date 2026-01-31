@@ -24,7 +24,7 @@ export class StubResolverModule extends Module implements Resolver {
     });
   }
 
-  public resolve(query: Buffer): Promise<TResult<Buffer, ResultError>> {
+  public resolveQuery(query: Buffer): Promise<TResult<Buffer, ResultError>> {
     const queryTimeout = this.config.getConfig().resolverSubsystem.queryTimeout;
     const resolverAddress = this.config.getConfig().resolverSubsystem.stubResolverModule.mainResolver.primaryIPv4;
 
