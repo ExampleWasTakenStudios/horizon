@@ -3,7 +3,7 @@ import type { HorizonConfig } from './HorizonConfig.js';
 export const DefaultConfig: HorizonConfig = {
   configFileVersion: 1,
   resolverSubsystem: {
-    queryTimeout: 1,
+    queryTimeout: 5,
     authoritativeServerModule: {},
     recursiveResolverSubsystem: {},
     stubResolverModule: {
