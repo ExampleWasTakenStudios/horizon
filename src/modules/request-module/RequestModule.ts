@@ -20,6 +20,11 @@ export class RequestModule extends Module {
     this.resolutionSubsystem = resolutionSubsystem;
     this.transportLayer = transportLayer;
 
+    this.enable();
+  }
+
+  private enable(): void {
+    // This initiates the logic of the request module.
     this.transportLayer
       .getDownstreamModule()
       .onReceiveUDP4((data, rinfo) => void this.handleQuery(data, rinfo.address, rinfo.port));
