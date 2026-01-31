@@ -6,28 +6,28 @@ import { ResolutionSubsystem } from '../resolution-subsystem/ResolutionSubsystem
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule extends Module {
-  // @ts-expect-error Unused variable necessary for architecture.
-  private readonly _requestModule: RequestModule;
-  private readonly _resolutionSubsystem: ResolutionSubsystem;
-  private readonly _transportLayerSubsystem: TransportLayerSubsystem;
+  // @ts-expect-error Unused variables necessary for architecture
+  private readonly requestModule: RequestModule;
+  private readonly resolutionSubsystem: ResolutionSubsystem;
+  private readonly transportLayerSubsystem: TransportLayerSubsystem;
 
   public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
-    this._transportLayerSubsystem = new TransportLayerSubsystem(
+    this.transportLayerSubsystem = new TransportLayerSubsystem(
       this.logger.spawnSubLogger('TRANSPORT LAYER SUBSYSTEM'),
       this.config
     );
 
-    this._resolutionSubsystem = new ResolutionSubsystem(
-      this._transportLayerSubsystem,
+    this.resolutionSubsystem = new ResolutionSubsystem(
+      this.transportLayerSubsystem,
       this.logger.spawnSubLogger('RESOLUTION SUBSYSTEM'),
       this.config
     );
 
-    this._requestModule = new RequestModule(
-      this._resolutionSubsystem,
-      this._transportLayerSubsystem,
+    this.requestModule = new RequestModule(
+      this.resolutionSubsystem,
+      this.transportLayerSubsystem,
       this.logger.spawnSubLogger('REQUEST MODULE'),
       this.config
     );
