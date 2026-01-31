@@ -19,6 +19,7 @@ export class StubResolverModule extends Module implements Resolver {
     this.inflightQueries = new Map();
 
     this.transportLayer.getUpstreamModule().onReceiveUDP4((payload: Buffer) => {
+      this.logger.debug('RECEIVING DATA');
       this.onIncoming(payload);
     });
   }
@@ -35,6 +36,7 @@ export class StubResolverModule extends Module implements Resolver {
 
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
+        this.logger.verbose('Cleaning up query with ID ', queryId, '. Reason: Timeout');
         this.cleanupInflightQuery(queryId);
       }, queryTimeout * 1000);
 
@@ -59,6 +61,7 @@ export class StubResolverModule extends Module implements Resolver {
       return;
     }
 
+    this.logger.verbose('Received inflight query -> cleaning up.');
     this.cleanupInflightQuery(queryId);
 
     inflightQuery.resolve(Result.ok(data));
