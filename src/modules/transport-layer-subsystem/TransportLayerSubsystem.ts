@@ -4,7 +4,6 @@ import type { Logger } from '../../logging/Logger.js';
 import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
 import { Subsystem } from '../Subsystem.js';
 import { NetworkModule } from './NetworkModule.js';
-import { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
 export const IPv4_ADDRESS_REGEX =
   /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -12,24 +11,13 @@ export const IPv4_ADDRESS_REGEX =
 export class TransportLayerSubsystem extends Subsystem {
   private readonly downstreamModule: NetworkModule;
   private readonly upstreamModule: NetworkModule;
-  private readonly wireProtocolModule: WireProtocolModule;
 
   public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
-    this.wireProtocolModule = new WireProtocolModule(this.logger, this.config);
+    this.downstreamModule = new NetworkModule(this.logger.spawnSubLogger('DOWNSTREAM MODULE'), this.config);
 
-    this.downstreamModule = new NetworkModule(
-      this.wireProtocolModule,
-      this.logger.spawnSubLogger('DOWNSTREAM MODULE'),
-      config
-    );
-
-    this.upstreamModule = new NetworkModule(
-      this.wireProtocolModule,
-      this.logger.spawnSubLogger('UPSTREAM MODULE'),
-      config
-    );
+    this.upstreamModule = new NetworkModule(this.logger.spawnSubLogger('UPSTREAM MODULE'), this.config);
 
     const interfaces = this.getNormalizedIPv4Interfaces();
 

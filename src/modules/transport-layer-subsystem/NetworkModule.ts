@@ -7,61 +7,36 @@ import type { Logger } from '../../logging/Logger.js';
 import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
 import { IPv4_ADDRESS_REGEX } from './TransportLayerSubsystem.js';
-import type { WireProtocolModule } from './wire-protocol/WireProtocolModule.js';
 
 export class NetworkModule extends Module {
   private readonly udpSocket: Socket;
-  private readonly wireProtocolModule: WireProtocolModule;
 
-  public constructor(wireProtocolModule: WireProtocolModule, logger: Logger, config: ConfigManager) {
+  public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
     this.udpSocket = dgram.createSocket({ type: 'udp4' });
 
-    this.udpSocket.on('error', (error) => {
-      this.onError(error);
+    this.onErrorUDP4((error) => {
+      this.logger.error('Error occurred on UDP4 socket. Closing Socket.\nError: ', error);
+      this.closeUDP4();
     });
+
     this.udpSocket.on('close', () => {
-      this.onClose();
+      this.logger.info('Server closed.');
     });
     this.udpSocket.on('listening', () => {
-      this.onListening();
+      const address = this.udpSocket.address();
+      this.logger.info(`Server listening on ${address.address}:${address.port.toString()}.`);
     });
-    this.udpSocket.on('message', (msg, rinfo) => {
-      this.onMessage(msg, rinfo);
-    });
-
-    this.wireProtocolModule = wireProtocolModule;
-  }
-
-  public onMessage(msg: Buffer, rinfo: RemoteInfo): void {
-    const decodedMsg = this.wireProtocolModule.decode(msg);
-    this.logger.debug('Received msg: ', decodedMsg, ' from ', rinfo);
-
-    // The decoded message should be sent to the request module here.
-  }
-
-  public onListening(): void {
-    const address = this.udpSocket.address();
-    this.logger.info(`Server listening on ${address.address}:${address.port.toString()}.`);
-  }
-
-  public onClose(): void {
-    this.logger.info('Server closed.');
-  }
-
-  public onError(error: Error): void {
-    this.logger.error('Server error: ', error);
   }
 
   /**
    * Send a message as buffer to a specified IPv4 address and port.
    * @param msg Message to be sent as buffer.
    * @param address The address to send the message to.
-   * @param port The port to send the message to.
-   * @returns {@link TResult<void, IllegalAddressError>}
+   * @returns `TResult<void, IllegalAddressError>`
    */
-  public sendIPv4UDP(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
+  public sendUDP4(msg: Buffer, address: string, port: number): TResult<void, IllegalAddressError> {
     if (!IPv4_ADDRESS_REGEX.test(address)) {
       return Result.fail(new IllegalAddressError(`${address} is not a valid IPv4 address.`));
     }
@@ -70,8 +45,32 @@ export class NetworkModule extends Module {
       return Result.fail(new IllegalAddressError(`Illegal port received: ${port.toString()}. Must be between 0-65535`));
     }
 
+    this.logger.debug('SENDING DATA UDP4 TO: ', address, ':', port);
+
     this.udpSocket.send(msg, 0, msg.length, port, address);
+
     return Result.ok(undefined);
+  }
+
+  /**
+   * Called whenever data is received on the UDP4 socket.
+   * @param callback The callback to execute when data is received.
+   */
+  public onReceiveUDP4(callback: (payload: Buffer, rinfo: RemoteInfo) => void): void {
+    this.logger.debug('RECEIVING DATA');
+    this.udpSocket.on('message', (msg, rinfo) => {
+      callback(msg, rinfo);
+    });
+  }
+
+  /**
+   * Called whenever an error occurs. An error will ALWAYS cause the socket to be closed. This event exists for callers to detect errors and open a new socket.
+   * @param callback The callback to execute when an error occurs. Gets passed the error has arg.
+   */
+  public onErrorUDP4(callback: (error: Error) => void): void {
+    this.udpSocket.on('error', (error: Error) => {
+      callback(error);
+    });
   }
 
   public bind(address: string, port: number): TResult<void, ResultError> {
@@ -87,7 +86,17 @@ export class NetworkModule extends Module {
     return Result.ok(undefined);
   }
 
+  /**
+   * Closes all sockets managed by this module.
+   */
   public close(): void {
+    this.udpSocket.close();
+  }
+
+  /**
+   * Closes the UDP4 socket managed by this module.
+   */
+  public closeUDP4(): void {
     this.udpSocket.close();
   }
 
