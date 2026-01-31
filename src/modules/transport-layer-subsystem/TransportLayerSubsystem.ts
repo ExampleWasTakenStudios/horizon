@@ -5,9 +5,6 @@ import type { NetworkInterfaceIPv4 } from '../../types/NetworkInterfaceInfo.js';
 import { Subsystem } from '../Subsystem.js';
 import { NetworkModule } from './NetworkModule.js';
 
-export const IPv4_ADDRESS_REGEX =
-  /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-
 export class TransportLayerSubsystem extends Subsystem {
   private readonly downstreamModule: NetworkModule;
   private readonly upstreamModule: NetworkModule;
@@ -27,11 +24,9 @@ export class TransportLayerSubsystem extends Subsystem {
     this.logger.info('Binding modules...');
 
     const downstreamDnsIPv4Address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPv4Address;
-    const upstreamDnsIPv4Address = this.config.getConfig().transportLayerSubsystem.upstreamModule.dnsIPv4Address;
-    const upstreamDnsIPv4Port = this.config.getConfig().transportLayerSubsystem.upstreamModule.dnsIPv4Port;
 
     this.downstreamModule.bind(downstreamDnsIPv4Address, 53);
-    this.upstreamModule.bind(upstreamDnsIPv4Address, upstreamDnsIPv4Port);
+    // The upstream module does not bind to a specific port -> uses random port per request
   }
 
   public getDownstreamModule(): NetworkModule {
