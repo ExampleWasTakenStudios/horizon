@@ -17,7 +17,7 @@ Avoid throwing Exceptions for control flow. Instead, use a functional **Result P
 
 - **Usage:** All functions that can fail must return a `TResult<T, E extends ResultError>`.
 - **Implementation:** The implementation of the result pattern can be found at
-[src/result/Result.ts](../../src/result/Result.ts).
+  [src/result/Result.ts](../../src/result/Result.ts).
 - **Checking:** Callers are forces to check the status of the Result before accessing the data.
 
 **Rationale**: TypeScript Exceptions are opaque and easy to miss in signatures. The Result pattern forces developers to acknowledge and handle potential failures explicitly, leading to cleaner, more maintainable and safer code.

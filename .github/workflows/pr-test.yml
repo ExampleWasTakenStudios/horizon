@@ -74,4 +74,3 @@ jobs:
 
       - name: Run Prettier
         run: pnpm run compile
-
