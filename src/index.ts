@@ -18,8 +18,6 @@ import {
 } from './logging/transports/RotatingFileTransport.js';
 import { HeadModule } from './modules/head-module/HeadModule.js';
 
-// This is a global const, using UPPER_CASE as indication.
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
   // This format is required by the library
@@ -71,5 +69,6 @@ process.on('exit', (code) => {
 });
 
 const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
-// @ts-expect-error Unused variable necessary for architecture.
-const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
+
+const headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
+headModule.start();
