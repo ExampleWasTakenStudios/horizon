@@ -15,6 +15,14 @@ if (currentVersion < MIN_NODE_VERSION) {
   process.exit(1);
 }
 
+if (process.platform !== 'linux') {
+  stderr.write('\n');
+  stderr.write('    CRITICAL ERROR: Unsupported Platform\n');
+  stderr.write(`    Horizon required to be run on Linux platforms.\n`);
+  stderr.write('\n');
+  process.exit(1);
+}
+
 /* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
 const env = dotenv.config({ quiet: true });
 
