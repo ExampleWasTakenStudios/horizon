@@ -31,7 +31,9 @@ export class UpstreamModule extends Module implements NetworkModule, EventSource
 
   public send(data: Buffer, address: string, port: number): void {
     this.logger.debug('Sending data to: ', address, ':', port);
-    this.socket.send(data, port, address, (error) => this.sendCallback(error));
+    this.socket.send(data, port, address, (error) => {
+      this.sendCallback(error);
+    });
   }
 
   public subscribe(listener: EventListener<ReceivedData>): void {
