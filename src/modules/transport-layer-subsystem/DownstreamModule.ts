@@ -30,7 +30,7 @@ export class DownstreamModule extends Module implements NetworkModule, EventSour
 
   public send(data: Buffer, address: string, port: number): void {
     this.logger.debug('Sending data to: ', address, ':', port);
-    this.socket.send(data, port, address);
+    this.socket.send(data, port, address, (error) => this.sendCallback(error));
   }
 
   public subscribe(listener: EventListener<ReceivedData>): void {
@@ -56,5 +56,11 @@ export class DownstreamModule extends Module implements NetworkModule, EventSour
     this.socket.close();
 
     this.logger.info('Stopped.');
+  }
+
+  private sendCallback(error: Error | null): void {
+    if (error) {
+      this.logger.error('Socket error while trying to send: ', error);
+    }
   }
 }
