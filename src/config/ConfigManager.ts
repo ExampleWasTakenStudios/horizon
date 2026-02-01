@@ -1,7 +1,6 @@
 import type { Logger } from '@src/logging/Logger.js';
 import fs from 'fs';
 import JSON5 from 'json5';
-import os from 'node:os';
 import path from 'path';
 import type z from 'zod';
 import { DefaultConfig } from './DefaultConfig.js';
@@ -83,7 +82,7 @@ export class ConfigManager {
 
   private constructConfigPath(): string {
     const devPath = path.join(process.cwd(), '.config', 'Horizon', 'config.json5');
-    const prodPath = path.join(os.homedir(), '.config', 'Horizon', this.filename);
+    const prodPath = path.join('/', 'etc', 'opt', 'Horizon', this.filename);
     return process.env.NODE_ENV === 'dev' ? devPath : prodPath;
   }
 }

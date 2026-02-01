@@ -44,10 +44,6 @@ export const HorizonConfigSchema = z.object({
        * The IPv4 address to which the upstream module will bind to to perform DNS related work.
        */
       dnsIPv4Address: z.ipv4(),
-      /**
-       * The IPv4 port to which the upstream module will bind to to perform DNS related work.
-       */
-      dnsIPv4Port: z.number(),
     }),
     downstreamModule: z.object({
       /**
