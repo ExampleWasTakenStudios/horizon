@@ -1,5 +1,5 @@
-import type { ConfigManager } from '../../config/ConfigManager.js';
-import type { Logger } from '../../logging/Logger.js';
+import type { ConfigManager } from '@src/config/ConfigManager.js';
+import type { Logger } from '@src/logging/Logger.js';
 import { Module } from '../Module.js';
 import type { ResolutionSubsystem } from '../resolution-subsystem/ResolutionSubsystem.js';
 import type { ReceivedData } from '../transport-layer-subsystem/ReceivedData.js';

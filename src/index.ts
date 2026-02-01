@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { HeadModule } from './modules/head-module/HeadModule.js';
 /* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
 const env = dotenv.config({ quiet: true });
 
@@ -13,10 +14,9 @@ import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
 import {
-  RotatingFileTransport,
   type RotatingFileTransportSettings,
+  RotatingFileTransport,
 } from './logging/transports/RotatingFileTransport.js';
-import { HeadModule } from './modules/head-module/HeadModule.js';
 
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',

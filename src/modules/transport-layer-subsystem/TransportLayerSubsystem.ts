@@ -1,5 +1,5 @@
-import type { ConfigManager } from '../../config/ConfigManager.js';
-import type { Logger } from '../../logging/Logger.js';
+import { ConfigManager } from '@src/config/ConfigManager.js';
+import { Logger } from '@src/logging/Logger.js';
 import { Subsystem } from '../Subsystem.js';
 import { DownstreamModule } from './DownstreamModule.js';
 import { UpstreamModule } from './UpstreamModule.js';

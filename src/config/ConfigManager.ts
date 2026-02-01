@@ -1,11 +1,11 @@
+import type { Logger } from '@src/logging/Logger.js';
+import fs from 'fs';
 import JSON5 from 'json5';
-import fs from 'node:fs';
 import os from 'node:os';
-import path from 'node:path';
-import * as z from 'zod';
-import type { Logger } from '../logging/Logger.js';
+import path from 'path';
+import type z from 'zod';
 import { DefaultConfig } from './DefaultConfig.js';
-import { HorizonConfigSchema, type HorizonConfig } from './HorizonConfig.js';
+import { type HorizonConfig, HorizonConfigSchema } from './HorizonConfig.js';
 
 export class ConfigManager {
   private readonly logger: Logger;

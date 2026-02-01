@@ -1,9 +1,9 @@
-import type { ConfigManager } from '../../config/ConfigManager.js';
-import type { EventListener, EventSource } from '../../events/EventSource.js';
-import type { Logger } from '../../logging/Logger.js';
+import { ConfigManager } from '@src/config/ConfigManager.js';
+import type { EventListener, EventSource } from '@src/events/EventSource.js';
+import { Logger } from '@src/logging/Logger.js';
 import { Subsystem } from '../Subsystem.js';
 import type { ReceivedData } from '../transport-layer-subsystem/ReceivedData.js';
-import type { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
+import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 import type { Resolver } from './Resolver.js';
 import { StubResolverModule } from './StubResolverModule.js';
 

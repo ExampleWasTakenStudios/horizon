@@ -1,5 +1,5 @@
-import type { ConfigManager } from '../config/ConfigManager.js';
-import type { Logger } from '../logging/Logger.js';
+import type { ConfigManager } from '@src/config/ConfigManager.js';
+import type { Logger } from '@src/logging/Logger.js';
 
 export abstract class Module {
   protected logger: Logger;

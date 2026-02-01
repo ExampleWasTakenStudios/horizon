@@ -1,5 +1,5 @@
-import { ConfigManager } from '../../config/ConfigManager.js';
-import { Logger } from '../../logging/Logger.js';
+import { ConfigManager } from '@src/config/ConfigManager.js';
+import { Logger } from '@src/logging/Logger.js';
 import { Module } from '../Module.js';
 import { RequestModule } from '../request-module/RequestModule.js';
 import { ResolutionSubsystem } from '../resolution-subsystem/ResolutionSubsystem.js';
