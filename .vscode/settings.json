@@ -3,7 +3,7 @@
     "typescript.tsdk": "node_modules\\typescript\\lib",
     "eslint.lintTask.enable": true,
     "eslint.format.enable": true,
-    "eslint.useFlatConfig": false,
+    "eslint.useFlatConfig": true,
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.fixAll.eslint": "explicit",
