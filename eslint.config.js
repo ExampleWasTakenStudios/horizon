@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import recommendedConfig from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
@@ -10,6 +11,9 @@ export default tseslint.config(
   {
     name: 'Main Config',
     languageOptions: {
+      globals: {
+        ...globals.node,
+      },
       parserOptions: {
         projectService: true,
         tsconfigRootDir: import.meta.dirname,
@@ -142,6 +146,6 @@ export default tseslint.config(
   },
   {
     // DO NOT ADD ANY PROPERTIES TO THIS OBJECT
-    ignores: ['node_modules', 'dist', 'assets'],
+    ignores: ['node_modules', 'dist', 'out'],
   }
 );
