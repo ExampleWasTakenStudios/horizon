@@ -7,7 +7,7 @@ import path from 'node:path';
 
 const str = JSON.stringify;
 
-const envConfig = dotenv.config({ debug: true, path: './prod.env', quiet: true }).parsed;
+const envConfig = dotenv.config({ quiet: true, path: './prod.env' }).parsed;
 
 if (!envConfig) {
   console.error(`
