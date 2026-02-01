@@ -9,7 +9,6 @@
     "scripts": {
         "dev": "tsx watch ./src/index.ts",
         "compile": "tsc -p ./tsconfig.json --noEmit",
-        "bundle": "node ./scripts/bundle.js",
         "build": "tsc -p ./tsconfig.json && node ./scripts/bundle.js",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
