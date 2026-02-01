@@ -1,17 +1,13 @@
 import type { ConfigManager } from '../../config/ConfigManager.js';
-import type { ResultError } from '../../errors/result/ResultError.js';
+import type { EventListener, EventSource } from '../../events/EventSource.js';
 import type { Logger } from '../../logging/Logger.js';
-import type { TResult } from '../../result/Result.js';
 import { Subsystem } from '../Subsystem.js';
+import type { ReceivedData } from '../transport-layer-subsystem/ReceivedData.js';
 import type { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
+import type { Resolver } from './Resolver.js';
 import { StubResolverModule } from './StubResolverModule.js';
 
-export interface InflightQuery {
-  timeout: NodeJS.Timeout;
-  resolve(result: TResult<Buffer, ResultError>): void;
-}
-
-export class ResolutionSubsystem extends Subsystem {
+export class ResolutionSubsystem extends Subsystem implements Resolver, EventSource<ReceivedData> {
   private readonly isAuthoritative: boolean;
   private readonly isRecursive: boolean;
 
@@ -30,18 +26,29 @@ export class ResolutionSubsystem extends Subsystem {
     this.stubModule = new StubResolverModule(this.transportLayer, logger, config);
   }
 
-  public async resolveQuery(query: Buffer): Promise<TResult<Buffer, ResultError>> {
+  public resolveQuery(query: Buffer): void {
     if (this.isAuthoritative) {
-      // TODO: forward the query to the authoritative module
+      // TODO: forward query to authoritative module
     }
 
     if (!this.isAuthoritative && this.isRecursive) {
-      // TODO: forward the query to the recursive resolver module
+      // TODO: forward query to recursive module
     }
 
-    // Stub Resolver Mode -> forward to stub resolver module
-    this.logger.verbose('Authoritative and Recursive Resolvers are inactive -> falling back to Stub Resolver Mode.');
+    // Fallback to stub resolver mode
+    this.stubModule.resolveQuery(query);
+  }
 
-    return this.stubModule.resolveQuery(query);
+  public start(): void {
+    this.stubModule.start();
+  }
+
+  public stop(): void {
+    this.stubModule.stop();
+  }
+
+  public subscribe(listener: EventListener<ReceivedData>): void {
+    // Proxy the subscriptions to the internal component
+    this.stubModule.subscribe(listener);
   }
 }

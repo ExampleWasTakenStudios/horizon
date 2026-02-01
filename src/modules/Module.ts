@@ -9,4 +9,18 @@ export abstract class Module {
     this.logger = logger;
     this.config = config;
   }
+
+  /**
+   * Start the module.
+   *
+   * This method should enable the module to start performing its business logic.
+   */
+  public abstract start(): void;
+
+  /**
+   * Stops the module.
+   *
+   * This method should cause the module to terminate all its operation for a graceful shutdown.
+   */
+  public abstract stop(): void;
 }

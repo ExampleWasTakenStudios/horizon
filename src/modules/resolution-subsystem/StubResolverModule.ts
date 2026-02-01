@@ -1,79 +1,40 @@
 import type { ConfigManager } from '../../config/ConfigManager.js';
-import { ResultError } from '../../errors/result/ResultError.js';
+import { EventDispatcher } from '../../events/EventDispatcher.js';
+import type { EventListener, EventSource } from '../../events/EventSource.js';
 import type { Logger } from '../../logging/Logger.js';
-import { Result, type TResult } from '../../result/Result.js';
 import { Module } from '../Module.js';
+import type { ReceivedData } from '../transport-layer-subsystem/ReceivedData.js';
 import type { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
-import type { InflightQuery } from './ResolutionSubsystem.js';
 import type { Resolver } from './Resolver.js';
 
-export class StubResolverModule extends Module implements Resolver {
+export class StubResolverModule extends Module implements Resolver, EventSource<ReceivedData> {
   private readonly transportLayer: TransportLayerSubsystem;
-
-  private readonly inflightQueries: Map<number, InflightQuery>;
+  private readonly dispatcher: EventDispatcher<ReceivedData>;
 
   public constructor(transportLayer: TransportLayerSubsystem, logger: Logger, config: ConfigManager) {
     super(logger, config);
     this.transportLayer = transportLayer;
-
-    this.inflightQueries = new Map();
-
-    this.transportLayer.getUpstreamModule().onReceiveUDP4((payload: Buffer) => {
-      this.logger.debug('RECEIVING DATA');
-      this.onIncoming(payload);
-    });
+    this.dispatcher = new EventDispatcher();
   }
 
-  public resolveQuery(query: Buffer): Promise<TResult<Buffer, ResultError>> {
-    const queryTimeout = this.config.getConfig().resolverSubsystem.queryTimeout;
+  public resolveQuery(query: Buffer): void {
     const resolverAddress = this.config.getConfig().resolverSubsystem.stubResolverModule.mainResolver.primaryIPv4;
 
-    if (query.length < 2) {
-      return Promise.resolve(Result.fail(new ResultError('[STUB RESOLVER] Got invalid DNS query.')));
-    }
+    this.transportLayer.getUpstreamModule().send(query, resolverAddress, 53);
+  }
 
-    const queryId = query.readUint16BE(0);
+  public subscribe(listener: EventListener<ReceivedData>): void {
+    this.dispatcher.subscribe(listener);
+  }
 
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
-        this.logger.verbose('Cleaning up query with ID ', queryId, '. Reason: Timeout');
-        this.cleanupInflightQuery(queryId);
-      }, queryTimeout * 1000);
-
-      this.inflightQueries.set(queryId, { timeout: timeout, resolve: resolve });
-
-      this.transportLayer.getUpstreamModule().sendUDP4(query, resolverAddress, 53);
+  public start(): void {
+    // Reverse Path: Listen to upstream and dispatch (forward) upstream's events to our subscribers.
+    this.transportLayer.getUpstreamModule().subscribe((data) => {
+      this.dispatcher.dispatch(data);
     });
   }
 
-  private onIncoming(data: Buffer): void {
-    if (data.length < 2) {
-      // Data too short to be a DNS message so we ignore it.
-      return;
-    }
-
-    const queryId = data.readUint16BE(0);
-
-    const inflightQuery = this.inflightQueries.get(queryId);
-
-    if (!inflightQuery) {
-      // We are not waiting on this query so we ignore it.
-      return;
-    }
-
-    this.logger.verbose('Received inflight query -> cleaning up.');
-    this.cleanupInflightQuery(queryId);
-
-    inflightQuery.resolve(Result.ok(data));
-  }
-
-  private cleanupInflightQuery(id: number): void {
-    const query = this.inflightQueries.get(id);
-    if (!query) {
-      return;
-    }
-
-    clearTimeout(query.timeout);
-    this.inflightQueries.delete(id);
+  public stop(): void {
+    return;
   }
 }

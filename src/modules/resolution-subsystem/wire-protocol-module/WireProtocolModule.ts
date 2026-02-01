@@ -23,4 +23,12 @@ export class WireProtocolModule extends Module {
     // TODO: implement DNS packet encoder
     return Buffer.from('');
   }
+
+  public start(): void {
+    return;
+  }
+
+  public stop(): void {
+    return;
+  }
 }

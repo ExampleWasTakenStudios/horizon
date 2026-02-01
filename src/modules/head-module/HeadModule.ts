@@ -6,7 +6,6 @@ import { ResolutionSubsystem } from '../resolution-subsystem/ResolutionSubsystem
 import { TransportLayerSubsystem } from '../transport-layer-subsystem/TransportLayerSubsystem.js';
 
 export class HeadModule extends Module {
-  // @ts-expect-error Unused variables necessary for architecture
   private readonly requestModule: RequestModule;
   private readonly resolutionSubsystem: ResolutionSubsystem;
   private readonly transportLayerSubsystem: TransportLayerSubsystem;
@@ -31,5 +30,17 @@ export class HeadModule extends Module {
       this.logger.spawnSubLogger('REQUEST MODULE'),
       this.config
     );
+  }
+
+  public start(): void {
+    this.requestModule.start();
+    this.resolutionSubsystem.start();
+    this.transportLayerSubsystem.start();
+  }
+
+  public stop(): void {
+    this.requestModule.stop();
+    this.resolutionSubsystem.stop();
+    this.transportLayerSubsystem.stop();
   }
 }
