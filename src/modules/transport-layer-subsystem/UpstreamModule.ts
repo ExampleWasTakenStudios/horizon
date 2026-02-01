@@ -16,10 +16,21 @@ export class UpstreamModule extends Module implements NetworkModule, EventSource
     super(logger, config);
 
     this.socket = dgram.createSocket({ type: 'udp4' });
+
+    this.socket.on('listening', () => {
+      this.logger.verbose('Listening...');
+    });
+
+    this.socket.on('error', (error) => {
+      this.logger.error('Error occurred on socket. Closing.\nError: ', error);
+      this.socket.close();
+    });
+
     this.dispatcher = new EventDispatcher();
   }
 
   public send(data: Buffer, address: string, port: number): void {
+    this.logger.debug('Sending data to: ', address, ':', port);
     this.socket.send(data, port, address);
   }
 
@@ -29,6 +40,7 @@ export class UpstreamModule extends Module implements NetworkModule, EventSource
 
   public start(): void {
     this.socket.on('message', (msg, rinfo) => {
+      this.logger.debug('Received data from: ', rinfo);
       this.dispatcher.dispatch({ buf: msg, rinfo });
     });
   }

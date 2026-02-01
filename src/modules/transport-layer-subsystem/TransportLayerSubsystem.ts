@@ -11,8 +11,8 @@ export class TransportLayerSubsystem extends Subsystem {
   public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
 
-    this.upstreamModule = new UpstreamModule(logger, config);
-    this.downstreamModule = new DownstreamModule(logger, config);
+    this.upstreamModule = new UpstreamModule(logger.spawnSubLogger('UPSTREAM MODULE'), config);
+    this.downstreamModule = new DownstreamModule(logger.spawnSubLogger('DOWNSTREAM MODULE'), config);
   }
 
   public start(): void {

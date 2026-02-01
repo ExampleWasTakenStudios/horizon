@@ -15,10 +15,21 @@ export class DownstreamModule extends Module implements NetworkModule, EventSour
   public constructor(logger: Logger, config: ConfigManager) {
     super(logger, config);
     this.socket = dgram.createSocket({ type: 'udp4' });
+
+    this.socket.on('listening', () => {
+      this.logger.info('Listening...');
+    });
+
+    this.socket.on('error', (error) => {
+      this.logger.error('Error occurred on socket. Closing.\nError: ', error);
+      this.socket.close();
+    });
+
     this.dispatcher = new EventDispatcher();
   }
 
   public send(data: Buffer, address: string, port: number): void {
+    this.logger.debug('Sending data to: ', address, ':', port);
     this.socket.send(data, port, address);
   }
 
@@ -28,9 +39,14 @@ export class DownstreamModule extends Module implements NetworkModule, EventSour
 
   public start(): void {
     this.socket.on('message', (msg, rinfo) => {
+      this.logger.debug('Received data from: ', rinfo);
       this.dispatcher.dispatch({ buf: msg, rinfo });
     });
-    this.socket.bind(53);
+
+    const address = this.config.getConfig().transportLayerSubsystem.downstreamModule.dnsIPv4Address;
+
+    this.logger.info(`Binding to ${address}:53`);
+    this.socket.bind(53, address);
   }
 
   public stop(): void {
