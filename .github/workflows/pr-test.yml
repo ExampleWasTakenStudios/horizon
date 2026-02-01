@@ -54,7 +54,7 @@ jobs:
         run: pnpm run prettier:check
 
   compile:
-    name: Prettier
+    name: Compile
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.draft == false }}
     steps:
