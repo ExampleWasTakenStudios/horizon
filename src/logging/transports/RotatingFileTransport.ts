@@ -42,7 +42,6 @@ export class RotatingFileTransport implements BaseTransport {
     filename: string,
     settings: RotatingFileTransportSettings,
     maxLevel: LOG_LEVEL,
-    // eslint-disable-next-line @typescript-eslint/naming-convention
     DEV_DO_NOT_USE_IN_PROD_clearLogsOnStartup?: boolean
   ) {
     this.maxLevel = maxLevel;

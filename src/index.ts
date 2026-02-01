@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { HeadModule } from './modules/head-module/HeadModule.js';
 /* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
 const env = dotenv.config({ quiet: true });
 
@@ -13,13 +14,10 @@ import { ConfigManager } from './config/ConfigManager.js';
 import { Logger } from './logging/Logger.js';
 import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
 import {
-  RotatingFileTransport,
   type RotatingFileTransportSettings,
+  RotatingFileTransport,
 } from './logging/transports/RotatingFileTransport.js';
-import { HeadModule } from './modules/head-module/HeadModule.js';
 
-// This is a global const, using UPPER_CASE as indication.
-// eslint-disable-next-line @typescript-eslint/naming-convention
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
   // This format is required by the library
@@ -40,12 +38,12 @@ const rotatingFileTransport = new RotatingFileTransport(
   process.env.HORIZON_FILE_LOG_LEVEL
 );
 
-const mainLogger = new Logger('MAIN');
-mainLogger.addTransport(consoleTransport);
-mainLogger.addTransport(rotatingFileTransport);
+const logger = new Logger('MAIN');
+logger.addTransport(consoleTransport);
+logger.addTransport(rotatingFileTransport);
 
 process.on('uncaughtException', (error, origin) => {
-  mainLogger.fatal(
+  logger.fatal(
     'Uncaught Exception - Attempting cleanup and graceful exit...',
     '\nError: ',
     error,
@@ -53,23 +51,35 @@ process.on('uncaughtException', (error, origin) => {
     origin
   );
 
-  // TODO: destroy all modules, end and file streams etc,
+  // TODO:
+  logger.info('Stopping head module.');
+  headModule.stop();
 
+  logger.warn('Exiting.');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  mainLogger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
+  logger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
 });
 
 process.on('warning', (warning) => {
-  mainLogger.warn('Node warning: ', warning);
+  logger.warn('Node warning: ', warning);
 });
 
 process.on('exit', (code) => {
-  mainLogger.info('Exiting with exit code ', code);
+  logger.info('Exiting with exit code ', code);
 });
 
-const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
-// @ts-expect-error Unused variable necessary for architecture.
-const _headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
+process.on('SIGINT', () => {
+  logger.info('Received SIGINT. Shutting down gracefully...');
+
+  headModule.stop();
+
+  process.exit(0);
+});
+
+const configManager = new ConfigManager(logger.spawnSubLogger('CONFIG MANAGER'));
+
+const headModule = new HeadModule(logger.spawnSubLogger('HEAD MODULE'), configManager);
+headModule.start();

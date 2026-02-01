@@ -1,5 +1,5 @@
-import { PromiseRejectError } from '../errors/result/PromiseRejectError.js';
-import type { ResultError } from '../errors/result/ResultError.js';
+import { PromiseRejectError } from '@src/errors/result/PromiseRejectError.js';
+import type { ResultError } from '@src/errors/result/ResultError.js';
 
 export type TResult<T, E extends ResultError> = Success<T, never> | Failure<never, E>;
 

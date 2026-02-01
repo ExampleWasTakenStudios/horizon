@@ -1,4 +1,4 @@
-import type { int16, int32, int8, uint16, uint32, uint8 } from '../../../../types/number-types.js';
+import type { int16, int32, int8, uint16, uint32, uint8 } from '@src/types/number-types.js';
 import { Cursor } from './Cursor.js';
 
 /**

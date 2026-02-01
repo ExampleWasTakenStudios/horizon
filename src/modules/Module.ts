@@ -1,5 +1,5 @@
-import type { ConfigManager } from '../config/ConfigManager.js';
-import type { Logger } from '../logging/Logger.js';
+import type { ConfigManager } from '@src/config/ConfigManager.js';
+import type { Logger } from '@src/logging/Logger.js';
 
 export abstract class Module {
   protected logger: Logger;
@@ -9,4 +9,18 @@ export abstract class Module {
     this.logger = logger;
     this.config = config;
   }
+
+  /**
+   * Start the module.
+   *
+   * This method should enable the module to start performing its business logic.
+   */
+  public abstract start(): void;
+
+  /**
+   * Stops the module.
+   *
+   * This method should cause the module to terminate all its operation for a graceful shutdown.
+   */
+  public abstract stop(): void;
 }

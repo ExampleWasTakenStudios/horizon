@@ -2,15 +2,41 @@ import * as z from 'zod';
 
 export const HorizonConfigSchema = z.object({
   configFileVersion: z.number(),
-  headModule: z.object({}),
-  configModule: z.object({}),
   resolverSubsystem: z.object({
+    /**
+     * How long a pending query should be considered alive. (in seconds)
+     */
+    queryTimeout: z.number(),
     authoritativeServerModule: z.object({}),
     recursiveResolverSubsystem: z.object({}),
-  }),
-  zoneSubsystem: z.object({
-    zoneLoaderModule: z.object({}),
-    zoneAuthorityModule: z.object({}),
+    stubResolverModule: z.object({
+      /**
+       * The main foreign resolver to be used by Horizon when in stub resolver mode.
+       */
+      mainResolver: z.object({
+        /**
+         * The primary IPv4 address of the main resolver.
+         */
+        primaryIPv4: z.ipv4(),
+        /**
+         * The secondary IPv4 address of the main resolver. (optional)
+         */
+        secondaryIPv4: z.optional(z.ipv4()),
+      }),
+      /**
+       * The fallback resolver to be used by Horizon when the main resolver is not reachable.
+       */
+      fallbackResolver: z.object({
+        /**
+         * The primary IPv4 address of the fallback resolver.
+         */
+        primaryIPv4: z.ipv4(),
+        /**
+         * The secondary IPv4 address of the fallback resolver. (optional)
+         */
+        secondaryIPv4: z.optional(z.ipv4()),
+      }),
+    }),
   }),
   transportLayerSubsystem: z.object({
     upstreamModule: z.object({
@@ -29,9 +55,7 @@ export const HorizonConfigSchema = z.object({
        */
       dnsIPv4Address: z.ipv4(),
     }),
-    wireProtocolModule: z.object({}),
   }),
-  analyticsModule: z.object({}),
 });
 
 export type HorizonConfig = z.infer<typeof HorizonConfigSchema>;

@@ -2,15 +2,20 @@ import type { HorizonConfig } from './HorizonConfig.js';
 
 export const DefaultConfig: HorizonConfig = {
   configFileVersion: 1,
-  headModule: {},
-  configModule: {},
   resolverSubsystem: {
+    queryTimeout: 5,
     authoritativeServerModule: {},
     recursiveResolverSubsystem: {},
-  },
-  zoneSubsystem: {
-    zoneLoaderModule: {},
-    zoneAuthorityModule: {},
+    stubResolverModule: {
+      mainResolver: {
+        primaryIPv4: '1.1.1.1',
+        secondaryIPv4: '1.0.0.1',
+      },
+      fallbackResolver: {
+        primaryIPv4: '8.8.8.8',
+        secondaryIPv4: '8.8.4.4',
+      },
+    },
   },
   transportLayerSubsystem: {
     upstreamModule: {
@@ -20,7 +25,5 @@ export const DefaultConfig: HorizonConfig = {
     downstreamModule: {
       dnsIPv4Address: '0.0.0.0',
     },
-    wireProtocolModule: {},
   },
-  analyticsModule: {},
 };
