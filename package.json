@@ -7,7 +7,8 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "dev": "tsx watch ./src/index.ts",
+        "dev": "authbind --deep pnpm run authbind",
+        "authbind": "tsx watch ./src/index.ts",
         "compile": "tsc -p ./tsconfig.json --noEmit",
         "build": "tsc -p ./tsconfig.json && node ./scripts/bundle.js",
         "lint": "eslint .",
