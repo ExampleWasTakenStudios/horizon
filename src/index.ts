@@ -1,5 +1,20 @@
 import dotenv from 'dotenv';
-import { HeadModule } from './modules/head-module/HeadModule.js';
+import { stderr } from 'process';
+import type { RotatingFileTransportSettings } from './logging/transports/RotatingFileTransport.js';
+
+const MIN_NODE_VERSION = 25;
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+const currentVersion = parseInt(process.versions.node.split('.')[0]!, 10);
+if (currentVersion < MIN_NODE_VERSION) {
+  stderr.write('\n');
+  stderr.write('    CRITICAL ERROR: Unsupported Node.js Version\n');
+  stderr.write(`    You are running Node.js ${currentVersion.toString()}\n`);
+  stderr.write(`    Horizon requires Node.js ${MIN_NODE_VERSION.toString()} or later to run.\n`);
+  stderr.write('    Please update your Node.js installation.\n');
+  stderr.write('\n');
+  process.exit(1);
+}
+
 /* --- THIS MUST BE THE FIRST THING TO BE EXECUTED */
 const env = dotenv.config({ quiet: true });
 
@@ -9,14 +24,13 @@ if (env.error) {
   throw env.error;
 }
 
-import path from 'path';
-import { ConfigManager } from './config/ConfigManager.js';
-import { Logger } from './logging/Logger.js';
-import { ConsoleTransport } from './logging/transports/ConsoleTransport.js';
-import {
-  type RotatingFileTransportSettings,
-  RotatingFileTransport,
-} from './logging/transports/RotatingFileTransport.js';
+// These dynamic imports are needed to avoid hoisting so that the code above runs before these are imported.
+const path = await import('node:path');
+const { ConfigManager } = await import('./config/ConfigManager.js');
+const { Logger } = await import('./logging/Logger.js');
+const { ConsoleTransport } = await import('./logging/transports/ConsoleTransport.js');
+const { RotatingFileTransport } = await import('./logging/transports/RotatingFileTransport.js');
+const { HeadModule } = await import('./modules/head-module/HeadModule.js');
 
 const ROTATING_STREAM_SETTINGS: RotatingFileTransportSettings = {
   interval: '1d',
@@ -55,7 +69,12 @@ process.on('uncaughtException', (error, origin) => {
 
   // TODO:
   logger.info('Stopping head module.');
-  headModule.stop();
+
+  // This is indeed not unnecessary but ESLint doesn't realize that this function may be called before headModule has been initialized.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (headModule) {
+    headModule.stop();
+  }
 
   logger.warn('Exiting.');
   process.exit(1);
@@ -76,7 +95,11 @@ process.on('exit', (code) => {
 process.on('SIGINT', () => {
   logger.info('Received SIGINT. Shutting down gracefully...');
 
-  headModule.stop();
+  // This is indeed not unnecessary but ESLint doesn't realize that this function may be called before headModule has been initialized.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (headModule) {
+    headModule.stop();
+  }
 
   process.exit(0);
 });
