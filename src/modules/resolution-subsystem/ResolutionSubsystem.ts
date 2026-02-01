@@ -48,7 +48,7 @@ export class ResolutionSubsystem extends Subsystem implements Resolver, EventSou
   }
 
   public subscribe(listener: EventListener<ReceivedData>): void {
-    // Proxy the subscriptions to the internal component
+    // Proxy the subscriptions to the internal components
     this.stubModule.subscribe(listener);
   }
 }
