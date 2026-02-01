@@ -20,7 +20,7 @@ Once a config file has either been created or read the configuration data is loa
 The config is stored in different locations based on the NODE_ENV env var:
 
 - `dev`: `process.cwd()/.config/Horizon/config.json5`
-- `prod`: `os.homedir()/.config/Horizon/config.json5`
+- `prod`: `etc/opt/Horizon/config.json5`
 
 ---
 
