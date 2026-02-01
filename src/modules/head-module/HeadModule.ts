@@ -39,8 +39,12 @@ export class HeadModule extends Module {
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
+
     this.requestModule.stop();
     this.resolutionSubsystem.stop();
     this.transportLayerSubsystem.stop();
+
+    this.logger.info('Stopped.');
   }
 }

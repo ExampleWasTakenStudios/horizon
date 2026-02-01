@@ -46,6 +46,11 @@ export class UpstreamModule extends Module implements NetworkModule, EventSource
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
+
+    this.logger.verbose('Closing socket...');
     this.socket.close();
+
+    this.logger.info('Stopped.');
   }
 }

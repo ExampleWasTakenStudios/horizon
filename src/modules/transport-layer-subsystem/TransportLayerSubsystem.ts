@@ -21,8 +21,12 @@ export class TransportLayerSubsystem extends Subsystem {
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
+
     this.downstreamModule.stop();
     this.upstreamModule.stop();
+
+    this.logger.info('Stopped.');
   }
 
   public getDownstreamModule(): DownstreamModule {

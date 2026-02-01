@@ -42,7 +42,18 @@ export class RequestModule extends Module {
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
+
+    this.logger.verbose('Clearing inflight query timeouts...');
+    for (const current of this.inflightQueries) {
+      const [, query] = current;
+      clearTimeout(query.timeout);
+    }
+
+    this.logger.verbose('Clearing inflight queries.');
     this.inflightQueries.clear();
+
+    this.logger.info('Stopped.');
   }
 
   /**

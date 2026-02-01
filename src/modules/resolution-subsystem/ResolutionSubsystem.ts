@@ -44,7 +44,9 @@ export class ResolutionSubsystem extends Subsystem implements Resolver, EventSou
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
     this.stubModule.stop();
+    this.logger.info('Stopped.');
   }
 
   public subscribe(listener: EventListener<ReceivedData>): void {

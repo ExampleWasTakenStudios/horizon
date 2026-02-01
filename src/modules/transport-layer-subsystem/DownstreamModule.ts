@@ -50,6 +50,11 @@ export class DownstreamModule extends Module implements NetworkModule, EventSour
   }
 
   public stop(): void {
+    this.logger.verbose('Stopping...');
+
+    this.logger.verbose('Closing socket...');
     this.socket.close();
+
+    this.logger.info('Stopped.');
   }
 }

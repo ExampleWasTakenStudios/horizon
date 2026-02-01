@@ -35,6 +35,7 @@ export class StubResolverModule extends Module implements Resolver, EventSource<
   }
 
   public stop(): void {
+    this.logger.info('Stopped.');
     return;
   }
 }

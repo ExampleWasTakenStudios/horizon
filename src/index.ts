@@ -38,12 +38,12 @@ const rotatingFileTransport = new RotatingFileTransport(
   process.env.HORIZON_FILE_LOG_LEVEL
 );
 
-const mainLogger = new Logger('MAIN');
-mainLogger.addTransport(consoleTransport);
-mainLogger.addTransport(rotatingFileTransport);
+const logger = new Logger('MAIN');
+logger.addTransport(consoleTransport);
+logger.addTransport(rotatingFileTransport);
 
 process.on('uncaughtException', (error, origin) => {
-  mainLogger.fatal(
+  logger.fatal(
     'Uncaught Exception - Attempting cleanup and graceful exit...',
     '\nError: ',
     error,
@@ -52,26 +52,34 @@ process.on('uncaughtException', (error, origin) => {
   );
 
   // TODO:
-  mainLogger.info('Stopping head module.');
+  logger.info('Stopping head module.');
   headModule.stop();
 
-  mainLogger.warn('Exiting.');
+  logger.warn('Exiting.');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  mainLogger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
+  logger.error('Unhandled Promise Rejection!', '\nReason: ', reason, '\n Promise: ', promise);
 });
 
 process.on('warning', (warning) => {
-  mainLogger.warn('Node warning: ', warning);
+  logger.warn('Node warning: ', warning);
 });
 
 process.on('exit', (code) => {
-  mainLogger.info('Exiting with exit code ', code);
+  logger.info('Exiting with exit code ', code);
 });
 
-const configManager = new ConfigManager(mainLogger.spawnSubLogger('CONFIG MANAGER'));
+process.on('SIGINT', () => {
+  logger.info('Received SIGINT. Shutting down gracefully...');
 
-const headModule = new HeadModule(mainLogger.spawnSubLogger('HEAD MODULE'), configManager);
+  headModule.stop();
+
+  process.exit(0);
+});
+
+const configManager = new ConfigManager(logger.spawnSubLogger('CONFIG MANAGER'));
+
+const headModule = new HeadModule(logger.spawnSubLogger('HEAD MODULE'), configManager);
 headModule.start();
