@@ -42,6 +42,8 @@ const logger = new Logger('MAIN');
 logger.addTransport(consoleTransport);
 logger.addTransport(rotatingFileTransport);
 
+logger.info(`Bootstrapping Horizon ${process.env.HORIZON_VERSION} (${process.env.HORIZON_COMMIT_HASH})`);
+
 process.on('uncaughtException', (error, origin) => {
   logger.fatal(
     'Uncaught Exception - Attempting cleanup and graceful exit...',
