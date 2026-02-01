@@ -51,8 +51,11 @@ process.on('uncaughtException', (error, origin) => {
     origin
   );
 
-  // TODO: destroy all modules, end and file streams etc,
+  // TODO:
+  mainLogger.info('Stopping head module.');
+  headModule.stop();
 
+  mainLogger.warn('Exiting.');
   process.exit(1);
 });
 
