@@ -4,13 +4,14 @@ This document describes how Horizon is released. This includes stable release as
 It also covers the versioning used by Horizon.
 
 ## Versioning
-Horizon uses the [semver](https://semver.org/) principle for its releases.
+Horizon uses a modified version of the [semver](https://semver.org/) principle for its releases that follows the format **`YY.MINOR.PATCH`**. This style of versioning is also known as `CalVer`. As there is no official specification for CalVer, we use the semver spec as reference for precedence etc.
 
-As Horizon it not a library used within other projects, but instead is intended to run independently on a users machine, the concept of breaking changes does not apply to it. Because of that, the `MAJOR` version of the semver string, indicates the latter two digits of the year the version was released in. 
+- **Major (`YY`):** The last two digits of the release year (e.g., `26` for 2026).
+- **Minor:** Incremented for new features or significant changes within the year.
+- **Patch:** Incremented for bug fixes and maintenance.
 
-The meanings of `MINOR` and `PATCH` are unchanged.
-
-Version `x.2.4` released in 2026 would therefore be `26.2.4`.
+> [!NOTE]
+> Breaking changes are usually handled gracefully. E.g. config files will be updated to new standards, versions, etc. along with proper deprecation notices.
 
 ## Pre-Releases
 Horizon pre-releases are also released under the semver standard.
@@ -28,15 +29,35 @@ All pre-releases are identified by the appropriate suffix in the version string.
 ## Releases
 Horizon is released in continuous order. That means there are not LTS releases or similar.
 
-Once the decision has been made to release the current feature set as a new release, a release branch is created. This marks the end of the feature contribution for that release.
+Once the decision has been made to release the current feature set as a new release, a release branch (see [git-flow.md](./git-flow.md)) is created. This marks the end of the feature contribution for that release and the start of the release procedure outlined below.
 
-There are three or four stages of leading up to a release:
+There are up to four but at least three stages leading up to a release:
 
 ### 1. Alpha
-Depending on the complexity of the additions, developers may elect to start an alpha phase to indicate that while features are generally considered working, bugs are very likely.
+Depending on the complexity of the additions, developers may elect to start an alpha phase to indicate that, while features are generally considered working, bugs are very likely.
 
 As this does not apply to all releases, the alpha stage may be skipped.
 
 ### 2. Beta
+The beta stage indicates releases that are generally considered working but may still contain bugs.
 
+The beta stage is mandatory for all releases and is entered into as soon as the release branch has been created, unless it has been decided that there would be an alpha stage.
 
+If there was an alpha stage, the beta stage follows it.
+
+### 3. Release Candidate
+Release candidates (RCs) are beta versions that are considered stable enough for a stable release. The goal of the RCs is to give the software a final grace period during which bugs may be fixed without requiring a full release cycle.
+
+The Release Candidate stage follows the beta stage and is mandatory for all releases.
+
+### 4. Stable Release
+The stable release is a full production release. The software is considered stable enough to work in full production environments.
+
+### *Special Case: Hotfix*
+Hotfixes address critical bugs (e.g., security vulnerabilities or startup crashes) that cannot wait for a full release cycle.
+
+#### Procedure
+Unlike standard releases, hotfixes bypass the Alpha/Beta/RC phases.
+1. A hotfix is branched directly from the `main` stable branch.
+2. It undergoes a focused review and test cycle.
+3. It is released immediately as a `PATCH` version increment (e.g., `26.2.4` -> `26.2.5`).
