@@ -97,6 +97,7 @@ jobs:
           name: ${{ needs.context.outputs.version }}
           tag_name: v${{ needs.context.outputs.version }}
           prerelease: false
+          make_latest: true
           files: |
             ./dist/horizon.zip
           fail_on_unmatched_files: true
