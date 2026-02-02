@@ -7,10 +7,9 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "dev": "authbind --deep pnpm run authbind",
-        "authbind": "tsx watch ./src/index.ts",
+        "dev": "authbind --deep tsx watch ./src/index.ts",
         "compile": "tsc -p ./tsconfig.json --noEmit",
-        "build": "tsc -p ./tsconfig.json && node ./scripts/bundle.js",
+        "build": "npx igniter -r \".*\"",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "prettier": "prettier . -c",
@@ -29,8 +28,10 @@
     "homepage": "https://github.com/ExampleWasTakenStudios/horizon#readme",
     "devDependencies": {
         "@eslint/js": "^9.36.0",
+        "@flybywiresim/igniter": "^1.3.0",
         "@types/node": "^24.5.2",
         "esbuild": "^0.27.2",
+        "esbuild-plugin-license": "^1.2.3",
         "eslint": "^9.36.0",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
