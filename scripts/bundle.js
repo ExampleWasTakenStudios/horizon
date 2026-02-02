@@ -32,14 +32,12 @@ const ESBUILD_PLUGIN_CONFIG = {
             const { name, version, license } = dependency.packageJson;
             const licenseText = dependency.licenseText || 'License text not found';
 
-            return `
--------------------------------------------------------------------------
+            return `-------------------------------------------------------------------------
 Package:  ${name}
 Version:  ${version}
 License:  ${license}
 -------------------------------------------------------------------------
-${licenseText}
-`;
+${licenseText}\n\n`;
           })
           .join('');
       },
@@ -54,15 +52,19 @@ if (!fs.existsSync(ENTRY_FILE)) {
   process.exit(1);
 }
 
+// Read version from package.json
+const packageJsonRaw = fs.readFileSync('package.json');
+const packageJson = JSON.parse(packageJsonRaw);
+const VERSION = packageJson.version;
+
 const define = {
   'process.env.NODE_ENV': str(envConfig.NODE_ENV),
-  'process.env.HORIZON_VERSION': str(envConfig.HORIZON_VERSION),
+  'process.env.HORIZON_VERSION': str(VERSION),
   'process.env.HORIZON_COMMIT_HASH': str(COMMIT_HASH),
   'process.env.HORIZON_CONSOLE_LOG_LEVEL': str(envConfig.HORIZON_CONSOLE_LOG_LEVEL),
   'process.env.HORIZON_FILE_LOG_LEVEL': str(envConfig.HORIZON_FILE_LOG_LEVEL),
 };
 
-const _start = performance.mark('start_build');
 await esbuild.build({
   entryPoints: [ENTRY_FILE],
   bundle: true,
@@ -78,7 +80,5 @@ await esbuild.build({
     js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
   },
 });
-const _end = performance.mark('end_build');
-const measure = performance.measure('bundle', { start: 'start_build', end: 'end_build' });
 
-console.log(`✅ Bundle complete in ${Math.round(measure.duration)} ms`);
+console.log(`✅ Bundle complete`);
