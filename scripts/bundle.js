@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import dotenv from 'dotenv';
-import * as esbuild from 'esbuild';
+import esbuild from 'esbuild';
+import esbuildPluginLicense from 'esbuild-plugin-license';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -20,6 +21,31 @@ const ENTRY_FILE = './out/compiled/index.js';
 const COMMIT_HASH = execSync('git rev-parse --short HEAD').toString().trim();
 const OUT_DIR = './out/';
 const OUT_FILE = 'horizon.js';
+
+const ESBUILD_PLUGIN_CONFIG = {
+  thirdParty: {
+    output: {
+      file: 'out/third-party-licenses.txt',
+      template(dependencies) {
+        return dependencies
+          .map((dependency) => {
+            const { name, version, license } = dependency.packageJson;
+            const licenseText = dependency.licenseText || 'License text not found';
+
+            return `
+-------------------------------------------------------------------------
+Package:  ${name}
+Version:  ${version}
+License:  ${license}
+-------------------------------------------------------------------------
+${licenseText}
+`;
+          })
+          .join('');
+      },
+    },
+  },
+};
 
 if (!fs.existsSync(ENTRY_FILE)) {
   console.error(`
@@ -46,6 +72,8 @@ await esbuild.build({
   outfile: path.join(OUT_DIR, OUT_FILE),
   format: 'esm',
   define: define,
+  legalComments: 'inline',
+  plugins: [esbuildPluginLicense(ESBUILD_PLUGIN_CONFIG)],
   banner: {
     js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
   },
