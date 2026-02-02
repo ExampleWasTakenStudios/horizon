@@ -1,0 +1,96 @@
+# GitHub Actions workflow that creates a pre-release whenever the version in package.json is updated on a branch whose name starts with "release/".
+name: Pre-Release
+
+on:
+  push:
+    branches:
+      - release/**
+    paths:
+      - package.json
+
+permissions:
+  contents: write
+
+jobs:
+  context:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.package-version.outputs.current-version }}
+      tag_exists: ${{ steps.check-tag.outputs.exists }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
+
+      - name: Get Version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@3cf273023a0dda27efcd3164bdfb51908dd46a5b # 1.3.1
+
+      - name: Check if tag exists
+        id: check-tag
+        uses: mukunku/tag-exists-action@5c39604fe8aef7e65acb6fbcf96ec580f7680313 # 1.7.0
+        with:
+          tag: 'v${{ steps.package-version.outputs.current-version }}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    needs: [context]
+    if: needs.context.outputs.tag_exists == 'false'
+    uses: ./.github/workflows/test.yml
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [context, test]
+    if: needs.context.outputs.tag_exists == 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # 6.2.0
+        with:
+          node-version-file: package.json
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # 4.2.0
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: horizon.zip
+          if-no-files-found: error
+          path: ./out/horizon.zip
+
+  pre-release:
+    runs-on: ubuntu-latest
+    needs: [context, test, build]
+    if: needs.context.outputs.tag_exists == 'false'
+    environment: pre_release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
+        with:
+          fetch-depth: 0 # Needed for release notes generation
+
+      - name: Download Artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
+        with:
+          name: horizon.zip
+          path: ./dist
+
+      - name: Create Pre-Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # 2.5.0
+        with:
+          name: ${{ needs.context.outputs.version }}
+          tag_name: v${{ needs.context.outputs.version }}
+          prerelease: true
+          files: |
+            ./dist/horizon.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
