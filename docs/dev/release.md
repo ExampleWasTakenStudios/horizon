@@ -15,15 +15,28 @@ Version `x.2.4` released in 2026 would therefore be `26.2.4`.
 ## Pre-Releases
 Horizon pre-releases are also released under the semver standard.
 
-We use four categories to identify the nature of a pre-release:
+We use three categories to identify the nature of a pre-release:
 
 - `alpha`
 - `beta`
 - `release candidate (rc)`
-- `stable`
 
 All pre-releases are identified by the appropriate suffix in the version string.
 
 `alpha` releases are not always required, so a release chain may not include `alpha` releases. It will however, ***always*** include at least one `beta` and one `rc` release before a `stable` release is published.
+
+## Releases
+Horizon is released in continuous order. That means there are not LTS releases or similar.
+
+Once the decision has been made to release the current feature set as a new release, a release branch is created. This marks the end of the feature contribution for that release.
+
+There are three or four stages of leading up to a release:
+
+### 1. Alpha
+Depending on the complexity of the additions, developers may elect to start an alpha phase to indicate that while features are generally considered working, bugs are very likely.
+
+As this does not apply to all releases, the alpha stage may be skipped.
+
+### 2. Beta
 
 
