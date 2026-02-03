@@ -1,0 +1,20 @@
+name: PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  test:
+    name: Test
+    if: ${{ github.event.pull_request.draft == false }}
+    uses: ./.github/workflows/TEST.yml
+
+  build:
+    name: Build
+    needs: [test]
+    uses: ./.github/workflows/BUILD.yml

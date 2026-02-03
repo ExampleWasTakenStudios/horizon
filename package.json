@@ -1,6 +1,6 @@
 {
     "name": "horizon",
-    "version": "26.0.0-alpha.1",
+    "version": "26.0.0-alpha.0",
     "description": "A node DNS service.",
     "author": "ExampleWasTaken",
     "license": "GPL-3.0",

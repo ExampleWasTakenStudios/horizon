@@ -1,18 +1,43 @@
 name: PR Semantics
 on:
-  pull_request_target:
+  pull_request:
     types:
       - opened
       - reopened
       - edited
       - ready_for_review
       - review_requested
+      - synchronize
 
 jobs:
-  main:
-    name: PR Semantics
+  title:
+    name: PR Title
     runs-on: ubuntu-latest
     steps:
       - uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Prevent release/* and hotfix/* branches from targeting anything other than `main`
+  target-check:
+    name: Enforce Merge Rules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Release Strategy
+        if: startsWith(github.head_ref, 'release/') && github.base_ref != 'main'
+        run: |
+          echo "::error::Violation: Release branches (release/*) must target 'main'. You are targeting '${{ github.base_ref }}'."
+          exit 1
+
+      # Rule 2: Hotfix Branch -> MUST target 'main'
+      - name: Check Hotfix Strategy
+        if: startsWith(github.head_ref, 'hotfix/') && github.base_ref != 'main'
+        run: |
+          echo "::error::Violation: Hotfix branches (hotfix/*) must target 'main'. You are targeting '${{ github.base_ref }}'."
+          exit 1
+
+      - name: Check Accidental Merge to 'main'
+        if: github.base_ref == 'main' && !startsWith(github.head_ref, 'release/') && !startsWith(github.head_ref, 'hotfix/')
+        run: |
+          echo "::error::Violation: Only Release and Hotfix branches (hotfix/*) may target 'main'."
+          exit 1

@@ -15,7 +15,7 @@
     },
     "typescript.preferences.quoteStyle": "single",
     "[markdown]": {
-        "editor.defaultFormatter": "vscode.markdown-language-features",
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true
     },
     "[jsonc]": {
