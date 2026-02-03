@@ -10,8 +10,10 @@ Used for content text and small-size numerical data.
 # Interface
 Interfaces use the following [ui.shadcn.com](ui.shadcn.com) script:
 ```sh
-pnpm dlx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=gray&theme=blue&iconLibrary=lucide&font=inter&menuAccent=subtle&menuColor=default&radius=default&template=vite" --template vite
+pnpm dlx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=vega&baseColor=neutral&theme=neutral&iconLibrary=lucide&menuAccent=subtle&menuColor=default&radius=default&template=vite&rtl=false" --template vite
 ```
+
+Shadcn does not support either Satoshi or Metropolis out of the box, so they must be configured manually.
 
 # Logo
 ```svg
