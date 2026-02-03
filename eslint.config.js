@@ -151,6 +151,6 @@ export default tseslint.config(
   },
   {
     // DO NOT ADD ANY PROPERTIES TO THIS OBJECT
-    ignores: ['node_modules', 'dist', 'out'],
+    ignores: ['node_modules', 'dist', 'out', 'vitest.config.ts'],
   }
 );
