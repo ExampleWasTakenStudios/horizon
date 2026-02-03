@@ -1,0 +1,10 @@
+<svg width="512" height="512" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="horizonGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF6A00" /> <stop offset="100%" stop-color="#FFB800" /> </linearGradient>
+  </defs>
+
+  <path d="M2 9.5 A6 6 0 0 1 14 9.5 Z" fill="url(#horizonGradient)" />
+
+  <rect x="1" y="10.5" width="14" height="2" rx="0.5" fill="url(#horizonGradient)" />
+</svg>
