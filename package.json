@@ -9,6 +9,8 @@
     "scripts": {
         "dev": "authbind --deep tsx watch ./src/index.ts",
         "test": "vitest run -c ./vitest.config.ts",
+        "test:ui": "vitest -c ./vitest.config.ts --ui",
+        "test:coverage": "vitest run -c ./vitest.config.ts --coverage",
         "test:watch": "vitest -c ./vitest.config.ts",
         "compile": "tsc -p ./tsconfig.json --noEmit",
         "build": "npx igniter -r \".*\"",

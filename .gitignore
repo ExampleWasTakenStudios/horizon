@@ -5,6 +5,7 @@
 node_modules/
 .igniter/
 .vscode/*
+coverage/
 out/
 log/
 
