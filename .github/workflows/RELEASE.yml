@@ -1,0 +1,46 @@
+# Reusable workflow to create full and pre-releases.
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: The GitHub environment to deploy the release to.
+        required: true
+        type: string
+      version:
+        description: The clean semantic version string (e.g. "1.0.0")
+        required: true
+        type: string
+      pre_release:
+        description: Whether this release should be marked as pre-release.
+        required: true
+        type: boolean
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
+        with:
+          fetch-depth: 0 # Needed for release notes generation
+
+      - name: Download Artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
+        with:
+          name: horizon.zip
+          path: ./dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # 2.5.0
+        with:
+          name: ${{ inputs.version }}
+          tag_name: v${{ inputs.version }}
+          prerelease: ${{ inputs.pre_release }}
+          make_latest: ${{ !inputs.pre_release }}
+          files: |
+            ./dist/horizon.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
