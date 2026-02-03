@@ -19,17 +19,17 @@ describe('Result Pattern', () => {
       expect(result.isFailure()).toBe(false);
       expect(result.value).toBe(value);
     });
+  });
 
-    describe('Failure', () => {
-      it('should create a failure result with an error', () => {
-        const error = new MockError('Something went wrong');
-        const result = Result.fail(error);
+  describe('Failure', () => {
+    it('should create a failure result with an error', () => {
+      const error = new MockError('Something went wrong');
+      const result = Result.fail(error);
 
-        expect(result.isFailure()).toBe(true);
-        expect(result.isSuccess()).toBe(false);
-        expect(result.error).toBeInstanceOf(MockError);
-        expect(result.error.message).toContain('Something went wrong');
-      });
+      expect(result.isFailure()).toBe(true);
+      expect(result.isSuccess()).toBe(false);
+      expect(result.error).toBeInstanceOf(MockError);
+      expect(result.error.message).toContain('Something went wrong');
     });
   });
 
