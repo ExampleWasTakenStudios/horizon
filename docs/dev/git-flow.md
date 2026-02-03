@@ -16,10 +16,12 @@ Both `dev` and `main` only accept squash commits.
 
 The `dev` branch receives all updates on main by merging `main` into `dev`. This means that a `release` or `hotfix` branch should never be merged into `dev`. Instead, they should be merged to `main` which would then be merged into `dev`.
 
-##### Conflict Resolution Strategy: 
+##### Conflict Resolution Strategy:
+
 When merging `main` into `dev`, conflicts often occur in version files (e.g., `package.json`).
-* **Version Numbers:** Accept **Current Change** (preserve the `dev` version, e.g., `v26.2.0-alpha`).
-* **Code/Logic:** Resolve manually. Ensure hotfixes from `main` (Incoming) are combined with new features in `dev` (Current). **Do not** blindly accept "Current Changes" for code, or you will revert the hotfix.
+
+- **Version Numbers:** Accept **Current Change** (preserve the `dev` version, e.g., `v26.2.0-alpha`).
+- **Code/Logic:** Resolve manually. Ensure hotfixes from `main` (Incoming) are combined with new features in `dev` (Current). **Do not** blindly accept "Current Changes" for code, or you will revert the hotfix.
 
 ### Long-Lived Branches
 
