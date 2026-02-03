@@ -2,14 +2,14 @@
     // Visit https://aka.ms/tsconfig to read more about this file
     "compilerOptions": {
         // File Layout
-        "rootDir": "./src",
+        "rootDir": ".",
         "outDir": "./out/compiled",
 
         // Environment Settings
         // See also https://aka.ms/tsconfig/module
         "module": "nodenext",
         "target": "ESNext",
-        "types": ["node"],
+        "types": ["node", "vitest/globals"],
         "lib": ["ESNext"],
         "baseUrl": ".",
         "paths": {
@@ -50,6 +50,7 @@
         "noErrorTruncation": true,
         "isolatedModules": true,
         "moduleDetection": "force",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "esModuleInterop": true
     }
 }

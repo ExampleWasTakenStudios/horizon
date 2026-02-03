@@ -1,5 +1,6 @@
 import eslint from '@eslint/js';
 import recommendedConfig from 'eslint-plugin-prettier/recommended';
+import vitest from 'eslint-plugin-vitest';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -19,7 +20,11 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
+    plugins: {
+      vitest,
+    },
     rules: {
+      ...vitest.configs.recommended.rules,
       'prettier/prettier': ['error', {}, { usePrettierrc: true }],
 
       'max-lines-per-function': ['error', { max: 60, skipBlankLines: true, skipComments: true }],
