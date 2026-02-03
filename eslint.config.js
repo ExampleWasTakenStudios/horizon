@@ -149,6 +149,13 @@ export default tseslint.config(
     files: ['**/*.mjs', '**/*.cjs', '**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
   },
+  // Turn off console warnings for test files as it enables pretty logs in vitest
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
   {
     // DO NOT ADD ANY PROPERTIES TO THIS OBJECT
     ignores: ['node_modules', 'dist', 'out', 'vitest.config.ts'],
