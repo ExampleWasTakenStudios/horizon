@@ -1,5 +1,5 @@
 import { PromiseRejectError } from '@src/errors/result/PromiseRejectError.js';
-import type { ResultError } from '@src/errors/result/ResultError.js';
+import { ResultError } from '@src/errors/result/ResultError.js';
 
 export type TResult<T, E extends ResultError> = Success<T, never> | Failure<never, E>;
 
@@ -11,7 +11,11 @@ export abstract class Result<T, E extends ResultError> {
     try {
       return Result.ok(await promise);
     } catch (err) {
-      return Result.fail(new PromiseRejectError(err));
+      if (err instanceof Error) {
+        return Result.fail(new PromiseRejectError(err));
+      }
+
+      return Result.fail(new PromiseRejectError(new Error(String(err))));
     }
   }
 

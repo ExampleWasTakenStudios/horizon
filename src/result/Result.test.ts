@@ -17,7 +17,7 @@ describe('Result Pattern', () => {
 
       expect(result.isSuccess()).toBe(true);
       expect(result.isFailure()).toBe(false);
-      expect(result.value).toBe({ data: 'test' });
+      expect(result.value).toBe(value);
     });
 
     describe('Failure', () => {
@@ -26,7 +26,7 @@ describe('Result Pattern', () => {
         const result = Result.fail(error);
 
         expect(result.isFailure()).toBe(true);
-        expect(result.isSuccess()).toBe(true);
+        expect(result.isSuccess()).toBe(false);
         expect(result.error).toBeInstanceOf(MockError);
         expect(result.error.message).toContain('Something went wrong');
       });
@@ -45,7 +45,7 @@ describe('Result Pattern', () => {
     });
 
     it('should return Failure when promise rejects', async () => {
-      const error = new Error('Netowrk failure');
+      const error = new Error('Test error message');
       const promise = Promise.reject(error);
       const result = await Result.fromPromise(promise);
 
@@ -54,7 +54,7 @@ describe('Result Pattern', () => {
 
       if (result.isFailure()) {
         expect(result.error).toBeInstanceOf(PromiseRejectError);
-        expect(result.error.message).toContain('Network failure');
+        expect(result.error.message).toContain('Test error message');
       }
     });
   });

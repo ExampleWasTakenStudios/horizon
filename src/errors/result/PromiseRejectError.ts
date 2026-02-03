@@ -1,10 +1,10 @@
 import { ResultError } from './ResultError.js';
 
 export class PromiseRejectError extends ResultError {
-  public readonly err: unknown;
+  public readonly error: Error;
 
-  public constructor(err: unknown) {
-    super('Promise rejected.');
-    this.err = err;
+  public constructor(error: Error) {
+    super(error.message);
+    this.error = error;
   }
 }

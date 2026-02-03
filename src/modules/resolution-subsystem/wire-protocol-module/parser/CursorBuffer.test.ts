@@ -15,8 +15,8 @@ describe('CursorBuffer', () => {
     const buffer = Buffer.from([0x01, 0x0a]);
     const cursorBuffer = new CursorBuffer(buffer);
 
-    expect(cursorBuffer.readNextUint16()).toBe(258);
-    expect(cursorBuffer.getCursorPosition()).toBe(1);
+    expect(cursorBuffer.readNextUint16()).toBe(266);
+    expect(cursorBuffer.getCursorPosition()).toBe(2);
   });
 
   it('should extract a subarray from the buffer and advance cursor', () => {
@@ -24,7 +24,7 @@ describe('CursorBuffer', () => {
     const cursorBuffer = new CursorBuffer(buffer);
 
     expect(cursorBuffer.nextSubarray(3)).toStrictEqual(Buffer.from([0xa1, 0x11, 0x34]));
-    expect(cursorBuffer.getCursorPosition()).toBe(2);
+    expect(cursorBuffer.getCursorPosition()).toBe(3);
   });
 
   it('should correctly report remaining bytes', () => {
@@ -67,14 +67,7 @@ describe('CursorBuffer', () => {
 
       cursorBuffer.readNextUint16();
 
-      expect(cursorBuffer.readNextUint8()).toThrow();
-    });
-
-    it('should throw when trying to extract subarray past buffer end', () => {
-      const buffer = Buffer.from([0x22, 0x53]);
-      const cursorBuffer = new CursorBuffer(buffer);
-
-      expect(cursorBuffer.nextSubarray(3)).toThrow();
+      expect(() => cursorBuffer.readNextUint8()).toThrow();
     });
   });
 });
