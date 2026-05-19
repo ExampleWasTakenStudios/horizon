@@ -1,3 +1,5 @@
+use horizon::entry;
+
 fn main() {
-    println!("Hello, world!");
+    entry();
 }
