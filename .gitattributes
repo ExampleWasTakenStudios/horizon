@@ -1,0 +1,6 @@
+# Automatically normalize text files.
+* text=auto
+
+# Ensure all shell files use LF.
+*.sh text eol=lf
+

@@ -1,1 +1,22 @@
+# Ignore all *.ignore.* files
+**/*.ignore.*
+
+# Directories
+node_modules/
+.igniter/
+.vscode/*
+out/
+log/
 /target
+
+# Files
+.config/Horizon/config.json5
+
+# .env files
+*.env
+!example.env
+!prod.env
+
+# vscode config files
+!.vscode/settings.json
+!.vscode/extensions.json
