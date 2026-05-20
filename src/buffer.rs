@@ -15,6 +15,13 @@ impl PacketBuffer {
         }
     }
 
+    pub fn from_raw_buffer(buffer: [u8; 512]) -> Self {
+        PacketBuffer {
+            buffer,
+            position: 0,
+        }
+    }
+
     pub fn as_slice(&self) -> &[u8; 512] {
         &self.buffer
     }
