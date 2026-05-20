@@ -1,5 +1,6 @@
 use crate::buffer::PacketBuffer;
 
+#[derive(Debug)]
 pub enum ResponseCode {
     NOERROR = 0,
     FORMERR = 1,
@@ -22,6 +23,7 @@ impl ResponseCode {
     }
 }
 
+#[derive(Debug)]
 pub enum DnsClass {
     IN = 1,
     WILDCARD = 255,
@@ -43,6 +45,7 @@ impl DnsClass {
     }
 }
 
+#[derive(Debug)]
 pub enum DnsType {
     A = 1,
     NS = 2,
@@ -82,6 +85,7 @@ impl DnsType {
     }
 }
 
+#[derive(Debug)]
 pub struct DomainName {
     name: Vec<u8>,
 }
@@ -157,6 +161,7 @@ impl DomainName {
     }
 }
 
+#[derive(Debug)]
 pub struct AData {
     address: [u8; 4],
 }
@@ -174,6 +179,7 @@ impl AData {
     }
 }
 
+#[derive(Debug)]
 pub struct NsData {
     ns_domain_name: DomainName,
 }
@@ -186,6 +192,7 @@ impl NsData {
     }
 }
 
+#[derive(Debug)]
 pub struct CNameData {
     c_name: DomainName,
 }
@@ -198,6 +205,7 @@ impl CNameData {
     }
 }
 
+#[derive(Debug)]
 pub struct SoaRecordData {
     m_name: DomainName,
     r_name: DomainName,
@@ -230,6 +238,7 @@ impl SoaRecordData {
     }
 }
 
+#[derive(Debug)]
 pub struct PtrData {
     ptr_d_name: DomainName,
 }
@@ -242,6 +251,7 @@ impl PtrData {
     }
 }
 
+#[derive(Debug)]
 pub struct MxRecordData {
     preference: u16,
     exchange: DomainName,
@@ -259,6 +269,7 @@ impl MxRecordData {
     }
 }
 
+#[derive(Debug)]
 pub struct TxtData {
     txt_data: Vec<u8>,
 }
@@ -272,6 +283,7 @@ impl TxtData {
     }
 }
 
+#[derive(Debug)]
 pub struct UnknownRData {
     data: Vec<u8>,
 }
@@ -284,6 +296,7 @@ impl UnknownRData {
     }
 }
 
+#[derive(Debug)]
 pub enum DnsRecordData {
     A(AData),
     NS(NsData),
@@ -295,6 +308,7 @@ pub enum DnsRecordData {
     UNKNOWN(UnknownRData),
 }
 
+#[derive(Debug)]
 pub struct DnsHeader {
     id: u16,
 
@@ -351,6 +365,7 @@ impl DnsHeader {
     }
 }
 
+#[derive(Debug)]
 pub struct DnsQuestion {
     name: DomainName,
     query_type: DnsType,
@@ -371,6 +386,7 @@ impl DnsQuestion {
     }
 }
 
+#[derive(Debug)]
 pub struct DnsRecord {
     name: DomainName,
     r#type: DnsType,
@@ -411,6 +427,7 @@ impl DnsRecord {
     }
 }
 
+#[derive(Debug)]
 pub struct DnsPacket {
     header: DnsHeader,
     questions: Vec<DnsQuestion>,
