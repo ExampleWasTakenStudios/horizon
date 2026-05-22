@@ -1,0 +1,23 @@
+root = true
+
+# Unix-style newlines and standard encoding for all files
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Rust source files (Matches rustfmt defaults)
+[*.rs]
+indent_style = space
+indent_size = 4
+
+# TOML configuration files
+[*.toml]
+indent_style = space
+indent_size = 4
+
+# Markdown files
+# Trailing whitespace is often used in Markdown for line breaks
+[*.md]
+trim_trailing_whitespace = false
