@@ -11,6 +11,7 @@ pub enum ResponseCode {
 }
 
 impl ResponseCode {
+    #[allow(clippy::wildcard_in_or_patterns)] // Added for readability
     pub fn from_number(number: u8) -> ResponseCode {
         match number {
             1 => ResponseCode::FORMERR,
@@ -30,6 +31,7 @@ pub enum DnsClass {
 }
 
 impl DnsClass {
+    #[allow(clippy::wildcard_in_or_patterns)] // Added for readability
     pub fn from_number(x: u16) -> Self {
         match x {
             1 => DnsClass::IN,
@@ -38,10 +40,10 @@ impl DnsClass {
     }
 
     pub fn to_number(&self) -> u16 {
-        return match *self {
+        match *self {
             DnsClass::IN => 1,
             DnsClass::WILDCARD => 255,
-        };
+        }
     }
 }
 
@@ -58,6 +60,7 @@ pub enum DnsType {
 }
 
 impl DnsType {
+    #[allow(clippy::wildcard_in_or_patterns)] // Added for readability
     pub fn from_number(x: u16) -> Self {
         match x {
             1 => DnsType::A,
@@ -72,7 +75,7 @@ impl DnsType {
     }
 
     pub fn to_number(&self) -> u16 {
-        return match *self {
+        match *self {
             DnsType::A => 1,
             DnsType::NS => 2,
             DnsType::CNAME => 5,
@@ -81,83 +84,91 @@ impl DnsType {
             DnsType::MX => 15,
             DnsType::TXT => 16,
             DnsType::WILDCARD => 255,
-        };
+        }
     }
 }
 
 #[derive(Debug)]
-pub struct DomainName {
-    name: Vec<u8>,
-}
+pub struct DomainName(Vec<Vec<u8>>);
 
 impl DomainName {
-    fn parse_raw(buffer: &[u8], start_position: usize) -> Result<(Vec<u8>, usize), ResponseCode> {
+    fn parse_raw(
+        buffer: &[u8],
+        start_position: usize,
+    ) -> Result<(Vec<Vec<u8>>, usize), ResponseCode> {
+        // The local cursor for parsing `buffer`.
         let mut local_position = start_position;
+        // Indicates that a jump is active
         let mut jumped = false;
-        let mut jump_end_position = 0;
-        let mut visited_pointers = Vec::new();
+        // Holds the value to which `local_position` should return to, once the currently active jump is complete
+        let mut return_position: usize = 0;
 
-        let mut out_bytes: Vec<u8> = Vec::new();
+        // Holds all parsed labels - this will be returned
+        let mut labels: Vec<Vec<u8>> = Vec::new();
 
         loop {
-            if local_position >= buffer.len() {
-                return Err(ResponseCode::FORMERR);
-            }
-
-            let current_byte = buffer[local_position];
+            let current_byte = *buffer.get(local_position).ok_or(ResponseCode::FORMERR)?;
 
             // Check if current_byte is a pointer
             if (current_byte & 0xC0) == 0xC0 {
-                if !jumped {
-                    jump_end_position = local_position + 2;
-                }
+                // Decode the pointer
+                let low_byte = *buffer
+                    .get(local_position + 1)
+                    .ok_or(ResponseCode::FORMERR)? as u16;
+                let ptr = ((((current_byte as u16) ^ 0xC0) << 8) | low_byte) as usize;
 
-                let low_byte = buffer[local_position + 1] as u16;
-                let ptr = (((current_byte as u16) ^ 0xC0) << 8 | low_byte) as usize;
-
-                if visited_pointers.contains(&ptr) {
+                // Check that pointer location is less than current position as per the RFC1035
+                // This also mathematically prevents pointer loops as a new pointer must always be less than the current position.
+                if ptr >= local_position {
                     return Err(ResponseCode::FORMERR);
                 }
-                visited_pointers.push(ptr);
 
+                // Check if a jump is currently active
+                if jumped {
+                    local_position = ptr;
+                    continue;
+                }
+
+                return_position = local_position + 2;
                 local_position = ptr;
                 jumped = true;
                 continue;
             }
 
-            // Check if current_byte is a zero terminator (0x00)
+            // current_byte is not a pointer so we check if it is a zero terminator (0x00)
             if current_byte == 0x00 {
                 if jumped {
-                    local_position = jump_end_position;
-                    jumped = false;
-                    continue;
+                    // If we jumped to local_position, we need to return to wherever we set return_position before we jumped.
+                    local_position = return_position;
+                } else {
+                    // Since we didn't jump, we advance the local_position by one to move past the current position which is the zero terminator
+                    local_position += 1;
                 }
                 break;
             }
 
-            // current_byte must be a length label
-            if (current_byte as usize) >= buffer.len() {
-                return Err(ResponseCode::FORMERR);
-            }
+            // current_byte is neither a pointer nor a zero terminator - therefore it must be a length byte indicating the length of the following label
+            let length = current_byte as usize;
+            local_position += 1;
 
-            let label_start_position = local_position + 1;
-            let label_end_position = local_position + (current_byte as usize);
+            let label = buffer
+                .get(local_position..local_position + length)
+                .ok_or(ResponseCode::FORMERR)?
+                .to_vec();
+            labels.push(label);
 
-            let labels = buffer[label_start_position..=label_end_position].to_vec();
-
-            out_bytes.extend_from_slice(&labels);
-            local_position = label_end_position;
+            local_position += length;
         }
 
-        Ok((out_bytes, local_position))
+        Ok((labels, local_position - start_position))
     }
 
     pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
-        let (bytes, bytes_consumed) = Self::parse_raw(buffer.as_slice(), buffer.get_position())?;
+        let (labels, bytes_consumed) = Self::parse_raw(buffer.as_slice(), buffer.get_position())?;
 
         buffer.advance_by(bytes_consumed);
 
-        Ok(DomainName { name: bytes })
+        Ok(DomainName(labels))
     }
 }
 
@@ -284,15 +295,11 @@ impl TxtData {
 }
 
 #[derive(Debug)]
-pub struct UnknownRData {
-    data: Vec<u8>,
-}
+pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
     pub fn read_from(buffer: &mut PacketBuffer, length: usize) -> Result<Self, ResponseCode> {
-        Ok(UnknownRData {
-            data: buffer.read_subarray(length)?,
-        })
+        Ok(UnknownRData(buffer.read_subarray(length)?))
     }
 }
 
@@ -333,7 +340,7 @@ impl DnsHeader {
 
         let flags = buffer.read_u16()?;
 
-        let is_response = ((flags & 0xFFFF) >> 15) != 0; // Masks the MSB
+        let is_response = ((flags & 0x8000) >> 15) != 0; // Masks the MSB
         let op_code: u8 = ((flags & 0x87FF) >> 11) as u8;
         let is_authoritative = ((flags & 0xFBFF) >> 10) != 0;
         let is_truncated = ((flags & 0xFDFF) >> 9) != 0;
@@ -418,7 +425,7 @@ impl DnsRecord {
 
         Ok(DnsRecord {
             name,
-            r#type: r#type,
+            r#type,
             class,
             ttl,
             rd_length,
