@@ -348,14 +348,14 @@ impl DnsHeader {
 
         let flags = buffer.read_u16()?;
 
-        let is_response = ((flags & 0x8000) >> 15) != 0; // Masks the MSB
-        let op_code: u8 = ((flags & 0x87FF) >> 11) as u8;
-        let is_authoritative = ((flags & 0xFBFF) >> 10) != 0;
-        let is_truncated = ((flags & 0xFDFF) >> 9) != 0;
-        let is_recursion_desired = ((flags & 0xFEFF) >> 8) != 0;
-        let is_recursion_avail = ((flags & 0xFF7F) >> 7) != 0;
-        let z = ((flags & 0xFF8F) >> 4) as u8;
-        let response_code = ResponseCode::from_number((flags & 0xFFF0) as u8);
+        let is_response = (flags >> 15) & 1 != 0;
+        let op_code = ((flags >> 11) & 1) as u8;
+        let is_authoritative = (flags >> 10) & 1 != 0;
+        let is_truncated = (flags >> 9) & 1 != 0;
+        let is_recursion_desired = (flags >> 8) & 1 != 0;
+        let is_recursion_avail = (flags >> 7) & 1 != 0;
+        let z = ((flags >> 4) & 1) as u8;
+        let response_code = ResponseCode::from_number((flags & 0x0F) as u8);
 
         let question_count = buffer.read_u16()?;
         let answer_count = buffer.read_u16()?;
