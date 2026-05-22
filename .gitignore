@@ -2,15 +2,11 @@
 **/*.ignore.*
 
 # Directories
-node_modules/
-.igniter/
 .vscode/*
-out/
-log/
 /target
 
 # Files
-.config/Horizon/config.json5
+
 
 # .env files
 *.env
