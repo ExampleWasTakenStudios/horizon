@@ -5,6 +5,12 @@ pub struct PacketBuffer {
     position: usize,
 }
 
+impl Default for PacketBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Represents a cursored buffer with length 512.
 /// It features special methods to read the buffer that keep track of the cursor i.e. the current location in the buffer.
 impl PacketBuffer {
@@ -55,15 +61,19 @@ impl PacketBuffer {
         let value = ((self.read_u8()? as u32) << 24)
             | ((self.read_u8()? as u32) << 16)
             | ((self.read_u8()? as u32) << 8)
-            | ((self.read_u8()? as u32) << 0);
+            | (self.read_u8()? as u32);
 
         Ok(value)
     }
 
     pub fn read_subarray(&mut self, length: usize) -> Result<Vec<u8>, ResponseCode> {
         let mut subarray: Vec<u8> = Vec::new();
-        
-        for _ in 0..length  {
+
+        if length > self.buffer.len() {
+            return Err(ResponseCode::FORMERR);
+        }
+
+        for _ in 0..length {
             subarray.push(self.read_u8()?);
         }
 
