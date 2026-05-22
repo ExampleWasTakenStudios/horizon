@@ -20,7 +20,6 @@ pub fn entry() {
         println!("Bound to socket: {:?}", socket);
         let mut buffer: [u8; 512] = [0; 512];
 
-
         loop {
              let (bytes, source) = match socket.recv_from(&mut buffer).await {
                 Ok(result) => result,
