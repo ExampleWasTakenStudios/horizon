@@ -301,7 +301,7 @@ impl TxtData {
             let mut data = buffer.read_subarray(length as usize)?;
 
             txt_data.append(&mut data);
-            
+
             // Add 1 for the length byte itself, plus the length of the string
             bytes_read += 1 + length as u16;
         }
@@ -357,12 +357,12 @@ impl DnsHeader {
         let flags = buffer.read_u16()?;
 
         let is_response = (flags >> 15) & 1 != 0;
-        let op_code = ((flags >> 11) & 1) as u8;
+        let op_code = ((flags >> 11) & 0x0F) as u8;
         let is_authoritative = (flags >> 10) & 1 != 0;
         let is_truncated = (flags >> 9) & 1 != 0;
         let is_recursion_desired = (flags >> 8) & 1 != 0;
         let is_recursion_avail = (flags >> 7) & 1 != 0;
-        let z = ((flags >> 4) & 1) as u8;
+        let z = ((flags >> 4) & 0x07) as u8;
         let response_code = ResponseCode::from_number((flags & 0x0F) as u8);
 
         let question_count = buffer.read_u16()?;
