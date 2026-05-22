@@ -5,6 +5,12 @@ pub struct PacketBuffer {
     position: usize,
 }
 
+impl Default for PacketBuffer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Represents a cursored buffer with length 512.
 /// It features special methods to read the buffer that keep track of the cursor i.e. the current location in the buffer.
 impl PacketBuffer {
@@ -55,7 +61,7 @@ impl PacketBuffer {
         let value = ((self.read_u8()? as u32) << 24)
             | ((self.read_u8()? as u32) << 16)
             | ((self.read_u8()? as u32) << 8)
-            | ((self.read_u8()? as u32) << 0);
+            | (self.read_u8()? as u32);
 
         Ok(value)
     }
