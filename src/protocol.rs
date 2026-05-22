@@ -89,7 +89,13 @@ impl DnsType {
 }
 
 #[derive(Debug)]
-pub struct DomainName(Vec<Vec<u8>>);
+pub struct DomainName {
+    /// A `Vec` containing all labels that make up the domain name.
+    /// 
+    /// A label is stored as a `Vec` holding the individual bits. 
+    /// This results in the nested type structure `Vec<Vec<u8>>`.
+    pub labels: Vec<Vec<u8>>,
+}
 
 impl DomainName {
     fn parse_raw(
@@ -168,13 +174,15 @@ impl DomainName {
 
         buffer.advance_by(bytes_consumed);
 
-        Ok(DomainName(labels))
+        Ok(DomainName {
+            labels
+        })
     }
 }
 
 #[derive(Debug)]
 pub struct AData {
-    address: [u8; 4],
+    pub address: [u8; 4],
 }
 
 impl AData {
@@ -192,7 +200,7 @@ impl AData {
 
 #[derive(Debug)]
 pub struct NsData {
-    ns_domain_name: DomainName,
+    pub ns_domain_name: DomainName,
 }
 
 impl NsData {
@@ -205,7 +213,7 @@ impl NsData {
 
 #[derive(Debug)]
 pub struct CNameData {
-    c_name: DomainName,
+    pub c_name: DomainName,
 }
 
 impl CNameData {
@@ -218,13 +226,13 @@ impl CNameData {
 
 #[derive(Debug)]
 pub struct SoaRecordData {
-    m_name: DomainName,
-    r_name: DomainName,
-    serial: u32,
-    refresh: u32,
-    retry: u32,
-    expire: u32,
-    minimum: u32,
+    pub m_name: DomainName,
+    pub r_name: DomainName,
+    pub serial: u32,
+    pub refresh: u32,
+    pub retry: u32,
+    pub expire: u32,
+    pub minimum: u32,
 }
 
 impl SoaRecordData {
@@ -251,7 +259,7 @@ impl SoaRecordData {
 
 #[derive(Debug)]
 pub struct PtrData {
-    ptr_d_name: DomainName,
+    pub ptr_d_name: DomainName,
 }
 
 impl PtrData {
@@ -264,8 +272,8 @@ impl PtrData {
 
 #[derive(Debug)]
 pub struct MxRecordData {
-    preference: u16,
-    exchange: DomainName,
+    pub preference: u16,
+    pub exchange: DomainName,
 }
 
 impl MxRecordData {
@@ -282,7 +290,7 @@ impl MxRecordData {
 
 #[derive(Debug)]
 pub struct TxtData {
-    txt_data: Vec<u8>,
+    pub txt_data: Vec<u8>,
 }
 
 impl TxtData {
@@ -317,21 +325,21 @@ pub enum DnsRecordData {
 
 #[derive(Debug)]
 pub struct DnsHeader {
-    id: u16,
+    pub id: u16,
 
-    is_response: bool,
-    op_code: u8,
-    is_authoritative: bool,
-    is_truncated: bool,
-    is_recursion_desired: bool,
-    is_recursion_avail: bool,
-    z: u8,
-    response_code: ResponseCode,
+    pub is_response: bool,
+    pub op_code: u8,
+    pub is_authoritative: bool,
+    pub is_truncated: bool,
+    pub is_recursion_desired: bool,
+    pub is_recursion_avail: bool,
+    pub z: u8,
+    pub response_code: ResponseCode,
 
-    question_count: u16,
-    answer_count: u16,
-    authoritative_count: u16,
-    additional_count: u16,
+    pub question_count: u16,
+    pub answer_count: u16,
+    pub authoritative_count: u16,
+    pub additional_count: u16,
 }
 
 impl DnsHeader {
@@ -374,9 +382,9 @@ impl DnsHeader {
 
 #[derive(Debug)]
 pub struct DnsQuestion {
-    name: DomainName,
-    query_type: DnsType,
-    query_class: DnsClass,
+    pub name: DomainName,
+    pub query_type: DnsType,
+    pub query_class: DnsClass,
 }
 
 impl DnsQuestion {
@@ -395,12 +403,12 @@ impl DnsQuestion {
 
 #[derive(Debug)]
 pub struct DnsRecord {
-    name: DomainName,
-    r#type: DnsType,
-    class: DnsClass,
-    ttl: u32,
-    rd_length: u16,
-    r_data: DnsRecordData,
+    pub name: DomainName,
+    pub r#type: DnsType,
+    pub class: DnsClass,
+    pub ttl: u32,
+    pub rd_length: u16,
+    pub r_data: DnsRecordData,
 }
 
 impl DnsRecord {
@@ -436,11 +444,11 @@ impl DnsRecord {
 
 #[derive(Debug)]
 pub struct DnsPacket {
-    header: DnsHeader,
-    questions: Vec<DnsQuestion>,
-    answers: Vec<DnsRecord>,
-    authoritatives: Vec<DnsRecord>,
-    additionals: Vec<DnsRecord>,
+    pub header: DnsHeader,
+    pub questions: Vec<DnsQuestion>,
+    pub answers: Vec<DnsRecord>,
+    pub authoritatives: Vec<DnsRecord>,
+    pub additionals: Vec<DnsRecord>,
 }
 
 impl DnsPacket {
