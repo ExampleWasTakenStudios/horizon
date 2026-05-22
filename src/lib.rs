@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use tokio::{self, net, runtime};
 
 use crate::{buffer::PacketBuffer, protocol::DnsPacket};
