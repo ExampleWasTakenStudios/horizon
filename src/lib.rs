@@ -1,8 +1,5 @@
 use std::io::Write;
-
 use tokio::{self, net, runtime};
-
-use crate::{buffer::PacketBuffer, protocol::DnsPacket};
 
 pub mod protocol;
 pub mod buffer;
@@ -30,8 +27,8 @@ pub fn entry() {
              };
 
              tokio::spawn(async move {
-                let mut buffer = PacketBuffer::from_raw_buffer(buffer);
-                let packet = DnsPacket::parse_from(&mut buffer).unwrap();
+                let mut buffer = buffer::PacketBuffer::from_raw_buffer(buffer);
+                let packet = protocol::DnsPacket::parse_from(&mut buffer).unwrap();
 
                 println!("Received {} bytes from {} in packet: {:#?}", bytes, source, packet);
                 let labels = &packet.questions[0].name.labels;
