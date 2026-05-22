@@ -3,4 +3,3 @@
 
 # Ensure all shell files use LF.
 *.sh text eol=lf
-
