@@ -1,5 +1,5 @@
 # Automatically normalize text files.
-* text=auto
+* text=auto eol=lf
 
 # Ensure all shell files use LF.
 *.sh text eol=lf
