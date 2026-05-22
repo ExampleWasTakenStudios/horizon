@@ -1,4 +1,11 @@
-use crate::{buffer::PacketBuffer, protocol::{domain::DomainName, enums::{DnsClass, DnsType, ResponseCode}}};
+use crate::{
+    buffer::PacketBuffer,
+    protocol::{
+        CharString,
+        domain::DomainName,
+        enums::{DnsClass, DnsType, ResponseCode},
+    },
+};
 
 #[derive(Debug)]
 pub struct AData {
@@ -110,25 +117,14 @@ impl MxRecordData {
 
 #[derive(Debug)]
 pub struct TxtData {
-    pub txt_data: Vec<u8>,
+    pub txt_data: CharString,
 }
 
 impl TxtData {
     pub fn read_from(buffer: &mut PacketBuffer, rd_length: u16) -> Result<Self, ResponseCode> {
-        let mut txt_data = Vec::with_capacity(rd_length as usize);
-        let mut bytes_read: u16 = 0;
-
-        while bytes_read < rd_length {
-            let length = buffer.read_u8()?;
-            let mut data = buffer.read_subarray(length as usize)?;
-
-            txt_data.append(&mut data);
-
-            // Add 1 for the length byte itself, plus the length of the string
-            bytes_read += 1 + length as u16;
-        }
-
-        Ok(TxtData { txt_data })
+        Ok(TxtData {
+            txt_data: CharString::read_from(buffer, rd_length)?,
+        })
     }
 }
 
