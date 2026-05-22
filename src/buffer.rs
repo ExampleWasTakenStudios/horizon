@@ -68,8 +68,12 @@ impl PacketBuffer {
 
     pub fn read_subarray(&mut self, length: usize) -> Result<Vec<u8>, ResponseCode> {
         let mut subarray: Vec<u8> = Vec::new();
-        
-        for _ in 0..length  {
+
+        if length > self.buffer.len() {
+            return Err(ResponseCode::FORMERR);
+        }
+
+        for _ in 0..length {
             subarray.push(self.read_u8()?);
         }
 
