@@ -91,8 +91,8 @@ impl DnsType {
 #[derive(Debug)]
 pub struct DomainName {
     /// A `Vec` containing all labels that make up the domain name.
-    /// 
-    /// A label is stored as a `Vec` holding the individual bits. 
+    ///
+    /// A label is stored as a `Vec` holding the individual bits.
     /// This results in the nested type structure `Vec<Vec<u8>>`.
     pub labels: Vec<Vec<u8>>,
 }
@@ -174,9 +174,7 @@ impl DomainName {
 
         buffer.advance_by(bytes_consumed);
 
-        Ok(DomainName {
-            labels
-        })
+        Ok(DomainName { labels })
     }
 }
 
@@ -294,11 +292,21 @@ pub struct TxtData {
 }
 
 impl TxtData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
-        let length = buffer.read_u8()?;
-        let data = buffer.read_subarray(length as usize)?;
+    pub fn read_from(buffer: &mut PacketBuffer, rd_length: u16) -> Result<Self, ResponseCode> {
+        let mut txt_data = Vec::with_capacity(rd_length as usize);
+        let mut bytes_read: u16 = 0;
 
-        Ok(TxtData { txt_data: data })
+        while bytes_read < rd_length {
+            let length = buffer.read_u8()?;
+            let mut data = buffer.read_subarray(length as usize)?;
+
+            txt_data.append(&mut data);
+            
+            // Add 1 for the length byte itself, plus the length of the string
+            bytes_read += 1 + length as u16;
+        }
+
+        Ok(TxtData { txt_data })
     }
 }
 
@@ -306,8 +314,8 @@ impl TxtData {
 pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
-    pub fn read_from(buffer: &mut PacketBuffer, length: usize) -> Result<Self, ResponseCode> {
-        Ok(UnknownRData(buffer.read_subarray(length)?))
+    pub fn read_from(buffer: &mut PacketBuffer, rd_length: usize) -> Result<Self, ResponseCode> {
+        Ok(UnknownRData(buffer.read_subarray(rd_length)?))
     }
 }
 
@@ -425,7 +433,7 @@ impl DnsRecord {
             DnsType::MX => DnsRecordData::MX(MxRecordData::read_from(buffer)?),
             DnsType::PTR => DnsRecordData::PTR(PtrData::read_from(buffer)?),
             DnsType::SOA => DnsRecordData::SOA(SoaRecordData::read_from(buffer)?),
-            DnsType::TXT => DnsRecordData::TXT(TxtData::read_from(buffer)?),
+            DnsType::TXT => DnsRecordData::TXT(TxtData::read_from(buffer, rd_length)?),
             DnsType::WILDCARD => {
                 DnsRecordData::UNKNOWN(UnknownRData::read_from(buffer, rd_length as usize)?)
             }
