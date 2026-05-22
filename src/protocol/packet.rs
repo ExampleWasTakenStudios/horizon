@@ -1,0 +1,49 @@
+use crate::{buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
+
+#[derive(Debug)]
+pub struct DnsPacket {
+    pub header: DnsHeader,
+    pub questions: Vec<DnsQuestion>,
+    pub answers: Vec<DnsRecord>,
+    pub authoritatives: Vec<DnsRecord>,
+    pub additionals: Vec<DnsRecord>,
+}
+
+impl DnsPacket {
+    pub fn parse_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+        let header = DnsHeader::read_from(buffer)?;
+        let mut questions: Vec<DnsQuestion> = Vec::with_capacity(header.question_count as usize);
+        let mut answers: Vec<DnsRecord> = Vec::with_capacity(header.answer_count as usize);
+        let mut authoritatives: Vec<DnsRecord> =
+            Vec::with_capacity(header.authoritative_count as usize);
+        let mut additionals: Vec<DnsRecord> = Vec::with_capacity(header.additional_count as usize);
+
+        for _ in 0..header.question_count {
+            let question = DnsQuestion::read_from(buffer)?;
+            questions.push(question);
+        }
+
+        for _ in 0..header.answer_count {
+            let answer = DnsRecord::read_from(buffer)?;
+            answers.push(answer);
+        }
+
+        for _ in 0..header.authoritative_count {
+            let authoritative = DnsRecord::read_from(buffer)?;
+            authoritatives.push(authoritative);
+        }
+
+        for _ in 0..header.additional_count {
+            let additional = DnsRecord::read_from(buffer)?;
+            additionals.push(additional);
+        }
+
+        Ok(DnsPacket {
+            header,
+            questions,
+            answers,
+            authoritatives,
+            additionals,
+        })
+    }
+}
