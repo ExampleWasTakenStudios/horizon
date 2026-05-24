@@ -1,3 +1,5 @@
+use tokio::io::AsyncWriteExt;
+
 use crate::{buffer::PacketBuffer, protocol::ResponseCode};
 
 #[derive(Debug)]
@@ -87,5 +89,16 @@ impl DomainName {
         buffer.advance_by(bytes_consumed);
 
         Ok(DomainName { labels })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = Vec::new();
+
+        for label in &self.labels {
+            buffer.write_u8(label.len() as u8);
+            tokio::io::AsyncWriteExt::write_all(&mut buffer, label);
+        }
+
+        buffer
     }
 }

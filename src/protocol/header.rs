@@ -1,3 +1,5 @@
+use tokio::io::AsyncWriteExt;
+
 use crate::{buffer::PacketBuffer, protocol::enums::ResponseCode};
 
 #[derive(Debug)]
@@ -54,5 +56,39 @@ impl DnsHeader {
             authoritative_count,
             additional_count,
         })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = Vec::with_capacity(12);
+
+        // --- ID ---
+        buffer.write_u16(self.id);
+
+        // --- Flags ---
+        let mut flags: u16 = 0;
+        flags |= (self.is_response as u16) << 15;
+        flags |= (self.op_code as u16 & 0b1111) << 11;
+        flags |= (self.is_authoritative as u16) << 10;
+        flags |= (self.is_truncated as u16) << 9;
+        flags |= (self.is_recursion_desired as u16) << 8;
+        flags |= (self.is_recursion_avail as u16) << 7;
+        flags |= (self.z as u16 & 0b111) << 6;
+        flags |= self.response_code as u16 & 0b1111;
+
+        buffer.write_u16(flags);
+
+        // --- Question Count ---
+        buffer.write_u16(self.question_count);
+
+        // --- Answers Count ---
+        buffer.write_u16(self.answer_count);
+
+        // --- Authoritative Count ---
+        buffer.write_u16(self.authoritative_count);
+
+        // --- Additionals Count ---
+        buffer.write_u16(self.additional_count);
+
+        buffer
     }
 }

@@ -23,7 +23,7 @@ impl CharString {
         Ok(CharString { buffer: string })
     }
 
-    pub fn as_buffer(&self) -> &[u8] {
-        &self.buffer
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.buffer.clone()
     }
 }

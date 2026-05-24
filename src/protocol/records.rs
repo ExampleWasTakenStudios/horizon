@@ -1,3 +1,5 @@
+use tokio::io::AsyncWriteExt;
+
 use crate::{
     buffer::PacketBuffer,
     protocol::{
@@ -23,6 +25,11 @@ impl AData {
             ],
         })
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let buffer: Vec<u8> = self.address.to_vec();
+        buffer
+    }
 }
 
 #[derive(Debug)]
@@ -36,6 +43,10 @@ impl NsData {
             ns_domain_name: DomainName::read_from(buffer)?,
         })
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.ns_domain_name.to_vec()
+    }
 }
 
 #[derive(Debug)]
@@ -48,6 +59,10 @@ impl CNameData {
         Ok(CNameData {
             c_name: DomainName::read_from(buffer)?,
         })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.c_name.to_vec()
     }
 }
 
@@ -82,6 +97,13 @@ impl SoaRecordData {
             minimum,
         })
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = Vec::new();
+
+        buffer.write_all(&self.m_name.to_vec());
+        buffer
+    }
 }
 
 #[derive(Debug)]
@@ -94,6 +116,13 @@ impl PtrData {
         Ok(PtrData {
             ptr_d_name: DomainName::read_from(buffer)?,
         })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = Vec::new();
+
+        buffer.write_all(&self.ptr_d_name.to_vec());
+        buffer
     }
 }
 
@@ -113,6 +142,14 @@ impl MxRecordData {
             exchange,
         })
     }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut buffer: Vec<u8> = Vec::new();
+
+        buffer.write_u16(self.preference);
+        buffer.write_all(&self.exchange.to_vec());
+        buffer
+    }
 }
 
 #[derive(Debug)]
@@ -125,6 +162,10 @@ impl TxtData {
         Ok(TxtData {
             txt_data: CharString::read_from(buffer, rd_length)?,
         })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.txt_data.to_vec().clone().to_vec()
     }
 }
 
@@ -147,27 +188,6 @@ pub enum DnsRecordData {
     MX(MxRecordData),
     TXT(TxtData),
     UNKNOWN(UnknownRData),
-}
-
-#[derive(Debug)]
-pub struct DnsQuestion {
-    pub name: DomainName,
-    pub query_type: DnsType,
-    pub query_class: DnsClass,
-}
-
-impl DnsQuestion {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
-        let q_name = DomainName::read_from(buffer)?;
-        let q_type = DnsType::from_number(buffer.read_u16()?);
-        let q_class = DnsClass::from_number(buffer.read_u16()?);
-
-        Ok(DnsQuestion {
-            name: q_name,
-            query_type: q_type,
-            query_class: q_class,
-        })
-    }
 }
 
 #[derive(Debug)]
@@ -208,5 +228,11 @@ impl DnsRecord {
             rd_length,
             r_data,
         })
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self.r#type {
+            
+        }
     }
 }

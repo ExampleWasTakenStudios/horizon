@@ -1,4 +1,7 @@
-use crate::{buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
+use crate::{
+    buffer::PacketBuffer,
+    protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode},
+};
 
 #[derive(Debug)]
 pub struct DnsPacket {
@@ -10,6 +13,22 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
+    pub fn create(
+        header: DnsHeader,
+        questions: Option<Vec<DnsQuestion>>,
+        answers: Option<Vec<DnsRecord>>,
+        authoritatives: Option<Vec<DnsRecord>>,
+        additionals: Option<Vec<DnsRecord>>,
+    ) -> DnsPacket {
+        DnsPacket {
+            header,
+            questions: questions.unwrap_or(Vec::with_capacity(0)),
+            answers: answers.unwrap_or(Vec::with_capacity(0)),
+            authoritatives: authoritatives.unwrap_or(Vec::with_capacity(0)),
+            additionals: additionals.unwrap_or(Vec::with_capacity(0)),
+        }
+    }
+
     pub fn parse_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
         let header = DnsHeader::read_from(buffer)?;
         let mut questions: Vec<DnsQuestion> = Vec::with_capacity(header.question_count as usize);
@@ -45,5 +64,19 @@ impl DnsPacket {
             authoritatives,
             additionals,
         })
+    }
+
+    pub fn to_vec(&self) -> [u8; 512] {
+        let buffer: Vec<u8> = Vec::with_capacity(12);
+
+        buffer.extend(self.header.to_vec());
+
+        for question in self.questions {
+            buffer.extend(question.to_vec());
+        }
+
+        for answer in self.answers {
+            buffer.extend(answer)
+        }
     }
 }
