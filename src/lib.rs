@@ -1,7 +1,7 @@
-use std::io::Write;
 use tokio::{self, net, runtime};
 
 pub mod protocol;
+pub mod context;
 pub mod buffer;
 
 pub fn entry() {
@@ -14,11 +14,11 @@ pub fn entry() {
 
     rt.block_on(async {
         let socket = net::UdpSocket::bind("0.0.0.0:1234").await.unwrap();
-        println!("Bound to socket: {:?}", socket);
+        println!("Bound to socket: {:?}", socket.local_addr());
         let mut buffer: [u8; 512] = [0; 512];
 
         loop {
-             let (bytes, source) = match socket.recv_from(&mut buffer).await {
+             let (_, source) = match socket.recv_from(&mut buffer).await {
                 Ok(result) => result,
                 Err(e) => {
                     eprintln!("Failure while receiving datagram...should send a SERVFAIL response code.\n{:#?}", e);
@@ -28,17 +28,7 @@ pub fn entry() {
 
              tokio::spawn(async move {
                 let mut buffer = buffer::PacketBuffer::from_raw_buffer(buffer);
-                let packet = protocol::DnsPacket::parse_from(&mut buffer).unwrap();
-
-                println!("Received {} bytes from {} in packet: {:#?}", bytes, source, packet);
-                let labels = &packet.questions[0].name.labels;
-
-                println!("Query:");
-                let mut stdout = std::io::stdout();
-                for label in labels {
-                    stdout.write_all(label).unwrap();
-                    stdout.flush().unwrap();
-                }
+                let packet = protocol::DnsPacket::parse_from(&mut buffer);
 
              });
         }
