@@ -14,7 +14,7 @@ impl Default for PacketBuffer {
 /// Represents a cursored buffer with length 512.
 /// It features special methods to read the buffer that keep track of the cursor i.e. the current location in the buffer.
 impl PacketBuffer {
-    pub fn new() -> Self {
+    fn new() -> Self {
         PacketBuffer {
             buffer: [0; 512],
             position: 0,
@@ -78,5 +78,34 @@ impl PacketBuffer {
         }
 
         Ok(subarray)
+    }
+
+    pub fn write_u8(&mut self, value: u8) -> Result<(), ResponseCode> {
+        if self.position + 1 > self.buffer.len() {
+            return Err(ResponseCode::SERVFAIL);
+        }
+
+        self.buffer[self.position] = value;
+        self.position += 1;
+
+        Ok(())
+    }
+
+    pub fn write_u16(&mut self, value: u16) -> Result<(), ResponseCode> {
+        let bytes = value.to_be_bytes();
+        for byte in bytes {
+            self.write_u8(byte)?;
+        }
+
+        Ok(())
+    }
+
+    pub fn write_u32(&mut self, value: u32) -> Result<(), ResponseCode> {
+        let bytes = value.to_be_bytes();
+        for byte in bytes {
+            self.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }

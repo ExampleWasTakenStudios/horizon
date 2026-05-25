@@ -1,5 +1,3 @@
-use tokio::io::AsyncWriteExt;
-
 use crate::{buffer::PacketBuffer, protocol::ResponseCode};
 
 #[derive(Debug)]
@@ -91,14 +89,19 @@ impl DomainName {
         Ok(DomainName { labels })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer: Vec<u8> = Vec::new();
+    /// TODO: This method currently does not support message compression.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let total_capacity = self.labels.iter().map(|label| label.len() + 1).sum::<usize>();
+
+        let mut bytes: Vec<u8> = Vec::with_capacity(total_capacity);
 
         for label in &self.labels {
-            buffer.write_u8(label.len() as u8);
-            tokio::io::AsyncWriteExt::write_all(&mut buffer, label);
+            // DNS RFC restricts label lengths to 63 so we can cast to u8 here
+            bytes.push(label.len() as u8);
+
+            bytes.extend_from_slice(&label);
         }
 
-        buffer
+        bytes
     }
 }

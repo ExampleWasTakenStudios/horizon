@@ -26,9 +26,12 @@ impl AData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        let buffer: Vec<u8> = self.address.to_vec();
-        buffer
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        for byte in self.address {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -44,8 +47,14 @@ impl NsData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.ns_domain_name.to_vec()
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        let bytes = self.ns_domain_name.to_bytes();
+
+        for byte in bytes {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -61,8 +70,14 @@ impl CNameData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.c_name.to_vec()
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        let bytes = self.c_name.to_bytes();
+
+        for byte in bytes {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -98,11 +113,25 @@ impl SoaRecordData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer: Vec<u8> = Vec::new();
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        let m_name_bytes = self.m_name.to_bytes();
+        let r_name_bytes = self.r_name.to_bytes();
 
-        buffer.write_all(&self.m_name.to_vec());
-        buffer
+        for byte in m_name_bytes {
+            buffer.write_u8(byte)?;
+        }
+
+        for byte in r_name_bytes {
+            buffer.write_u8(byte)?;
+        }
+
+        buffer.write_u32(self.serial)?;
+        buffer.write_u32(self.refresh)?;
+        buffer.write_u32(self.retry)?;
+        buffer.write_u32(self.expire)?;
+        buffer.write_u32(self.minimum)?;
+
+        Ok(())
     }
 }
 
@@ -118,11 +147,12 @@ impl PtrData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer: Vec<u8> = Vec::new();
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        for byte in self.ptr_d_name.to_bytes() {
+            buffer.write_u8(byte)?;
+        }
 
-        buffer.write_all(&self.ptr_d_name.to_vec());
-        buffer
+        Ok(())
     }
 }
 
@@ -143,12 +173,14 @@ impl MxRecordData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer: Vec<u8> = Vec::new();
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        buffer.write_u16(self.preference)?;
 
-        buffer.write_u16(self.preference);
-        buffer.write_all(&self.exchange.to_vec());
-        buffer
+        for byte in self.exchange.to_bytes() {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -164,8 +196,12 @@ impl TxtData {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.txt_data.to_vec().clone().to_vec()
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        for byte in self.txt_data.to_bytes() {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -175,6 +211,14 @@ pub struct UnknownRData(Vec<u8>);
 impl UnknownRData {
     pub fn read_from(buffer: &mut PacketBuffer, rd_length: usize) -> Result<Self, ResponseCode> {
         Ok(UnknownRData(buffer.read_subarray(rd_length)?))
+    }
+
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        for byte in self.0 {
+            buffer.write_u8(byte)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -188,6 +232,21 @@ pub enum DnsRecordData {
     MX(MxRecordData),
     TXT(TxtData),
     UNKNOWN(UnknownRData),
+}
+
+impl DnsRecordData {
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        match self {
+            DnsRecordData::A(data) => data.write_to(buffer),
+            DnsRecordData::NS(data) => data.write_to(buffer),
+            DnsRecordData::CNAME(data) => data.write_to(buffer),
+            DnsRecordData::SOA(data) => data.write_to(buffer),
+            DnsRecordData::PTR(data) => data.write_to(buffer),
+            DnsRecordData::MX(data) => data.write_to(buffer),
+            DnsRecordData::TXT(data) => data.write_to(buffer),
+            DnsRecordData::UNKNOWN(data) => data.write_to(buffer),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -230,9 +289,21 @@ impl DnsRecord {
         })
     }
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        match self.r#type {
-            
+    pub fn write_to(&self, buffer: &mut PacketBuffer) -> Result<(), ResponseCode> {
+        for byte in self.name.to_bytes() {
+            buffer.write_u8(byte)?;
         }
+
+        buffer.write_u16(self.r#type.to_number())?;
+        buffer.write_u16(self.class.to_number())?;
+        buffer.write_u32(self.ttl)?;
+        buffer.write_u16(self.rd_length)?;
+
+        for byte in self.r_data.
+
+        /*
+            Instead of writing directly do the buffer in the corresponding methods of RDATA,
+            we should turn them into bytes and write them to a buffer in a method of the DnsPacket impl
+         */
     }
 }
