@@ -20,7 +20,7 @@ pub struct DnsHeader {
 }
 
 impl DnsHeader {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let id = buffer.read_u16()?;
 
         let flags = buffer.read_u16()?;

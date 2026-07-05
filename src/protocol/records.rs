@@ -13,7 +13,7 @@ pub struct AData {
 }
 
 impl AData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         Ok(AData {
             address: [
                 buffer.read_u8()?,
@@ -31,7 +31,7 @@ pub struct NsData {
 }
 
 impl NsData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         Ok(NsData {
             ns_domain_name: DomainName::read_from(buffer)?,
         })
@@ -44,7 +44,7 @@ pub struct CNameData {
 }
 
 impl CNameData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         Ok(CNameData {
             c_name: DomainName::read_from(buffer)?,
         })
@@ -63,7 +63,7 @@ pub struct SoaRecordData {
 }
 
 impl SoaRecordData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let m_name = DomainName::read_from(buffer)?;
         let r_name = DomainName::read_from(buffer)?;
         let serial = buffer.read_u32()?;
@@ -90,7 +90,7 @@ pub struct PtrData {
 }
 
 impl PtrData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         Ok(PtrData {
             ptr_d_name: DomainName::read_from(buffer)?,
         })
@@ -104,7 +104,7 @@ pub struct MxRecordData {
 }
 
 impl MxRecordData {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let preference = buffer.read_u16()?;
         let exchange = DomainName::read_from(buffer)?;
 
@@ -121,7 +121,7 @@ pub struct TxtData {
 }
 
 impl TxtData {
-    pub fn read_from(buffer: &mut PacketBuffer, rd_length: u16) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: u16) -> Result<Self, ResponseCode> {
         Ok(TxtData {
             txt_data: CharString::read_from(buffer, rd_length)?,
         })
@@ -132,7 +132,7 @@ impl TxtData {
 pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
-    pub fn read_from(buffer: &mut PacketBuffer, rd_length: usize) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: usize) -> Result<Self, ResponseCode> {
         Ok(UnknownRData(buffer.read_subarray(rd_length)?))
     }
 }
@@ -157,7 +157,7 @@ pub struct DnsQuestion {
 }
 
 impl DnsQuestion {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let q_name = DomainName::read_from(buffer)?;
         let q_type = DnsType::from_number(buffer.read_u16()?);
         let q_class = DnsClass::from_number(buffer.read_u16()?);
@@ -181,7 +181,7 @@ pub struct DnsRecord {
 }
 
 impl DnsRecord {
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let name = DomainName::read_from(buffer)?;
         let r#type = DnsType::from_number(buffer.read_u16()?);
         let class = DnsClass::from_number(buffer.read_u16()?);

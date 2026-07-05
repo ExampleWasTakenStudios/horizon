@@ -2,36 +2,36 @@ use std::{net::SocketAddr, time::SystemTime};
 
 use crate::protocol::packet::DnsPacket;
 
-pub struct QueryState<'a> {
-    query: DnsPacket,
-    sender: SocketAddr,
+pub struct QueryState {
+    origin: SocketAddr,
+    packet: DnsPacket,
     timestamp: SystemTime,
-    pub master_zone_file: Option<&'a MasterZoneFile>,
-    pub blacklist: Option<&'a Blacklist>,
-    pub response: Option<DnsPacket>,
+    response: Option<DnsPacket>,
 }
 
 impl QueryState {
-    pub fn new(query: DnsPacket, sender: SocketAddr, timestamp: SystemTime) -> Self {
+    pub fn new(origin: SocketAddr, packet: DnsPacket) -> QueryState {
         QueryState {
-            query,
-            sender,
-            timestamp,
-            master_zone_file: None,
-            blacklist: None,
-            response: None
+            origin,
+            packet,
+            timestamp: SystemTime::now(),
+            response: None,
         }
     }
 
-    pub fn get_query(&self) -> DnsPacket {
-        self.query
+    pub fn get_origin(&self) -> &SocketAddr {
+        &self.origin
     }
 
-    pub fn get_sender(&self) -> SocketAddr {
-        self.sender
+    pub fn get_packet(&self) -> &DnsPacket {
+        &self.packet
     }
 
-    pub fn get_timestamp(&self) -> SystemTime {
-        self.timestamp
+    pub fn get_timestamp(&self) -> &SystemTime {
+        &self.timestamp
+    }
+
+    pub fn get_response(&self) -> &Option<DnsPacket> {
+        &self.response
     }
 }

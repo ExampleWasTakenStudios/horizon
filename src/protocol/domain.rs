@@ -81,7 +81,7 @@ impl DomainName {
         Ok((labels, local_position - start_position))
     }
 
-    pub fn read_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let (labels, bytes_consumed) = Self::parse_raw(buffer.as_slice(), buffer.get_position())?;
 
         buffer.advance_by(bytes_consumed);
