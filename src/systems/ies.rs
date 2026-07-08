@@ -1,59 +1,64 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc, thread::JoinHandle};
 
-use tokio::sync::mpsc::{Receiver, Sender};
-
-use crate::{
-    MAX_PACKET_SIZE, buffer::PacketBuffer, isc::HalfDuplexMessage, protocol::packet::DnsPacket,
-    query_state::QueryState,
+use tokio::{
+    net::UdpSocket,
+    sync::mpsc::{Receiver, Sender},
+    task::JoinSet,
 };
 
-/// Data structure used to send data between the socket manager and the IES.
-pub struct NetworkTrafficMessage {
-    origin: SocketAddr,
-    data: [u8; MAX_PACKET_SIZE],
-}
+use crate::{
+    IP_ADDR, MAX_PACKET_SIZE, buffer::PacketBuffer, isc::HalfDuplexMessage, protocol::packet::DnsPacket, query_state::QueryState, systems::IesCommand,
+};
 
 pub struct IesChannels {
-    pub ies_ingress_rx: Receiver<NetworkTrafficMessage>,
-    pub ies_egress_tx: Sender<NetworkTrafficMessage>,
     pub ies_to_dps_tx: Sender<QueryState>,
-    pub ies_resolving_rx: Receiver<HalfDuplexMessage<DnsPacket, Option<DnsPacket>>>,
     pub ies_answer_rx: Receiver<QueryState>,
+    pub ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<DnsPacket, Option<DnsPacket>>>,
 }
 
-pub struct IngressEgressSystem;
+pub struct IngressEgressSystem {
+    socket: Arc<UdpSocket>,
+    pub ies_to_dps_tx: Sender<QueryState>,
+    pub ies_answer_rx: Receiver<QueryState>,
+    pub ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesCommand, Option<DnsPacket>>>,
+}
 
 impl IngressEgressSystem {
-    pub async fn run(channels: IesChannels) {
+    pub async fn run(&mut self) {
         println!("Starting IES...");
 
-        let mut ingress_rx = channels.ies_ingress_rx;
-        let mut answer_rx = channels.ies_answer_rx;
-        let mut resolving_rx = channels.ies_resolving_rx;
+        let socket_ingress_clone = self.socket.clone();
+        let socket_egress_clone = self.socket.clone();
+
+        let ies_to_dps_tx_clone = self.ies_to_dps_tx.clone();
+        // Continue: all fields of self should be cloned and those clones be used in the corresponding tasks
 
         // This task handles all incoming queries.
         tokio::spawn(async move {
             println!("Starting incoming query task...");
+
             loop {
-                let incoming_message = match ingress_rx.recv().await {
-                    None => {
-                        panic!("IES RX channel to receive incoming traffic closed unexpectedly.")
+                let mut buf = [0_u8; MAX_PACKET_SIZE];
+                let (_, origin) = match socket_ingress_clone.recv_from(&mut buf).await {
+                    Err(e) => {
+                        eprintln!("Error while receiving DGRAM: {:#?}", e);
+                        continue;
                     }
-                    Some(v) => v,
+                    Ok(value) => value,
                 };
 
                 // Parse bytes to DnsPacket
-                let mut packet_buf = PacketBuffer::from_raw_buffer(incoming_message.data);
+                let mut packet_buf = PacketBuffer::from_raw_buffer(buf);
                 let packet = match DnsPacket::parse_from(&mut packet_buf) {
                     Err(_) => continue,
                     Ok(packet) => packet,
                 };
 
                 // Create QueryState
-                let query_state = QueryState::new(incoming_message.origin, packet);
+                let query_state = QueryState::new(origin, packet);
 
                 // Send DnsPacket to DPS
-                channels.ies_to_dps_tx.send(query_state).await;
+                ies_to_dps_tx.send(query_state).await;
             }
         });
 
@@ -61,7 +66,7 @@ impl IngressEgressSystem {
         tokio::spawn(async move {
             println!("Starting answer task...");
             loop {
-                let received_query_state = match answer_rx.recv().await {
+                let received_query_state = match ies_answer_rx.recv().await {
                     None => {
                         panic!("IES RX channel to receive answered queries closed unexpectedly.")
                     }
@@ -77,13 +82,9 @@ impl IngressEgressSystem {
                     Some(v) => v,
                 };
 
-                // Send data to socket
-                channels
-                    .ies_egress_tx
-                    .send(NetworkTrafficMessage {
-                        origin: *received_query_state.get_origin(),
-                        data: bytes,
-                    })
+                // Send data to downstream client
+                egress_socket
+                    .send_to(&bytes, received_query_state.get_origin())
                     .await;
             }
         });
@@ -92,7 +93,7 @@ impl IngressEgressSystem {
         tokio::spawn(async move {
             println!("Starting upstream forward task...");
             loop {
-                let message = match resolving_rx.recv().await {
+                let message = match ies_upstream_resolve_rx.recv().await {
                     None => {
                         panic!("IES-SRS resolving channel closed unexpectedly.");
                     }
@@ -160,5 +161,19 @@ impl IngressEgressSystem {
                 });
             }
         });
+    }
+
+    pub async fn new(
+        ies_to_dps_tx: Sender<QueryState>,
+        ies_answer_rx: Receiver<QueryState>,
+        ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesCommand, Option<DnsPacket>>>,
+    ) -> Self {
+        let socket = Arc::new(UdpSocket::bind(IP_ADDR).await.unwrap());
+        Self {
+            socket,
+            ies_to_dps_tx,
+            ies_answer_rx,
+            ies_upstream_resolve_rx,
+        }
     }
 }

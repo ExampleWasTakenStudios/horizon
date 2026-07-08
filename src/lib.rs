@@ -1,9 +1,6 @@
 use tokio::{self, runtime};
 
-use crate::{
-    isc::init_msg_channels,
-    systems::{IesChannels, IngressEgressSystem},
-};
+use crate::systems::IngressEgressSystem;
 
 mod buffer;
 mod isc;
@@ -24,30 +21,14 @@ pub fn entry() {
 
     rt.block_on(async {
         // Initialize communication channels
-        let channels = init_msg_channels();
-
-        // Configure main socket
-        let socket = tokio::net::UdpSocket::bind(IP_ADDR).await.unwrap();
+        let channels = isc::init_msg_channels();
 
         // Start IES
-        IngressEgressSystem::run(IesChannels {
-            ies_ingress_rx: channels.ies_ingress_channel.rx,
-            ies_to_dps_tx: channels.ies_to_dps.tx,
-            ies_egress_tx: channels.ies_egress_channel.tx,
-            ies_resolving_rx: channels.ies_resolving_channel.rx,
-            ies_answer_rx: channels.ies_answer_channel.rx,
-        })
+        let ies = IngressEgressSystem::new(
+            channels.ies_to_dps.tx,
+            channels.ies_answer.rx,
+            channels.ies_upstream_resolve.rx,
+        )
         .await;
-
-        loop {
-            let mut buf = [0_u8; MAX_PACKET_SIZE];
-            let (_, origin) = match socket.recv_from(&mut buf).await {
-                Err(e) => {
-                    eprintln!("Error while receiving DGRAM: {:#?}", e);
-                    continue;
-                }
-                Ok(value) => value,
-            };
-        }
     })
 }
