@@ -10,11 +10,6 @@ pub struct MpscChannel<T> {
     pub rx: mpsc::Receiver<T>,
 }
 
-pub struct OneshotChannel<T> {
-    pub tx: oneshot::Sender<T>,
-    pub rx: oneshot::Receiver<T>,
-}
-
 /// `T`: The type of the payload that is sent by the sender of the message. <br>
 /// `V`: The type of the payload of the returning message.
 pub struct HalfDuplexMessage<T, V> {
