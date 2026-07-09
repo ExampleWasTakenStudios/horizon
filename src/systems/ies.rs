@@ -77,7 +77,7 @@ impl IngressEgressSystem {
                 let bytes = match received_query_state.get_packet().to_raw_bytes() {
                     None => {
                         eprintln!("Error while translating query to bytes.");
-                        return;
+                        continue;
                     }
                     Some(v) => v,
                 };
@@ -109,7 +109,7 @@ impl IngressEgressSystem {
                 let bytes = match message.payload.packet.to_raw_bytes() {
                     None => {
                         eprintln!("Error while translating query for upstream resolver.");
-                        return;
+                        continue;
                     }
                     Some(v) => v,
                 };
