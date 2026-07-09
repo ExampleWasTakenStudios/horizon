@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc, thread::JoinHandle};
+use std::sync::Arc;
 
 use tokio::{
     net::UdpSocket,
@@ -18,15 +18,11 @@ pub struct IngressEgressSystem {
 }
 
 impl IngressEgressSystem {
-    pub async fn run(self) {
+    pub async fn run(mut self) {
         println!("Starting IES...");
 
         let socket_ingress_clone = self.socket.clone();
         let socket_egress_clone = self.socket.clone();
-
-        let ies_to_dps_tx_clone = self.ies_to_dps_tx.clone();
-        let mut ies_answer_rx_clone = self.ies_answer_rx;
-        let mut ies_upstream_resolve_rx_clone = self.ies_upstream_resolve_rx;
 
         // This task handles all incoming queries.
         tokio::spawn(async move {
@@ -53,7 +49,16 @@ impl IngressEgressSystem {
                 let query_state = QueryState::new(origin, packet);
 
                 // Send DnsPacket to DPS
-                ies_to_dps_tx_clone.send(query_state).await;
+                if let Err(e) = self.ies_to_dps_tx.try_send(query_state) {
+                    match e {
+                        tokio::sync::mpsc::error::TrySendError::Closed(_) => {
+                            panic!("DPS channel closed unexpectedly.")
+                        }
+                        tokio::sync::mpsc::error::TrySendError::Full(_) => {
+                            println!("IES-DPS channel overloaded. Dropping query")
+                        }
+                    }
+                }
             }
         });
 
@@ -61,7 +66,7 @@ impl IngressEgressSystem {
         tokio::spawn(async move {
             println!("Starting answer task...");
             loop {
-                let received_query_state = match ies_answer_rx_clone.recv().await {
+                let received_query_state = match self.ies_answer_rx.recv().await {
                     None => {
                         panic!("IES RX channel to receive answered queries closed unexpectedly.")
                     }
@@ -78,9 +83,14 @@ impl IngressEgressSystem {
                 };
 
                 // Send data to downstream client
-                socket_egress_clone
+                if let Err(e) = socket_egress_clone
                     .send_to(&bytes, received_query_state.get_origin())
-                    .await;
+                    .await
+                {
+                    eprintln!(
+                        "Error {e} occurred while trying to send answer to client. Dropping query"
+                    );
+                }
             }
         });
 
@@ -88,7 +98,7 @@ impl IngressEgressSystem {
         tokio::spawn(async move {
             println!("Starting upstream forward task...");
             loop {
-                let message = match ies_upstream_resolve_rx_clone.recv().await {
+                let message = match self.ies_upstream_resolve_rx.recv().await {
                     None => {
                         panic!("IES-SRS resolving channel closed unexpectedly.");
                     }
@@ -110,7 +120,11 @@ impl IngressEgressSystem {
                     let socket = match tokio::net::UdpSocket::bind("0.0.0.0:0").await {
                         Err(e) => {
                             eprintln!("Error while trying to bind resolving socket. Error: {e}");
-                            message.return_channel.send(None);
+                            if message.return_channel.send(None).is_err() {
+                                eprintln!(
+                                    "Failed to bind to upstream socket but could not notify SRS through return channel."
+                                );
+                            }
                             return;
                         }
                         Ok(v) => v,
@@ -125,7 +139,11 @@ impl IngressEgressSystem {
                         eprintln!(
                             "Error while trying to send query to upstream resolver. Error: {e}"
                         );
-                        message.return_channel.send(None);
+                        if message.return_channel.send(None).is_err() {
+                            eprintln!(
+                                "Failed to notify SRS of socket failure through return channel."
+                            );
+                        };
                         return;
                     };
 
@@ -134,7 +152,11 @@ impl IngressEgressSystem {
                             eprintln!(
                                 "Error while receiving data from upstream resolver. Error. {e}"
                             );
-                            message.return_channel.send(None);
+                            if message.return_channel.send(None).is_err() {
+                                eprintln!(
+                                    "Failed to notify SRS of socket receiving failure through return channel."
+                                );
+                            };
                             return;
                         }
                         Ok(v) => v,
@@ -145,14 +167,20 @@ impl IngressEgressSystem {
                     let received_packet = match DnsPacket::parse_from(&mut packet_buf) {
                         Err(_) => {
                             eprintln!("Error while parsing received upstream data.");
-                            message.return_channel.send(None);
+                            if message.return_channel.send(None).is_err() {
+                                eprintln!(
+                                    "Failed to notify SRS of parsing error through return channel."
+                                );
+                            };
                             return;
                         }
                         Ok(v) => v,
                     };
 
                     // Send data back to SRS
-                    message.return_channel.send(Some(received_packet));
+                    if message.return_channel.send(Some(received_packet)).is_err() {
+                        eprintln!("Failed send received query back to SRS through return channel.");
+                    };
                 });
             }
         });
