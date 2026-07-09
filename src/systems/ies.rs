@@ -1,31 +1,32 @@
 use std::sync::Arc;
 
 use tokio::{
-    net::UdpSocket,
-    sync::mpsc::{Receiver, Sender},
+    net::UdpSocket, sync::mpsc::{Receiver, Sender}, task::{JoinHandle, JoinSet},
 };
 
 use crate::{
     IP_ADDR, MAX_PACKET_SIZE, buffer::PacketBuffer, isc::HalfDuplexMessage,
-    protocol::packet::DnsPacket, query_state::QueryState, systems::IesCommand,
+    protocol::packet::DnsPacket, query_state::QueryState, systems::IesResolveCommand,
 };
 
 pub struct IngressEgressSystem {
     socket: Arc<UdpSocket>,
     ies_to_dps_tx: Sender<QueryState>,
     ies_answer_rx: Receiver<QueryState>,
-    ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesCommand, Option<DnsPacket>>>,
+    ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
 }
 
 impl IngressEgressSystem {
-    pub async fn run(mut self) {
+    pub async fn run(mut self) -> JoinSet<()> {
         println!("Starting IES...");
+
+        let mut join_set = JoinSet::<()>::new();
 
         let socket_ingress_clone = self.socket.clone();
         let socket_egress_clone = self.socket.clone();
 
         // This task handles all incoming queries.
-        tokio::spawn(async move {
+        join_set.spawn(async move {
             println!("Starting incoming query task...");
 
             loop {
@@ -63,7 +64,7 @@ impl IngressEgressSystem {
         });
 
         // This task receives answered query states and sends them back to the querying client.
-        tokio::spawn(async move {
+        join_set.spawn(async move {
             println!("Starting answer task...");
             loop {
                 let received_query_state = match self.ies_answer_rx.recv().await {
@@ -95,7 +96,7 @@ impl IngressEgressSystem {
         });
 
         // This task handles the query forwarding to an upstream resolver and returns it to the SRS.
-        tokio::spawn(async move {
+        join_set.spawn(async move {
             println!("Starting upstream forward task...");
             loop {
                 let message = match self.ies_upstream_resolve_rx.recv().await {
@@ -184,12 +185,14 @@ impl IngressEgressSystem {
                 });
             }
         });
+
+        join_set
     }
 
     pub async fn new(
         ies_to_dps_tx: Sender<QueryState>,
         ies_answer_rx: Receiver<QueryState>,
-        ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesCommand, Option<DnsPacket>>>,
+        ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
     ) -> Self {
         let socket = Arc::new(UdpSocket::bind(IP_ADDR).await.unwrap());
         Self {

@@ -3,7 +3,7 @@ use tokio::sync::{
     oneshot,
 };
 
-use crate::{protocol::packet::DnsPacket, query_state::QueryState, systems::IesCommand};
+use crate::{protocol::packet::DnsPacket, query_state::QueryState, systems::IesResolveCommand};
 
 pub struct MpscChannel<T> {
     pub tx: mpsc::Sender<T>,
@@ -35,7 +35,7 @@ pub struct InterSystemCommunicationChannels {
     ///
     /// `K`: The `IesCommand` <br>
     /// `V`: The owned `DnsPacket` of the upstream response
-    pub ies_upstream_resolve: MpscChannel<HalfDuplexMessage<IesCommand, Option<DnsPacket>>>,
+    pub ies_upstream_resolve: MpscChannel<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
 }
 
 pub fn init_msg_channels() -> InterSystemCommunicationChannels {

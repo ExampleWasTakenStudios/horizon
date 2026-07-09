@@ -31,6 +31,9 @@ pub fn entry() {
         )
         .await;
 
-        ies.run().await;
+        let join_set = ies.run().await;
+        println!("AFTER AWAIT");
+
+        join_set.join_all().await;
     })
 }
