@@ -30,5 +30,7 @@ pub fn entry() {
             channels.ies_upstream_resolve.rx,
         )
         .await;
+
+        ies.run().await;
     })
 }
