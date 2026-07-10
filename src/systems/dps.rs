@@ -18,29 +18,31 @@ impl DecisionPipelineSystem {
 
         // Receive query states from the IES
         join_set.spawn(async move {
-            let message = match self.ies_to_dps_rx.recv().await {
-                None => {
-                    panic!("IES-DPS channel closed unexpectedly.");
-                }
-                Some(message) => message,
-            };
-
-            println!("Received message: {:#?}", &message);
-
-            // 1. Interrogate cache
-
-            // 2. Interrogate LZA
-
-            // 3. Interrogate SHS
-
-            // 4. Forward query to SRS
-            if let Err(e) = self.dps_to_srs_tx.try_send(message) {
-                match e {
-                    tokio::sync::mpsc::error::TrySendError::Closed(_) => {
-                        panic!("DPS-SRS channel closed unexpectedly.");
+            loop {
+                let message = match self.ies_to_dps_rx.recv().await {
+                    None => {
+                        panic!("IES-DPS channel closed unexpectedly.");
                     }
-                    tokio::sync::mpsc::error::TrySendError::Full(_) => {
-                        println!("DPS-SRS channel overloaded. Dropping query.");
+                    Some(message) => message,
+                };
+
+                println!("Received message: {:#?}", &message);
+
+                // 1. Interrogate cache
+
+                // 2. Interrogate LZA
+
+                // 3. Interrogate SHS
+
+                // 4. Forward query to SRS
+                if let Err(e) = self.dps_to_srs_tx.try_send(message) {
+                    match e {
+                        tokio::sync::mpsc::error::TrySendError::Closed(_) => {
+                            panic!("DPS-SRS channel closed unexpectedly.");
+                        }
+                        tokio::sync::mpsc::error::TrySendError::Full(_) => {
+                            println!("DPS-SRS channel overloaded. Dropping query.");
+                        }
                     }
                 }
             }
