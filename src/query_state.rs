@@ -2,6 +2,7 @@ use std::{net::SocketAddr, time::SystemTime};
 
 use crate::protocol::packet::DnsPacket;
 
+#[derive(Debug)]
 pub struct QueryState {
     origin: SocketAddr,
     packet: DnsPacket,
