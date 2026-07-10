@@ -1,5 +1,3 @@
-use std::u8;
-
 use crate::protocol::ResponseCode;
 
 pub struct PacketBuffer<const T: usize> {
