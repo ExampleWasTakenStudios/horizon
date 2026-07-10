@@ -1,6 +1,7 @@
-use tokio::{self, runtime};
+use std::net::Ipv4Addr;
 
 use crate::systems::IngressEgressSystem;
+use tokio::runtime;
 
 mod buffer;
 mod isc;
@@ -25,15 +26,15 @@ pub fn entry() {
 
         // Start IES
         let ies = IngressEgressSystem::new(
+            Ipv4Addr::new(1, 1, 1, 1),
             channels.ies_to_dps.tx,
             channels.ies_answer.rx,
             channels.ies_upstream_resolve.rx,
         )
         .await;
 
-        let join_set = ies.run().await;
-        println!("AFTER AWAIT");
+        let ies_join_set = ies.run().await;
 
-        join_set.join_all().await;
+        ies_join_set.join_all().await;
     })
 }

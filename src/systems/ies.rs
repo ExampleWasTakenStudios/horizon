@@ -1,7 +1,16 @@
-use std::sync::Arc;
+use core::panic;
+use std::{
+    net::{Ipv4Addr, SocketAddr}, sync::Arc,
+};
 
+use dashmap::DashMap;
 use tokio::{
-    net::UdpSocket, sync::mpsc::{Receiver, Sender}, task::{JoinHandle, JoinSet},
+    net::UdpSocket,
+    sync::{
+        mpsc::{Receiver, Sender},
+        oneshot,
+    },
+    task::JoinSet,
 };
 
 use crate::{
@@ -9,8 +18,14 @@ use crate::{
     protocol::packet::DnsPacket, query_state::QueryState, systems::IesResolveCommand,
 };
 
+struct InflightQuery {
+    original_id: u16,
+    sender: oneshot::Sender<Option<DnsPacket>>,
+}
+
 pub struct IngressEgressSystem {
     socket: Arc<UdpSocket>,
+    upstream_resolver_ip: Ipv4Addr,
     ies_to_dps_tx: Sender<QueryState>,
     ies_answer_rx: Receiver<QueryState>,
     ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
@@ -24,6 +39,21 @@ impl IngressEgressSystem {
 
         let socket_ingress_clone = self.socket.clone();
         let socket_egress_clone = self.socket.clone();
+
+        let upstream_socket = Arc::new(UdpSocket::bind("0.0.0.0:0").await.unwrap());
+
+        let upstream_socket_tx = upstream_socket.clone();
+        let upstream_socket_rx = upstream_socket.clone();
+
+        let inflight_queries = Arc::new(DashMap::<u16, InflightQuery>::new());
+        let egress_inflight_queries = inflight_queries.clone();
+        let ingress_inflight_queries = inflight_queries.clone();
+
+        if let Err(e) = upstream_socket
+            .connect(SocketAddr::new(self.upstream_resolver_ip.into(), 53))
+            .await {
+            panic!("Error while trying to connect to upstream resolver at {}. Error: {}", self.upstream_resolver_ip, e);
+        }
 
         // This task handles all incoming queries.
         join_set.spawn(async move {
@@ -95,11 +125,11 @@ impl IngressEgressSystem {
             }
         });
 
-        // This task handles the query forwarding to an upstream resolver and returns it to the SRS.
+        // This task handles the query forwarding to an upstream resolver.
         join_set.spawn(async move {
             println!("Starting upstream forward task...");
             loop {
-                let message = match self.ies_upstream_resolve_rx.recv().await {
+                let mut message = match self.ies_upstream_resolve_rx.recv().await {
                     None => {
                         panic!("IES-SRS resolving channel closed unexpectedly.");
                     }
@@ -115,74 +145,86 @@ impl IngressEgressSystem {
                     Some(v) => v,
                 };
 
-                // Spawn socket
-                tokio::spawn(async move {
-                    let mut receive_buf = [0_u8; MAX_PACKET_SIZE];
-                    let socket = match tokio::net::UdpSocket::bind("0.0.0.0:0").await {
-                        Err(e) => {
-                            eprintln!("Error while trying to bind resolving socket. Error: {e}");
-                            if message.return_channel.send(None).is_err() {
-                                eprintln!(
-                                    "Failed to bind to upstream socket but could not notify SRS through return channel."
-                                );
+                // Replace query ID
+                let original_id = message.payload.packet.header.id;
+                let new_id = Self::generate_id();
+                message.payload.packet.header.id = new_id;
+
+                // Store ID mapping
+                let inflight_query = InflightQuery {
+                    original_id,
+                    sender: message.return_channel,
+                };
+
+                egress_inflight_queries.insert(new_id, inflight_query);
+
+                // Send via upstream_socket and forget
+                if let Err(e) = upstream_socket_tx.send(&bytes).await {
+                    eprintln!(
+                        "Socket error - could not forward query to upstream resolver. Error: {e}"
+                    );
+
+                    match egress_inflight_queries.remove(&new_id) {
+                        None => (),
+                        Some((_, removed_query)) => {
+                            let send_result = removed_query.sender.send(None);
+                            if send_result.is_err() {
+                                eprintln!("Failed to notify SRS.");
                             }
-                            return;
                         }
-                        Ok(v) => v,
-                    };
+                    }
+                    continue;
+                }
 
-                    if let Err(e) = socket.connect(message.payload.resolver_address).await {
-                        eprintln!(
-                            "Error while trying to send query to upstream resolver. Error: {e}"
-                        );
-                    };
-                    if let Err(e) = socket.try_send(&bytes) {
-                        eprintln!(
-                            "Error while trying to send query to upstream resolver. Error: {e}"
-                        );
-                        if message.return_channel.send(None).is_err() {
-                            eprintln!(
-                                "Failed to notify SRS of socket failure through return channel."
-                            );
-                        };
-                        return;
-                    };
+                tokio::time::sleep(message.payload.timeout).await;
+                egress_inflight_queries.remove(&new_id);
+            }
+        });
 
-                    match socket.recv(&mut receive_buf).await {
-                        Err(e) => {
-                            eprintln!(
-                                "Error while receiving data from upstream resolver. Error. {e}"
-                            );
-                            if message.return_channel.send(None).is_err() {
-                                eprintln!(
-                                    "Failed to notify SRS of socket receiving failure through return channel."
-                                );
-                            };
-                            return;
+        // This task handles receiving data from the upstream resolver and forwards it to the SRS.
+        join_set.spawn(async move {
+            loop {
+                // Receive data from upstream
+                let mut buf = [0_u8; MAX_PACKET_SIZE];
+                match upstream_socket_rx.recv(&mut buf).await {
+                    Err(e) => {
+                        eprintln!("Error while receiving upstream response: {e}");
+                        continue;
+                    }
+                    Ok(size) => {
+                        if size > MAX_PACKET_SIZE {
+                            eprintln!("Max packet size exceeded. Dropping...");
+                            continue;
                         }
-                        Ok(v) => v,
-                    };
+                    },
+                };
 
-                    // Parse received data into DnsPacket
-                    let mut packet_buf = PacketBuffer::from_raw_buffer(receive_buf);
-                    let received_packet = match DnsPacket::parse_from(&mut packet_buf) {
-                        Err(_) => {
-                            eprintln!("Error while parsing received upstream data.");
-                            if message.return_channel.send(None).is_err() {
-                                eprintln!(
-                                    "Failed to notify SRS of parsing error through return channel."
-                                );
-                            };
-                            return;
+                // Parse upstream data
+                let mut packet_buf = PacketBuffer::from_raw_buffer(buf);
+                let mut packet = match DnsPacket::parse_from(&mut packet_buf) {
+                    Err(_) => {
+                        eprintln!("Error while parsing received packet. Dropping...");
+                        continue;
+                    }
+                    Ok(packet) => packet,
+                };
+
+                // Check if upstream response answers an inflight query and send it to the SRS if successful
+                match ingress_inflight_queries.remove(&packet.header.id) {
+                    Some((_, inflight_query)) => {
+
+                        // Replace ID with original ID
+                        packet.header.id = inflight_query.original_id;
+
+                        if inflight_query.sender.send(Some(packet)).is_err() {
+                            eprintln!("Return channel failure - could not send response to SRS. Dropping...");
+                            continue;
                         }
-                        Ok(v) => v,
-                    };
-
-                    // Send data back to SRS
-                    if message.return_channel.send(Some(received_packet)).is_err() {
-                        eprintln!("Failed send received query back to SRS through return channel.");
-                    };
-                });
+                    }
+                    None => {
+                        continue;
+                    }
+                }
             }
         });
 
@@ -190,6 +232,7 @@ impl IngressEgressSystem {
     }
 
     pub async fn new(
+        upstream_resolver_ip: Ipv4Addr,
         ies_to_dps_tx: Sender<QueryState>,
         ies_answer_rx: Receiver<QueryState>,
         ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
@@ -197,9 +240,14 @@ impl IngressEgressSystem {
         let socket = Arc::new(UdpSocket::bind(IP_ADDR).await.unwrap());
         Self {
             socket,
+            upstream_resolver_ip,
             ies_to_dps_tx,
             ies_answer_rx,
             ies_upstream_resolve_rx,
         }
+    }
+
+    fn generate_id() -> u16 {
+        rand::random::<u16>()
     }
 }
