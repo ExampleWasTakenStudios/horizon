@@ -1,12 +1,12 @@
 use crate::{buffer::PacketBuffer, protocol::ResponseCode};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CharString {
     buffer: Vec<u8>,
 }
 
 impl CharString {
-    pub fn read_from(buffer: &mut PacketBuffer, length: u16) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, length: u16) -> Result<Self, ResponseCode> {
         let mut string = Vec::with_capacity(length as usize);
         let mut bytes_read: u16 = 0;
 

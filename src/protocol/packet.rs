@@ -1,6 +1,6 @@
-use crate::{buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
+use crate::{MAX_PACKET_SIZE, buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DnsPacket {
     pub header: DnsHeader,
     pub questions: Vec<DnsQuestion>,
@@ -10,7 +10,7 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
-    pub fn parse_from(buffer: &mut PacketBuffer) -> Result<Self, ResponseCode> {
+    pub fn parse_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
         let header = DnsHeader::read_from(buffer)?;
         let mut questions: Vec<DnsQuestion> = Vec::with_capacity(header.question_count as usize);
         let mut answers: Vec<DnsRecord> = Vec::with_capacity(header.answer_count as usize);
@@ -45,5 +45,9 @@ impl DnsPacket {
             authoritatives,
             additionals,
         })
+    }
+
+    pub fn to_raw_bytes(&self) -> Option<[u8; MAX_PACKET_SIZE]> {
+        None // TODO: impl.
     }
 }

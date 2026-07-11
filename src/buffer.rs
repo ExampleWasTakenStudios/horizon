@@ -1,11 +1,11 @@
 use crate::protocol::ResponseCode;
 
-pub struct PacketBuffer {
-    buffer: [u8; 512],
+pub struct PacketBuffer<const T: usize> {
+    buffer: [u8; T],
     position: usize,
 }
 
-impl Default for PacketBuffer {
+impl Default for PacketBuffer<1232> {
     fn default() -> Self {
         Self::new()
     }
@@ -13,22 +13,22 @@ impl Default for PacketBuffer {
 
 /// Represents a cursored buffer with length 512.
 /// It features special methods to read the buffer that keep track of the cursor i.e. the current location in the buffer.
-impl PacketBuffer {
+impl<const T: usize> PacketBuffer<T> {
     pub fn new() -> Self {
         PacketBuffer {
-            buffer: [0; 512],
+            buffer: [0; T],
             position: 0,
         }
     }
 
-    pub fn from_raw_buffer(buffer: [u8; 512]) -> Self {
+    pub fn from_raw_buffer(buffer: [u8; T]) -> Self {
         PacketBuffer {
             buffer,
             position: 0,
         }
     }
 
-    pub fn as_slice(&self) -> &[u8; 512] {
+    pub fn as_slice(&self) -> &[u8; T] {
         &self.buffer
     }
 
