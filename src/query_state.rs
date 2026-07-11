@@ -35,4 +35,8 @@ impl QueryState {
     pub fn get_response(&self) -> &Option<DnsPacket> {
         &self.response
     }
+
+    pub fn set_response(&mut self, response: DnsPacket) {
+        self.response = Some(response);
+    }
 }
