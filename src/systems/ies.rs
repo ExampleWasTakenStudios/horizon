@@ -1,6 +1,7 @@
 use core::panic;
 use std::{
-    net::{Ipv4Addr, SocketAddr}, sync::Arc,
+    net::{Ipv4Addr, SocketAddr},
+    sync::Arc,
 };
 
 use dashmap::DashMap;
@@ -51,8 +52,12 @@ impl IngressEgressSystem {
 
         if let Err(e) = upstream_socket
             .connect(SocketAddr::new(self.upstream_resolver_ip.into(), 53))
-            .await {
-            panic!("Error while trying to connect to upstream resolver at {}. Error: {}", self.upstream_resolver_ip, e);
+            .await
+        {
+            panic!(
+                "Error while trying to connect to upstream resolver at {}. Error: {}",
+                self.upstream_resolver_ip, e
+            );
         }
 
         // This task handles all incoming queries.
@@ -68,6 +73,8 @@ impl IngressEgressSystem {
                     }
                     Ok(value) => value,
                 };
+
+                println!("[IES] RECEIVED QUERY");
 
                 // Parse bytes to DnsPacket
                 let mut packet_buf = PacketBuffer::from_raw_buffer(buf);
@@ -104,6 +111,8 @@ impl IngressEgressSystem {
                     Some(v) => v,
                 };
 
+                println!("[IES]  RECEIVED ANSWER -> SENDING TO CLIENT");
+
                 // Translate the DnsPacket into bytes
                 let bytes = match received_query_state.get_packet().to_raw_bytes() {
                     None => {
@@ -136,10 +145,15 @@ impl IngressEgressSystem {
                     Some(v) => v,
                 };
 
+                println!("[IES] RECEIVED FORWARD QUERY FROM SRS -> forwarding");
+
                 // Translate packet into bytes
                 let bytes = match message.payload.packet.to_raw_bytes() {
                     None => {
                         eprintln!("Error while translating query for upstream resolver.");
+                        if message.return_channel.send(None).is_err() {
+                            eprintln!("[IES] Could not notify SRS of above failure due failure in the return channel.");
+                        }
                         continue;
                     }
                     Some(v) => v,
@@ -198,6 +212,8 @@ impl IngressEgressSystem {
                         }
                     },
                 };
+
+                println!("[IES] RECEIVED UPSTREAM ANSWER -> SENDING TO SRS");
 
                 // Parse upstream data
                 let mut packet_buf = PacketBuffer::from_raw_buffer(buf);

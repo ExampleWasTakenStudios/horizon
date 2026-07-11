@@ -1,5 +1,5 @@
 use tokio::{
-    sync::mpsc::{Receiver, Sender, error::TrySendError::Closed},
+    sync::mpsc::{Receiver, Sender},
     task::JoinSet,
 };
 
@@ -26,7 +26,7 @@ impl DecisionPipelineSystem {
                     Some(message) => message,
                 };
 
-                println!("Received message: {:#?}", &message);
+                println!("[DPS] RECEIVED QUERY FROM IES");
 
                 // 1. Interrogate cache
 

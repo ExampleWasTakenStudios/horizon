@@ -1,6 +1,6 @@
 use std::net::Ipv4Addr;
 
-use crate::systems::{DecisionPipelineSystem, IngressEgressSystem};
+use crate::systems::{DecisionPipelineSystem, IngressEgressSystem, StubResolverSystem};
 use tokio::runtime;
 
 mod buffer;
@@ -27,19 +27,24 @@ pub fn entry() {
         // Init IES
         let ies = IngressEgressSystem::new(
             Ipv4Addr::new(1, 1, 1, 1),
-            channels.ies_to_dps.tx,
+            channels.ies_to_dps.tx.clone(),
             channels.ies_answer.rx,
             channels.ies_upstream_resolve.rx,
         )
         .await;
 
         // Init DPS
-        let dps = DecisionPipelineSystem::new(channels.ies_to_dps.rx, channels.dps_to_srs.tx);
+        let dps = DecisionPipelineSystem::new(channels.ies_to_dps.rx, channels.dps_to_srs.tx.clone());
+
+        // Init SRS
+        let srs = StubResolverSystem::new(channels.dps_to_srs.rx, channels.ies_upstream_resolve.tx.clone(), channels.ies_answer.tx.clone());
 
         let ies_join_set = ies.run().await;
         let dps_join_set = dps.run().await;
+        let srs_join_set = srs.run().await;
 
         ies_join_set.join_all().await;
         dps_join_set.join_all().await;
+        srs_join_set.join_all().await;
     })
 }
