@@ -146,7 +146,7 @@ impl<const T: usize> PacketBuffer<T> {
     ///
     /// Returns the length written, or an error message as `&str`.
     pub fn write_subarray(&mut self, array: &[u8]) -> Result<usize, &str> {
-        let mut v = self.buffer.get_mut(self.position..=(self.position + array.len())).ok_or("Index out of bounds.")?;
+        let mut v = self.buffer.get_mut(self.position..(self.position + array.len())).ok_or("Index out of bounds.")?;
         match v.write(&array) {
             Err(_) => return Err("Could not write array to PacketBuffer."),
             Ok(length) => {
