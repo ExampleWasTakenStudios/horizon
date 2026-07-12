@@ -82,6 +82,18 @@ impl SoaRecordData {
             minimum,
         })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.m_name.to_bytes(buffer)?;
+        length_written += self.r_name.to_bytes(buffer)?;
+        length_written += buffer.write_u32(&self.serial)?;
+        length_written += buffer.write_u32(&self.refresh)?;
+        length_written += buffer.write_u32(&self.retry)?;
+        length_written += buffer.write_u32(&self.expire)?;
+        length_written += buffer.write_u32(&self.minimum)?;
+
+        Ok(length_written)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -113,6 +125,13 @@ impl MxRecordData {
             exchange,
         })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = buffer.write_u16(&self.preference)?;
+        length_written += self.exchange.to_bytes(buffer)?;
+
+        Ok(length_written)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -121,7 +140,10 @@ pub struct TxtData {
 }
 
 impl TxtData {
-    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: u16) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(
+        buffer: &mut PacketBuffer<T>,
+        rd_length: u16,
+    ) -> Result<Self, ResponseCode> {
         Ok(TxtData {
             txt_data: CharString::read_from(buffer, rd_length)?,
         })
@@ -132,7 +154,10 @@ impl TxtData {
 pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
-    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: usize) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(
+        buffer: &mut PacketBuffer<T>,
+        rd_length: usize,
+    ) -> Result<Self, ResponseCode> {
         Ok(UnknownRData(buffer.read_subarray(rd_length)?))
     }
 }
@@ -147,6 +172,21 @@ pub enum DnsRecordData {
     MX(MxRecordData),
     TXT(TxtData),
     UNKNOWN(UnknownRData),
+}
+
+impl DnsRecordData {
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        match self {
+            DnsRecordData::A(d) => return Ok(buffer.write_subarray(&d.address)?),
+            DnsRecordData::NS(d) => return Ok(d.ns_domain_name.to_bytes(buffer)?),
+            DnsRecordData::CNAME(d) => return Ok(d.c_name.to_bytes(buffer)?),
+            DnsRecordData::SOA(d) => return Ok(d.to_bytes(buffer)?),
+            DnsRecordData::PTR(d) => return Ok(d.ptr_d_name.to_bytes(buffer)?),
+            DnsRecordData::MX(d) => return Ok(d.to_bytes(buffer)?),
+            DnsRecordData::TXT(d) => return Ok(d.txt_data.to_bytes(buffer)?),
+            DnsRecordData::UNKNOWN(d) => return Ok(buffer.write_subarray(&d.0)?),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -167,6 +207,14 @@ impl DnsQuestion {
             query_type: q_type,
             query_class: q_class,
         })
+    }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.name.to_bytes(buffer)?;
+        length_written += buffer.write_u16(&self.query_type.to_number())?;
+        length_written += buffer.write_u16(&self.query_class.to_number())?;
+
+        Ok(length_written)
     }
 }
 
@@ -208,5 +256,17 @@ impl DnsRecord {
             rd_length,
             r_data,
         })
+    }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.name.to_bytes(buffer)?;
+
+        length_written += buffer.write_u16(&self.r#type.to_number())?;
+        length_written += buffer.write_u16(&self.class.to_number())?;
+        length_written += buffer.write_u32(&self.ttl)?;
+        length_written += buffer.write_u16(&self.rd_length)?;
+        length_written += self.r_data.to_bytes(buffer)?;
+
+        Ok(length_written)
     }
 }

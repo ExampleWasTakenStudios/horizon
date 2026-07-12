@@ -88,4 +88,18 @@ impl DomainName {
 
         Ok(DomainName { labels })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let label_slice = self.labels.get(0..self.labels.len()).ok_or("Index out of bounds while trying to access labels.")?;
+
+        let mut length_written = 0_usize;
+
+        for label in label_slice {
+            for char_byte in label {
+                length_written = buffer.write_u8(char_byte)?;
+            }
+        }
+
+        Ok(length_written)
+    }
 }
