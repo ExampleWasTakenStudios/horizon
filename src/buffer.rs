@@ -81,7 +81,10 @@ impl<const T: usize> PacketBuffer<T> {
         Ok(subarray)
     }
 
-    pub fn write_u8(&mut self, value: u8) -> Result<(), &str> {
+    /// Write a `u8` to the buffer.
+    ///
+    /// Returns the length written, or an error message as `&str`
+    pub fn write_u8(&mut self, value: u8) -> Result<usize, &str> {
         let v = self
             .buffer
             .get_mut(self.position)
@@ -90,10 +93,13 @@ impl<const T: usize> PacketBuffer<T> {
 
         self.position += 1;
 
-        Ok(())
+        Ok(1_usize)
     }
 
-    pub fn write_u16(&mut self, value: u16) -> Result<(), &str> {
+    /// Write a `u8` to the buffer.
+    ///
+    /// Returns the length written, or an error message as `&str`
+    pub fn write_u16(&mut self, value: u16) -> Result<usize, &str> {
         let buf = [(value & 0xFF00) as u8, (value & 0x00FF) as u8];
 
         let mut v = self
@@ -104,13 +110,17 @@ impl<const T: usize> PacketBuffer<T> {
             Err(_) => {
                 return Err("Could not write u16 value to PacketBuffer.");
             }
-            Ok(length) => self.position += length,
+            Ok(length) => {
+                self.position += length;
+                return Ok(length);
+            }
         };
-
-        Ok(())
     }
 
-    pub fn write_u32(&mut self, value: u32) -> Result<(), &str> {
+    /// Write a `u8` to the buffer.
+    ///
+    /// Returns the length written, or an error message as `&str`
+    pub fn write_u32(&mut self, value: u32) -> Result<usize, &str> {
         let buf = [
             (value & 0xFF0000) as u8,
             (value & 0x00FF00) as u8,
@@ -125,9 +135,10 @@ impl<const T: usize> PacketBuffer<T> {
             Err(_) => {
                 return Err("Could not write u32 value to PacketBuffer.");
             }
-            Ok(length) => self.position += length,
+            Ok(length) => {
+                self.position += length;
+                return Ok(length);
+            }
         };
-
-        Ok(())
     }
 }
