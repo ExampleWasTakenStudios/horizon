@@ -154,7 +154,7 @@ impl IngressEgressSystem {
 
                 // Send data to downstream client
                 if let Err(e) = downstream_socket_tx
-                    .send_to(buffer.as_slice(), received_query_state.get_origin())
+                    .send_to(buffer.to_slice(), received_query_state.get_origin())
                     .await
                 {
                     eprintln!(
@@ -203,7 +203,7 @@ impl IngressEgressSystem {
                     Ok(v) => v,
                 };
 
-                let mut parse_buf = PacketBuffer::<MAX_PACKET_SIZE>::from_raw_buffer(buffer.as_slice().to_owned());
+                let mut parse_buf = PacketBuffer::<MAX_PACKET_SIZE>::from_raw_buffer(buffer.to_slice().to_owned());
                 let test_packet = match DnsPacket::parse_from(&mut parse_buf) {
                     Err(e) => {
                         eprintln!("Error while parsing the outgoing packet. Error: {:?}", e);
@@ -228,7 +228,7 @@ impl IngressEgressSystem {
                 egress_inflight_queries.insert(horizon_id, inflight_query);
 
                 // Send via upstream_socket
-                if let Err(e) = upstream_socket_tx.send(buffer.as_slice()).await {
+                if let Err(e) = upstream_socket_tx.send(buffer.to_slice()).await {
                     eprintln!(
                         "Socket error - could not forward query to upstream resolver. Error: {e}"
                     );

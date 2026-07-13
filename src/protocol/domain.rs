@@ -82,7 +82,7 @@ impl DomainName {
     }
 
     pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
-        let (labels, bytes_consumed) = Self::parse_raw(buffer.as_slice(), buffer.get_position())?;
+        let (labels, bytes_consumed) = Self::parse_raw(buffer.to_slice(), buffer.get_position())?;
 
         buffer.advance_by(bytes_consumed);
 
@@ -90,7 +90,10 @@ impl DomainName {
     }
 
     pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
-        let label_slice = self.labels.get(0..self.labels.len()).ok_or("Index out of bounds while trying to access labels.")?;
+        let label_slice = self
+            .labels
+            .get(0..self.labels.len())
+            .ok_or("Index out of bounds while trying to access labels.")?;
 
         let mut length_written = 0_usize;
 

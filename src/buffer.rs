@@ -29,7 +29,7 @@ impl<const T: usize> PacketBuffer<T> {
         }
     }
 
-    pub fn as_slice(&self) -> &[u8; T] {
+    pub fn to_slice(&self) -> &[u8; T] {
         &self.buffer
     }
 
@@ -105,7 +105,6 @@ impl<const T: usize> PacketBuffer<T> {
     ///
     /// Returns the length written, or an error message as `&str`
     pub fn write_u16(&mut self, value: u16) -> Result<usize, &str> {
-
         let buf = [((value & 0xFF00) >> 8) as u8, (value & 0x00FF) as u8];
 
         let mut v = self
@@ -137,9 +136,7 @@ impl<const T: usize> PacketBuffer<T> {
             .get_mut(self.position..=(self.position + 2))
             .ok_or("Index out of bounds.")?;
         match v.write(&buf) {
-            Err(_) => {
-                Err("Could not write u32 value to PacketBuffer.")
-            }
+            Err(_) => Err("Could not write u32 value to PacketBuffer."),
             Ok(length) => {
                 self.position += length;
                 Ok(length)
