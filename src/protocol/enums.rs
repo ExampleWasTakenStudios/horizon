@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum ResponseCode {
     NOERROR = 0,
     FORMERR = 1,
@@ -18,6 +18,17 @@ impl ResponseCode {
             4 => ResponseCode::NOTIMP,
             5 => ResponseCode::REFUSED,
             0 | _ => ResponseCode::NOERROR,
+        }
+    }
+
+    pub fn to_number(&self) -> u8 {
+        match *self {
+            ResponseCode::NOERROR => 0,
+            ResponseCode::FORMERR => 1,
+            ResponseCode::SERVFAIL => 2,
+            ResponseCode::NXDOMAIN => 3,
+            ResponseCode::NOTIMP => 4,
+            ResponseCode::REFUSED => 5,
         }
     }
 }
