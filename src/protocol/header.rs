@@ -66,7 +66,9 @@ impl DnsHeader {
 
         let mut length_written = buffer.write_u16(self.id)?;
 
-        length_written += buffer.write_u16(self.flags_to_bitfield())?;
+        let flags = self.flags_to_bitfield();
+
+        length_written += buffer.write_u16(flags)?;
 
         length_written += buffer.write_u16(self.question_count)?;
         length_written += buffer.write_u16(self.answer_count)?;
@@ -77,22 +79,17 @@ impl DnsHeader {
     }
 
     fn flags_to_bitfield(&self) -> u16 {
-        let is_response = (self.is_response as u16) << 15;
-        let op_code = ((self.op_code as u16) & 0x0F) << 11;
-        let is_authoritative = (self.is_authoritative as u16) << 10;
-        let is_truncated = (self.is_truncated as u16) << 9;
-        let is_recursion_desired = (self.is_recursion_desired as u16) << 8;
-        let is_recursion_avail = (self.is_recursion_avail as u16) << 7;
-        let z = ((self.z as u16) & 0x07) << 4;
-        let response_code = (self.response_code as u16) & 0x0F;
+        let mut flags = 0_u16;
 
-        (is_response
-            | op_code
-            | is_authoritative
-            | is_truncated
-            | is_recursion_desired
-            | is_recursion_avail
-            | z
-            | response_code).to_be()
+        flags |= (self.is_response as u16) << 15;
+        flags |= ((self.op_code & 0x0F) as u16) << 11;
+        flags |= (self.is_authoritative as u16) << 10;
+        flags |= (self.is_truncated as u16) << 9;
+        flags |= (self.is_recursion_desired as u16) << 8;
+        flags |= (self.is_recursion_avail as u16) << 7;
+        flags |= ((self.z & 0x07) as u16) << 4;
+        flags |= (self.response_code.to_number() & 0x0F) as u16;
+
+        flags
     }
 }
