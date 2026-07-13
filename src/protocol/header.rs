@@ -58,29 +58,41 @@ impl DnsHeader {
 
     pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
         if buffer.get_position() != 0 {
-            return Err(format!(
+            return Err(
                 "PacketBuffer position must be 0 at the beginning of header translation"
-            ));
+                    .to_string(),
+            );
         }
 
-        let mut length_written = buffer.write_u16(&self.id)?;
+        let mut length_written = buffer.write_u16(self.id)?;
 
-        let mut flags: u16 = self.id as u16
-            | self.is_response as u16
-            | self.op_code as u16
-            | self.is_authoritative as u16
-            | self.is_truncated as u16
-            | self.is_recursion_desired as u16
-            | self.is_recursion_avail as u16
-            | self.z as u16
-            | self.response_code as u16;
-        length_written += buffer.write_u16(&flags)?;
+        length_written += buffer.write_u16(self.flags_to_bitfield())?;
 
-        length_written += buffer.write_u16(&self.question_count)?;
-        length_written += buffer.write_u16(&self.answer_count)?;
-        length_written += buffer.write_u16(&self.authoritative_count)?;
-        length_written += buffer.write_u16(&self.additional_count)?;
+        length_written += buffer.write_u16(self.question_count)?;
+        length_written += buffer.write_u16(self.answer_count)?;
+        length_written += buffer.write_u16(self.authoritative_count)?;
+        length_written += buffer.write_u16(self.additional_count)?;
 
         Ok(length_written)
+    }
+
+    fn flags_to_bitfield(&self) -> u16 {
+        let is_response = (self.is_response as u16) << 15;
+        let op_code = ((self.op_code as u16) & 0x0F) << 11;
+        let is_authoritative = (self.is_authoritative as u16) << 10;
+        let is_truncated = (self.is_truncated as u16) << 9;
+        let is_recursion_desired = (self.is_recursion_desired as u16) << 8;
+        let is_recursion_avail = (self.is_recursion_avail as u16) << 7;
+        let z = ((self.z as u16) & 0x07) << 4;
+        let response_code = (self.response_code as u16) & 0x0F;
+
+        (is_response
+            | op_code
+            | is_authoritative
+            | is_truncated
+            | is_recursion_desired
+            | is_recursion_avail
+            | z
+            | response_code).to_be()
     }
 }

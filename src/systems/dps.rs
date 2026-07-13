@@ -35,6 +35,7 @@ impl DecisionPipelineSystem {
                 // 3. Interrogate SHS
 
                 // 4. Forward query to SRS
+                println!("[DPS] SENDING QUERY TO SRS"); 
                 if let Err(e) = self.dps_to_srs_tx.try_send(message) {
                     match e {
                         tokio::sync::mpsc::error::TrySendError::Closed(_) => {

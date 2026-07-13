@@ -8,7 +8,9 @@ use tokio::{
     task::JoinSet,
 };
 
-use crate::{isc::HalfDuplexMessage, protocol::packet::DnsPacket, query_state::QueryState};
+use crate::{
+    buffer::PacketBuffer, isc::HalfDuplexMessage, protocol::{DnsHeader, packet::DnsPacket}, query_state::QueryState,
+};
 
 /// An IES Resolve Command is sent to the IES to forward a packet to the specified resolver.
 ///
@@ -43,7 +45,7 @@ impl StubResolverSystem {
 
                 let ies_command = IesResolveCommand {
                     packet: query_state.get_packet().clone(),
-                    timeout: Duration::from_secs(2),
+                    timeout: Duration::from_secs(10),
                 };
 
                 let ies_message = HalfDuplexMessage {
@@ -52,6 +54,7 @@ impl StubResolverSystem {
                 };
 
                 // Send `DnsPacket` to IES to forward it to the upstream resolver
+                println!("[SRS] SENDING QUERY TO IES UPSTREAM EGRESS TASK");
                 if let Err(e) = self.upstream_resolver_tx.try_send(ies_message) {
                     match e {
                         tokio::sync::mpsc::error::TrySendError::Closed(_) => {
@@ -67,7 +70,7 @@ impl StubResolverSystem {
                 // Await response from the IES with the resolved
                 let resolved_packet = match return_channel_rx.await {
                     Err(e) => {
-                        eprintln!("IES->SRS return channel closed before sending a message. Error: {e}");
+                        eprintln!("[SRS] IES->SRS return channel closed before sending a message. Error: {e}");
                         return;
                     }
                     Ok(packet) => match packet {

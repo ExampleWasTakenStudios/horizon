@@ -82,4 +82,20 @@ impl DnsPacket {
 
         Ok(length_written)
     }
+
+    pub fn new(
+        header: DnsHeader,
+        questions: Vec<DnsQuestion>,
+        answers: Vec<DnsRecord>,
+        authoritatives: Vec<DnsRecord>,
+        additionals: Vec<DnsRecord>,
+    ) -> Self {
+        Self {
+            header,
+            questions,
+            answers,
+            authoritatives,
+            additionals,
+        }
+    }
 }

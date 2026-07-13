@@ -96,7 +96,7 @@ impl DomainName {
 
         for label in label_slice {
             for char_byte in label {
-                length_written = buffer.write_u8(char_byte)?;
+                length_written = buffer.write_u8(*char_byte)?;
             }
         }
 
