@@ -61,7 +61,7 @@ impl StubResolverSystem {
                             panic!("IES Upstream Resolver channel closed unexpectedly.")
                         }
                         tokio::sync::mpsc::error::TrySendError::Full(_) => {
-                            eprintln!("IES Upstream Resolver channel overloaded. Dropping...");
+                            eprintln!("[SRS] IES Upstream Resolver channel overloaded. Dropping...");
                             return;
                         }
                     }
@@ -75,7 +75,7 @@ impl StubResolverSystem {
                     }
                     Ok(packet) => match packet {
                         None => {
-                            println!("IES was unable to resolve query. Dropping.");
+                            println!("[SRS] IES was unable to resolve query. Dropping.");
                             return;
                         }
                         Some(packet) => packet,
@@ -94,7 +94,7 @@ impl StubResolverSystem {
                             panic!("IES Answer channel closed unexpectedly.");
                         }
                         tokio::sync::mpsc::error::TrySendError::Full(_) => {
-                            eprintln!("IES answer channel overloaded. Dropping.");
+                            eprintln!("[SRS] IES answer channel overloaded. Dropping.");
                             return;
                         }
                     }

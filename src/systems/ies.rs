@@ -1,6 +1,6 @@
 use core::panic;
 use std::{
-    net::{Ipv4Addr, SocketAddr},
+    net::{IpAddr, SocketAddr},
     sync::Arc,
 };
 
@@ -19,6 +19,7 @@ use crate::{
     protocol::packet::DnsPacket, query_state::QueryState, systems::IesResolveCommand,
 };
 
+#[derive(Debug)]
 struct InflightQuery {
     original_id: u16,
     sender: oneshot::Sender<Option<DnsPacket>>,
@@ -54,7 +55,7 @@ struct InflightQuery {
 /// Listens to responses from the upstream resolver.
 pub struct IngressEgressSystem {
     socket: Arc<UdpSocket>,
-    upstream_resolver_ip: Ipv4Addr,
+    upstream_resolver_ip: IpAddr,
     ies_to_dps_tx: Sender<QueryState>,
     ies_answer_rx: Receiver<QueryState>,
     ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
@@ -62,7 +63,7 @@ pub struct IngressEgressSystem {
 
 impl IngressEgressSystem {
     pub async fn run(mut self) -> JoinSet<()> {
-        println!("Starting IES...");
+        println!("[IES] Starting IES...");
 
         let mut join_set = JoinSet::<()>::new();
 
@@ -79,24 +80,27 @@ impl IngressEgressSystem {
         let ingress_inflight_queries = inflight_queries.clone();
 
         if let Err(e) = upstream_socket
-            .connect(SocketAddr::new(self.upstream_resolver_ip.into(), 53))
+            .connect(SocketAddr::new(self.upstream_resolver_ip, 53))
             .await
         {
             panic!(
-                "Error while trying to connect to upstream resolver at {}. Error: {}",
+                "[IES] Error while trying to connect to upstream resolver at {}. Error: {}",
                 self.upstream_resolver_ip, e
             );
         }
 
         // CLIENT INGRESS TASK
         join_set.spawn(async move {
-            println!("Starting incoming query task...");
+            println!("[IES] Starting client ingress task...");
 
             loop {
                 let mut buf = [0_u8; MAX_PACKET_SIZE];
                 let (_, origin) = match downstream_socket_rx.recv_from(&mut buf).await {
                     Err(e) => {
-                        eprintln!("Error while receiving DGRAM: {:#?}", e);
+                        eprintln!(
+                            "[IES] CLIENT INGRESS TASK: Error while receiving DGRAM: {:#?}",
+                            e
+                        );
                         continue;
                     }
                     Ok(value) => value,
@@ -121,7 +125,7 @@ impl IngressEgressSystem {
                             panic!("DPS channel closed unexpectedly.")
                         }
                         tokio::sync::mpsc::error::TrySendError::Full(_) => {
-                            println!("IES-DPS channel overloaded. Dropping query")
+                            println!("[IES] IES-DPS channel overloaded. Dropping query")
                         }
                     }
                 }
@@ -131,22 +135,22 @@ impl IngressEgressSystem {
         // CLIENT EGRESS TASK
         // This task receives answered query states and sends them back to the querying client.
         join_set.spawn(async move {
-            println!("Starting answer task...");
+            println!("[IES] Starting client egress task...");
             loop {
                 let received_query_state = match self.ies_answer_rx.recv().await {
                     None => {
-                        panic!("IES RX channel to receive answered queries closed unexpectedly.")
+                        panic!("[IES] CLIENT EGRESS TASK: IES RX channel to receive answered queries closed unexpectedly.")
                     }
                     Some(v) => v,
                 };
 
-                println!("[IES]  RECEIVED ANSWER -> SENDING TO CLIENT");
+                println!("[IES] RECEIVED ANSWER -> SENDING TO CLIENT");
 
                 // Translate the DnsPacket into bytes
                 let mut buffer = PacketBuffer::<MAX_PACKET_SIZE>::new();
                 let bytes = match received_query_state.get_packet().to_bytes(&mut buffer) {
                     Err(e) => {
-                        eprintln!("Error while translating query to bytes: {}", e);
+                        eprintln!("[IES] CLIENT EGRESS TASK: Error while translating query to bytes: {}", e);
                         continue;
                     }
                     Ok(v) => v.to_be_bytes(),
@@ -158,7 +162,7 @@ impl IngressEgressSystem {
                     .await
                 {
                     eprintln!(
-                        "Error {e} occurred while trying to send answer to client. Dropping query"
+                        "[IES] CLIENT EGRESS TASK: Error {e} occurred while trying to send answer to client. Dropping query"
                     );
                 }
             }
@@ -167,8 +171,9 @@ impl IngressEgressSystem {
         // UPSTREAM EGRESS TASK
         // This task handles the query forwarding to an upstream resolver.
         join_set.spawn(async move {
-            println!("Starting upstream forward task...");
-            loop {
+            println!("[IES] Starting upstream egress task...");
+            println!("[IES] Connected to {:#?}", upstream_socket_tx.peer_addr());
+            'outer: loop {
                 let mut message = match self.ies_upstream_resolve_rx.recv().await {
                     None => {
                         panic!("IES-SRS resolving channel closed unexpectedly.");
@@ -176,78 +181,74 @@ impl IngressEgressSystem {
                     Some(v) => v,
                 };
 
-                println!("[IES - UPSTREAM EGRESS] RECEIVED FORWARD QUERY FROM SRS -> forwarding");
+                println!("[IES] UPSTREAM EGRESS TASK: RECEIVED FORWARD QUERY FROM SRS -> forwarding");
 
                 // Replace query ID
                 let original_id = message.payload.packet.header.id;
                 let horizon_id = Self::generate_id();
                 message.payload.packet.header.id = horizon_id;
+                println!("[IES] UPSTREAM EGRESS TASK: Replaced query ID. Old: {original_id}, New: {horizon_id}");
+
 
                 // Create InflightQuery
                 let inflight_query = InflightQuery {
                     original_id,
                     sender: message.return_channel,
                 };
+                println!("[IES] UPSTREAM EGRESS TASK: Created InflightQuery struct");
 
 
                 // Translate packet into bytes
+                println!("[IES] UPSTREAM EGRESS TASK: Translating to bytes...");
                 let mut buffer = PacketBuffer::<MAX_PACKET_SIZE>::new();
-                let _bytes = match message.payload.packet.to_bytes(&mut buffer) {
+                let length = match message.payload.packet.to_bytes(&mut buffer) {
                     Err(e) => {
-                        eprintln!("Error while translating query for upstream resolver. Error: {}", e);
+                        eprintln!("[IES] UPSTREAM EGRESS TASK: Error while translating query for upstream resolver. Error: {}", e);
                         if inflight_query.sender.send(None).is_err() {
-                            eprintln!("[IES] Could not notify SRS of above failure due failure in the return channel.");
+                            eprintln!("[IES] UPSTREAM EGRESS TASK: Could not notify SRS of above failure due failure in the return channel.");
                         }
                         continue;
                     }
                     Ok(v) => v,
                 };
 
-                let mut parse_buf = PacketBuffer::<MAX_PACKET_SIZE>::from_raw_buffer(buffer.to_slice().to_owned());
-                let test_packet = match DnsPacket::parse_from(&mut parse_buf) {
-                    Err(e) => {
-                        eprintln!("Error while parsing the outgoing packet. Error: {:?}", e);
-                        continue;
-                    }
-                    Ok(packet) => packet,
-                };
-
-                println!("");
-                println!("---------------------");
-                println!("{:#?}", message.payload.packet);
-                println!("---------------------");
-                println!("");
-
-                println!("");
-                println!("---------------------");
-                println!("{:#?}", test_packet);
-                println!("---------------------");
-                println!("");
+                let mut bytes = Vec::<u8>::with_capacity(length);
+                let buffer_slice = buffer.to_slice();
+                for i in 0..length {
+                    match buffer_slice.get(i) {
+                        None => continue 'outer,
+                        Some(v) => bytes.push(*v),
+                    };
+                }
+                println!("[IES] UPSTREAM EGRESS TASK: Translated to bytes");
 
                 // Register query as being inflight
                 egress_inflight_queries.insert(horizon_id, inflight_query);
+                println!("[IES] UPSTREAM EGRESS TASK: Registered query as inflight");
 
                 // Send via upstream_socket
-                if let Err(e) = upstream_socket_tx.send(buffer.to_slice()).await {
+                if let Err(e) = upstream_socket_tx.send(&bytes).await {
                     eprintln!(
-                        "Socket error - could not forward query to upstream resolver. Error: {e}"
+                        "[IES] UPSTREAM EGRESS TASK: Socket error - could not forward query to upstream resolver. Error: {e}"
                     );
 
                     if let Some((_, removed_query)) = egress_inflight_queries.remove(&horizon_id) {
                         let send_result = removed_query.sender.send(None);
                         if send_result.is_err() {
-                            eprintln!("Failed to notify SRS of above failure.");
+                            eprintln!("[IES] UPSTREAM EGRESS TASK: Failed to notify SRS of above failure.");
                         }
                     }
                     continue;
                 }
+                println!("[IES] UPSTREAM EGRESS TASK: Successfully sent query to upstream");
 
                 // Let the task sleep until the query's timeout is elapsed - once woken up, remove the task from the `InflightQuery` map, thereby effectively dropping the query
                 tokio::time::sleep(message.payload.timeout).await;
+                println!("[IES] UPSTREAM EGRESS TASK: Upstream Query timed out");
                 if let Some((_, removed_query)) = egress_inflight_queries.remove(&horizon_id) {
                    let send_result = removed_query.sender.send(None);
                     if send_result.is_err() {
-                        eprintln!("Failed to notify SRS that query timed out.");
+                        eprintln!("[IES] UPSTREAM EGRESS TASK: Failed to notify SRS that query timed out.");
                     }
                 }
             }
@@ -256,29 +257,30 @@ impl IngressEgressSystem {
         // UPSTREAM INGRESS TASK
         // This task handles receiving data from the upstream resolver and forwards it to the SRS.
         join_set.spawn(async move {
+            println!("[IES] Starting IES Upstream Ingress Task...");
             loop {
                 // Receive data from upstream
                 let mut buf = [0_u8; MAX_PACKET_SIZE];
                 match upstream_socket_rx.recv(&mut buf).await {
                     Err(e) => {
-                        eprintln!("Error while receiving upstream response: {e}");
+                        eprintln!("[IES] UPSTREAM INGRESS TASK: Error while receiving upstream response: {e}");
                         continue;
                     }
                     Ok(size) => {
                         if size > MAX_PACKET_SIZE {
-                            eprintln!("Max packet size exceeded. Dropping...");
+                            eprintln!("[IES] UPSTREAM INGRESS TASK: Max packet size exceeded. Dropping...");
                             continue;
                         }
                     }
                 };
 
-                println!("[IES] RECEIVED UPSTREAM ANSWER -> SENDING TO SRS");
+                println!("[IES] UPSTREAM INGRESS TASK: RECEIVED UPSTREAM ANSWER -> SENDING TO SRS");
 
                 // Parse upstream data
                 let mut packet_buf = PacketBuffer::from_raw_buffer(buf);
                 let mut packet = match DnsPacket::parse_from(&mut packet_buf) {
                     Err(_) => {
-                        eprintln!("Error while parsing received packet. Dropping...");
+                        eprintln!("[IES] UPSTREAM INGRESS TASK: Error while parsing received packet. Dropping...");
                         continue;
                     }
                     Ok(packet) => packet,
@@ -293,7 +295,7 @@ impl IngressEgressSystem {
 
                     if inflight_query.sender.send(Some(packet)).is_err() {
                         eprintln!(
-                            "Return channel failure - could not send response to SRS. Dropping..."
+                            "[IES] UPSTREAM INGRESS TASK: Return channel failure - could not send response to SRS. Dropping..."
                         );
                         continue;
                     }
@@ -305,7 +307,7 @@ impl IngressEgressSystem {
     }
 
     pub async fn new(
-        upstream_resolver_ip: Ipv4Addr,
+        upstream_resolver_ip: IpAddr,
         ies_to_dps_tx: Sender<QueryState>,
         ies_answer_rx: Receiver<QueryState>,
         ies_upstream_resolve_rx: Receiver<HalfDuplexMessage<IesResolveCommand, Option<DnsPacket>>>,
