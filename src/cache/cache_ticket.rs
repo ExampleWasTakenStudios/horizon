@@ -10,7 +10,7 @@ use crate::protocol::packet::DnsPacket;
 /// Subsequent cache checks will wait until the cache result for the domain becomes available instead of reporting a cache-miss.
 ///
 /// This is an internal struct that external callers (outside the cache system) should not require.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CacheTicket {
     pub broadcast_sender: broadcast::Sender<DnsPacket>,
 }
