@@ -1,6 +1,6 @@
 use crate::{buffer::PacketBuffer, protocol::enums::ResponseCode};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsHeader {
     pub id: u16,
 

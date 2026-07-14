@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AData {
     pub address: [u8; 4],
 }
@@ -25,7 +25,7 @@ impl AData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NsData {
     pub ns_domain_name: DomainName,
 }
@@ -38,7 +38,7 @@ impl NsData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CNameData {
     pub c_name: DomainName,
 }
@@ -51,7 +51,7 @@ impl CNameData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SoaRecordData {
     pub m_name: DomainName,
     pub r_name: DomainName,
@@ -84,7 +84,7 @@ impl SoaRecordData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PtrData {
     pub ptr_d_name: DomainName,
 }
@@ -97,7 +97,7 @@ impl PtrData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MxRecordData {
     pub preference: u16,
     pub exchange: DomainName,
@@ -115,7 +115,7 @@ impl MxRecordData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TxtData {
     pub txt_data: CharString,
 }
@@ -128,7 +128,7 @@ impl TxtData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
@@ -137,7 +137,7 @@ impl UnknownRData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsRecordData {
     A(AData),
     NS(NsData),
@@ -149,7 +149,7 @@ pub enum DnsRecordData {
     UNKNOWN(UnknownRData),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsQuestion {
     pub name: DomainName,
     pub query_type: DnsType,
@@ -170,7 +170,7 @@ impl DnsQuestion {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsRecord {
     pub name: DomainName,
     pub r#type: DnsType,

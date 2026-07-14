@@ -1,6 +1,6 @@
 use crate::{MAX_PACKET_SIZE, buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsPacket {
     pub header: DnsHeader,
     pub questions: Vec<DnsQuestion>,

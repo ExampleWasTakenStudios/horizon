@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResponseCode {
     NOERROR = 0,
     FORMERR = 1,
@@ -22,7 +22,7 @@ impl ResponseCode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsClass {
     IN = 1,
     WILDCARD = 255,
@@ -45,7 +45,7 @@ impl DnsClass {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsType {
     A = 1,
     NS = 2,

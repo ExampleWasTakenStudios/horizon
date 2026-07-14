@@ -1,6 +1,6 @@
 use crate::{buffer::PacketBuffer, protocol::ResponseCode};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CharString {
     buffer: Vec<u8>,
 }
