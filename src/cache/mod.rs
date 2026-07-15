@@ -69,6 +69,9 @@ pub struct Cache {
     cache: Arc<DashMap<DnsPacket, CacheEntry>>,
 }
 
+// TODO: There are multiple serious flaws in the code at the moment
+// see https://app.notion.com/p/DNS-Service-Cache-Implementation-Errors-39e1c8ba1f6680d09aa4c1114a21f3c7
+
 impl Cache {
     pub fn new() -> Self {
         Self {
