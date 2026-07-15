@@ -75,7 +75,7 @@ pub fn entry() {
                             downstream_socket,
                             upstream_socket,
                             (length, origin, recv_buf),
-                        );
+                        ).await;
                     });
                 }
             };
