@@ -9,7 +9,6 @@ use tokio::{net::UdpSocket, runtime, task::JoinSet};
 mod buffer;
 mod protocol;
 mod query;
-mod query_state;
 mod cache;
 
 const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
