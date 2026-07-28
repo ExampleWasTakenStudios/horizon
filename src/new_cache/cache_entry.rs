@@ -1,57 +1,31 @@
-use std::time::SystemTime;
+use std::time::{Duration, Instant};
 
 use tokio::sync::broadcast;
 
 use crate::protocol::DnsRecord;
 
-/// Represents data that is committed to the cache.
 #[derive(Debug, Clone)]
-pub struct CacheEntry {
-    /// Timestamp at which the data was committed to cache.
-    timestamp: SystemTime,
-    /// The data
-    data: CacheData,
-}
-
-impl CacheEntry {
-    pub fn new(data: CacheData) -> Self {
-        Self {
-            timestamp: SystemTime::now(),
-            data,
-        }
-    }
-
-    pub fn get_timestamp(&self) -> &SystemTime {
-        &self.timestamp
-    }
-
-    pub fn get_data(&self) -> &CacheData {
-        &self.data
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum CacheData {
+pub enum CacheEntry {
     RRSet(RRSet),
     Ticket(CacheTicket),
 }
 
 #[derive(Debug, Clone)]
 pub struct RRSet {
-    ttl: u32,
+    ttl: Instant,
     records: Vec<DnsRecord>,
 }
 
 impl RRSet {
     pub fn new(records: Vec<DnsRecord>) -> Self {
         Self {
-            ttl: RRSet::get_shortest_ttl(&records),
+            ttl: Instant::now() + Duration::from_secs(RRSet::get_shortest_ttl(&records) as u64),
             records,
         }
     }
 
-    pub fn get_ttl(&self) -> u32 {
-        self.ttl
+    pub fn get_ttl(&self) -> &Instant {
+        &self.ttl
     }
 
     pub fn get_records(&self) -> &Vec<DnsRecord> {

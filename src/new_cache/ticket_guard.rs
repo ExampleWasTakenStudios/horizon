@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use tokio::sync::broadcast;
 
 use crate::{
-    new_cache::cache_entry::{CacheData, CacheEntry},
+    new_cache::cache_entry::{CacheEntry},
     protocol::{DnsQuestion, DnsRecord},
 };
 
@@ -38,9 +38,9 @@ impl Drop for CacheTicketGuard {
 
         // We only remove a ticket, not a valid RRSet.
         self.cache
-            .remove_if(&self.question, |_, entry| match entry.get_data() {
-                CacheData::Ticket(_) => true,
-                CacheData::RRSet(_) => false,
+            .remove_if(&self.question, |_, entry| match entry {
+                CacheEntry::Ticket(_) => true,
+                CacheEntry::RRSet(_) => false,
             });
     }
 }

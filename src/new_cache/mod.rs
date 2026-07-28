@@ -1,15 +1,11 @@
-use core::time;
-use std::{
-    sync::Arc,
-    time::{Duration, Instant, SystemTime},
-};
+use std::{sync::Arc, time::Instant};
 
 use dashmap::DashMap;
 use tokio::sync::broadcast;
 
 use crate::{
     new_cache::{
-        cache_entry::{CacheData, CacheEntry, CacheTicket, RRSet},
+        cache_entry::{CacheEntry, CacheTicket, RRSet},
         ticket_guard::CacheTicketGuard,
     },
     protocol::{DnsQuestion, DnsRecord},
@@ -38,9 +34,8 @@ pub mod ticket_guard;
 /// that is already in progress.
 ///
 /// #### Redeeming a Ticket
-/// When a RRSet is committed to cache through the [`Cache::commit()`] method,
-/// the system will automatically redeem the ticket if one is present for the
-/// specified DNS question.
+/// When an RRSet is committed to cache through the [`Cache::commit()`] method,
+/// the system will automatically redeem the ticket if one is present for the specified DNS question.
 pub struct Cache {
     enabled: bool,
     cache: Arc<DashMap<DnsQuestion, CacheEntry>>,
@@ -69,35 +64,21 @@ impl Cache {
                 Some(entry) => entry.value().clone(),
             };
 
-            let cache_data = cache_entry.get_data();
+            let cache_data = cache_entry;
 
             match cache_data {
-                CacheData::RRSet(rr_set) => {
+                CacheEntry::RRSet(rr_set) => {
                     // Check TTL validity
-                    let time_committed = *cache_entry.get_timestamp();
-                    let duration_since_commit = match SystemTime::now()
-                        .duration_since(time_committed)
-                    {
-                        Err(_) => {
-                            eprintln!(
-                                "The value for the cache entry timestamp was later than the current wall clock time."
-                            );
-                            return None;
-                        }
-                        Ok(d) => d,
-                    };
-
-                    if duration_since_commit > Duration::from_secs(rr_set.get_ttl() as u64) {
-                        println!("Found stale cache entry -> reporting cache-miss");
-
-                        // Since this entry is stale it will never be used again and we can thus, immediately purge it.
+                    if Instant::now() > *rr_set.get_ttl() {
+                        // The entry is stale so we remove it from cache and return `None`
                         self.cache.remove(question);
+
                         return None;
                     }
 
                     return Some(rr_set.get_records().clone());
                 }
-                CacheData::Ticket(t) => {
+                CacheEntry::Ticket(t) => {
                     match t.get_sender().subscribe().recv().await {
                         Err(e) => {
                             match e {
@@ -135,8 +116,9 @@ impl Cache {
     ) -> Result<CacheTicketGuard, broadcast::Receiver<Vec<DnsRecord>>> {
         // Check if ticket already exists
         // If true, we return a receiver for the sender giving the caller the chance to be notified once the ticket is redeemed.
+
         if let Some(entry) = self.cache.get(&question)
-            && let CacheData::Ticket(t) = entry.get_data()
+            && let CacheEntry::Ticket(t) = entry.value()
         {
             return Err(t.get_sender().subscribe());
         }
@@ -144,7 +126,7 @@ impl Cache {
         let (ticket_sender, _) = broadcast::channel(1);
         let ticket_guard_sender = ticket_sender.clone();
         let ticket = CacheTicket::new(ticket_sender);
-        let entry = CacheEntry::new(CacheData::Ticket(ticket));
+        let entry = CacheEntry::Ticket(ticket);
 
         self.cache.insert(question.clone(), entry);
 
@@ -162,10 +144,8 @@ impl Cache {
     /// If an RRSet is currently cached for the specified DNS question, it will be overwritten.
     /// If a ticket is currently cached for the specified DNS question, it will be redeemed.
     pub fn commit(&self, question: DnsQuestion, records: Vec<DnsRecord>) {
-        self.cache.insert(
-            question,
-            CacheEntry::new(CacheData::RRSet(RRSet::new(records))),
-        );
+        self.cache
+            .insert(question, CacheEntry::RRSet(RRSet::new(records)));
     }
 
     pub fn clear(&self) {
