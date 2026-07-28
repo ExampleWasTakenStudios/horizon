@@ -1,35 +1,61 @@
-use std::time::SystemTime;
+use std::time::{Duration, Instant};
 
-use crate::{cache::CacheTicket, protocol::packet::DnsPacket};
+use tokio::sync::broadcast;
+
+use crate::protocol::DnsRecord;
 
 #[derive(Debug, Clone)]
 pub enum CacheEntry {
-    Entry(DnsPacket),
+    RRSet(RRSet),
     Ticket(CacheTicket),
 }
 
-/// Wraps a cached [`DnsPacket`], adding cache relevant meta-data.
-pub struct PacketEntry {
-    /// [`SystemTime`] at which the [`DnsPacket`] was entered into the cache.
-    /// The [`crate::protocol::records::DnsRecord::ttl`] is compared against this value to determine the validity of the cached data.
-    timestamp: SystemTime,
-    /// The cached [`DnsPacket`]
-    packet: DnsPacket,
+#[derive(Debug, Clone)]
+pub struct RRSet {
+    ttl: Instant,
+    records: Vec<DnsRecord>,
 }
 
-impl PacketEntry {
-    pub fn get_timestamp(&self) -> &SystemTime {
-        &self.timestamp
-    }
-
-    pub fn get_packet(&self) -> &DnsPacket {
-        &self.packet
-    }
-
-    pub fn new(packet: DnsPacket) -> Self {
+impl RRSet {
+    pub fn new(records: Vec<DnsRecord>) -> Self {
         Self {
-            timestamp: SystemTime::now(),
-            packet,
+            ttl: Instant::now() + Duration::from_secs(RRSet::get_shortest_ttl(&records) as u64),
+            records,
         }
+    }
+
+    pub fn get_ttl(&self) -> &Instant {
+        &self.ttl
+    }
+
+    pub fn get_records(&self) -> &Vec<DnsRecord> {
+        &self.records
+    }
+
+    fn get_shortest_ttl(records: &Vec<DnsRecord>) -> u32 {
+        let mut shortest_ttl = u32::MAX;
+
+        for record in records {
+            if record.ttl < shortest_ttl {
+                shortest_ttl = record.ttl;
+            }
+        }
+
+        shortest_ttl
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CacheTicket {
+    sender: broadcast::Sender<Vec<DnsRecord>>,
+}
+
+impl CacheTicket {
+    pub fn new(sender: broadcast::Sender<Vec<DnsRecord>>) -> Self {
+        Self { sender }
+    }
+
+    pub fn get_sender(&self) -> &broadcast::Sender<Vec<DnsRecord>> {
+        &self.sender
     }
 }

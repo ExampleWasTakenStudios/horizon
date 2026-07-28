@@ -4,7 +4,7 @@ use dashmap::DashMap;
 use tokio::sync::broadcast;
 
 use crate::{
-    new_cache::cache_entry::{CacheEntry},
+    cache::cache_entry::{CacheEntry},
     protocol::{DnsQuestion, DnsRecord},
 };
 
