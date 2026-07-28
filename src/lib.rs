@@ -10,7 +10,6 @@ mod buffer;
 mod protocol;
 mod query;
 mod cache;
-mod min_heap;
 
 const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
 const DOWNSTREAM_PORT: u16 = 1234;
