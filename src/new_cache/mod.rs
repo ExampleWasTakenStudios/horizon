@@ -8,24 +8,58 @@ use dashmap::DashMap;
 use tokio::sync::broadcast;
 
 use crate::{
-    new_cache::cache_entry::{CacheData, CacheEntry, RRSet},
+    new_cache::{
+        cache_entry::{CacheData, CacheEntry, CacheTicket, RRSet},
+        ticket_guard::CacheTicketGuard,
+    },
     protocol::{DnsQuestion, DnsRecord},
 };
 
 pub mod cache_entry;
+pub mod ticket_guard;
 
+/// # Cache
+/// This struct is the representation of the DNS cache of the service.
+/// It provides a clean API for other systems to use.
+///
+/// ## Caching Strategy
+/// The cache optimizes network I/O operations by minimizing the amount of queries needed to be sent to an upstream resolver.
+/// It does this by coalescing multiple, identical queries into one single upstream query.
+///
+/// ## Ticket System
+/// Once a query is made to an upstream resolver by the system responsibly for the query, shall register a ticket with the cache system.
+/// This tells the cache that it can expect a cacheable response to the query in some finite, yet unknown time in the future.
+/// Subsequent queries with the specific DNS question will thus cause the cache to wait for the already inflight query instead of reporting a cache-miss.
+///
+/// #### Registering a Ticket
+/// [`Cache::register_ticket()`] returns a [`Result<T, E>`] where `T` is a
+/// [`CacheTicketGuard`] and `E` is a [`broadcast::Receiver`] through which
+/// the caller attempting to register the new ticket may subscribe to the query
+/// that is already in progress.
+///
+/// #### Redeeming a Ticket
+/// When a RRSet is committed to cache through the [`Cache::commit()`] method,
+/// the system will automatically redeem the ticket if one is present for the
+/// specified DNS question.
 pub struct Cache {
+    enabled: bool,
     cache: Arc<DashMap<DnsQuestion, CacheEntry>>,
 }
 
 impl Cache {
     pub fn new() -> Self {
         Self {
+            enabled: true,
             cache: Arc::new(DashMap::new()),
         }
     }
 
     pub async fn check_for(&self, question: &DnsQuestion) -> Option<Vec<DnsRecord>> {
+        // If the cache is disabled, we always return `None`
+        if !self.enabled {
+            return None;
+        }
+
         // A loop is used to to trigger a lookup should the broadcast be dropped.
         // If that happens the loop is `continue`ed and thus the process starts over.
         loop {
@@ -55,6 +89,9 @@ impl Cache {
 
                     if duration_since_commit > Duration::from_secs(rr_set.get_ttl() as u64) {
                         println!("Found stale cache entry -> reporting cache-miss");
+
+                        // Since this entry is stale it will never be used again and we can thus, immediately purge it.
+                        self.cache.remove(question);
                         return None;
                     }
 
@@ -86,5 +123,56 @@ impl Cache {
                 }
             }
         }
+    }
+
+    /// Register a ticket with the cache for a DNS question.
+    /// - Returns [`Ok()`] containing a [`CacheTicketGuard`] when the ticket was successfully registered.
+    /// - Returns [`Err()`] containing a [`broadcast::Receiver<Vec<DnsRecord>>`] when there is already a ticket registered for the DNS question.
+    ///   The Receiver can be used to wait for response to the already in progress query.
+    pub fn register_ticket(
+        &self,
+        question: DnsQuestion,
+    ) -> Result<CacheTicketGuard, broadcast::Receiver<Vec<DnsRecord>>> {
+        // Check if ticket already exists
+        // If true, we return a receiver for the sender giving the caller the chance to be notified once the ticket is redeemed.
+        if let Some(entry) = self.cache.get(&question)
+            && let CacheData::Ticket(t) = entry.get_data()
+        {
+            return Err(t.get_sender().subscribe());
+        }
+
+        let (ticket_sender, _) = broadcast::channel(1);
+        let ticket_guard_sender = ticket_sender.clone();
+        let ticket = CacheTicket::new(ticket_sender);
+        let entry = CacheEntry::new(CacheData::Ticket(ticket));
+
+        self.cache.insert(question.clone(), entry);
+
+        let ticket_guard = CacheTicketGuard::new(
+            self.cache.clone(),
+            question.clone(),
+            ticket_guard_sender.clone(),
+        );
+
+        Ok(ticket_guard)
+    }
+
+    /// Commit an RRSet to cache.
+    ///
+    /// If an RRSet is currently cached for the specified DNS question, it will be overwritten.
+    /// If a ticket is currently cached for the specified DNS question, it will be redeemed.
+    pub fn commit(&self, question: DnsQuestion, records: Vec<DnsRecord>) {
+        self.cache.insert(
+            question,
+            CacheEntry::new(CacheData::RRSet(RRSet::new(records))),
+        );
+    }
+
+    pub fn clear(&self) {
+        self.cache.clear();
+    }
+
+    pub fn set_enabled(&mut self, enabled: bool) {
+        self.enabled = enabled;
     }
 }

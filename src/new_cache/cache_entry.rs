@@ -14,6 +14,13 @@ pub struct CacheEntry {
 }
 
 impl CacheEntry {
+    pub fn new(data: CacheData) -> Self {
+        Self {
+            timestamp: SystemTime::now(),
+            data,
+        }
+    }
+
     pub fn get_timestamp(&self) -> &SystemTime {
         &self.timestamp
     }
