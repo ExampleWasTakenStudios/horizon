@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::query::Query;
+use crate::{cache::Cache, query::Query};
 use tokio::{net::UdpSocket, runtime, task::JoinSet};
 
 mod buffer;
@@ -56,6 +56,8 @@ pub fn entry() {
         };
         let upstream_socket = Arc::new(upstream_socket);
 
+        let cache = Arc::new(Cache::new());
+
         let mut active_query_join_set = JoinSet::<()>::new();
 
         loop {
@@ -68,11 +70,13 @@ pub fn entry() {
                 Ok((length, origin)) => {
                     let downstream_socket = downstream_socket.clone();
                     let upstream_socket = upstream_socket.clone();
+                    let cache = cache.clone();
 
                     active_query_join_set.spawn(async move {
                         Query::create(
                             downstream_socket,
                             upstream_socket,
+                            cache,
                             (length, origin, recv_buf),
                         ).await;
                     });
