@@ -49,12 +49,14 @@ impl DnsPacket {
         })
     }
 
-    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
-        if buffer.get_position() != 0 {
+    pub fn to_bytes<const T: usize>(&self, buffer: [u8; T]) -> Result<usize, String> {
+        let mut packet_buf = PacketBuffer::from_raw_buffer(buffer);
+
+        if packet_buf.get_position() != 0 {
             return Err("Attempted to translate packet into non-empty buffer.".into());
         }
 
-        let mut length_written = self.header.to_bytes(buffer)?;
+        let mut length_written = self.header.to_bytes(&mut packet_buf)?;
 
         // Safety check since a DNS header must always be 12 bytes long
         if length_written != 12 {
@@ -64,19 +66,19 @@ impl DnsPacket {
         }
 
         for question in &self.questions {
-            length_written += question.to_bytes(buffer)?;
+            length_written += question.to_bytes(&mut packet_buf)?;
         }
 
         for answer in &self.answers {
-            length_written += answer.to_bytes(buffer)?;
+            length_written += answer.to_bytes(&mut packet_buf)?;
         }
 
         for authoritative in &self.authoritatives {
-            length_written += authoritative.to_bytes(buffer)?;
+            length_written += authoritative.to_bytes(&mut packet_buf)?;
         }
 
         for additional in &self.additionals {
-            length_written += additional.to_bytes(buffer)?;
+            length_written += additional.to_bytes(&mut packet_buf)?;
         }
 
         Ok(length_written)
