@@ -55,4 +55,41 @@ impl DnsHeader {
             additional_count,
         })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        if buffer.get_position() != 0 {
+            return Err(
+                "PacketBuffer position must be 0 at the beginning of header translation"
+                    .to_string(),
+            );
+        }
+
+        let mut length_written = buffer.write_u16(self.id)?;
+
+        let flags = self.flags_to_bitfield();
+
+        length_written += buffer.write_u16(flags)?;
+
+        length_written += buffer.write_u16(self.question_count)?;
+        length_written += buffer.write_u16(self.answer_count)?;
+        length_written += buffer.write_u16(self.authoritative_count)?;
+        length_written += buffer.write_u16(self.additional_count)?;
+
+        Ok(length_written)
+    }
+
+    fn flags_to_bitfield(&self) -> u16 {
+        let mut flags = 0_u16;
+
+        flags |= (self.is_response as u16) << 15;
+        flags |= ((self.op_code & 0x0F) as u16) << 11;
+        flags |= (self.is_authoritative as u16) << 10;
+        flags |= (self.is_truncated as u16) << 9;
+        flags |= (self.is_recursion_desired as u16) << 8;
+        flags |= (self.is_recursion_avail as u16) << 7;
+        flags |= ((self.z & 0x07) as u16) << 4;
+        flags |= (self.response_code.to_number() & 0x0F) as u16;
+
+        flags
+    }
 }

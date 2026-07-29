@@ -1,7 +1,4 @@
-use crate::{
-
-    buffer::PacketBuffer, constants::MAX_PACKET_SIZE, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode},
-};
+use crate::{buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsPacket {
@@ -52,7 +49,52 @@ impl DnsPacket {
         })
     }
 
-    pub fn to_raw_bytes(&self) -> Option<[u8; MAX_PACKET_SIZE]> {
-        todo!("Translating a DnsPacket back into raw bytes is NOT YET IMPLEMENTED");
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        if buffer.get_position() != 0 {
+            return Err("Attempted to translate packet into non-empty buffer.".into());
+        }
+
+        let mut length_written = self.header.to_bytes(buffer)?;
+
+        // Safety check since a DNS header must always be 12 bytes long
+        if length_written != 12 {
+            return Err(format!(
+                "Header should be 12 bytes but was {length_written}"
+            ));
+        }
+
+        for question in &self.questions {
+            length_written += question.to_bytes(buffer)?;
+        }
+
+        for answer in &self.answers {
+            length_written += answer.to_bytes(buffer)?;
+        }
+
+        for authoritative in &self.authoritatives {
+            length_written += authoritative.to_bytes(buffer)?;
+        }
+
+        for additional in &self.additionals {
+            length_written += additional.to_bytes(buffer)?;
+        }
+
+        Ok(length_written)
+    }
+
+    pub fn new(
+        header: DnsHeader,
+        questions: Vec<DnsQuestion>,
+        answers: Vec<DnsRecord>,
+        authoritatives: Vec<DnsRecord>,
+        additionals: Vec<DnsRecord>,
+    ) -> Self {
+        Self {
+            header,
+            questions,
+            answers,
+            authoritatives,
+            additionals,
+        }
     }
 }

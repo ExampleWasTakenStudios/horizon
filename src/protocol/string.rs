@@ -23,6 +23,10 @@ impl CharString {
         Ok(CharString { buffer: string })
     }
 
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        Ok(buffer.write_subarray(&self.buffer)?)
+    }
+
     pub fn as_buffer(&self) -> &[u8] {
         &self.buffer
     }

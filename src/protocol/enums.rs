@@ -20,6 +20,17 @@ impl ResponseCode {
             0 | _ => ResponseCode::NOERROR,
         }
     }
+
+    pub fn to_number(&self) -> u8 {
+        match *self {
+            ResponseCode::NOERROR => 0,
+            ResponseCode::FORMERR => 1,
+            ResponseCode::SERVFAIL => 2,
+            ResponseCode::NXDOMAIN => 3,
+            ResponseCode::NOTIMP => 4,
+            ResponseCode::REFUSED => 5,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

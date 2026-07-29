@@ -1,5 +1,5 @@
 use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4}, str::FromStr, sync::Arc,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4}, sync::Arc,
 };
 
 use tokio::{net::UdpSocket, runtime, task::JoinSet};
@@ -11,8 +11,6 @@ mod protocol;
 mod query;
 mod srs;
 mod constants;
-
-
 
 pub fn entry() {
     let rt = runtime::Builder::new_multi_thread()

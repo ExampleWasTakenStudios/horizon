@@ -1,4 +1,7 @@
-use crate::{buffer::PacketBuffer, protocol::{DnsClass, DnsType, ResponseCode, domain::DomainName}};
+use crate::{
+    buffer::PacketBuffer,
+    protocol::{DnsClass, DnsType, ResponseCode, domain::DomainName},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsQuestion {
@@ -18,5 +21,13 @@ impl DnsQuestion {
             query_type: q_type,
             query_class: q_class,
         })
+    }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.name.to_bytes(buffer)?;
+        length_written += buffer.write_u16(self.query_type.to_number())?;
+        length_written += buffer.write_u16(self.query_class.to_number())?;
+
+        Ok(length_written)
     }
 }
