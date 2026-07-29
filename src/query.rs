@@ -4,7 +4,6 @@ use tokio::net::UdpSocket;
 
 use crate::{
     MAX_PACKET_SIZE,
-    cache::Cache,
     protocol::{DnsHeader, DnsRecord, ResponseCode, packet::DnsPacket},
     srs::StubResolverSystem,
 };
@@ -17,10 +16,10 @@ pub struct Query {
     pub downstream_socket: Arc<UdpSocket>,
     pub upstream_socket: Arc<UdpSocket>,
     pub timestamp: SystemTime,
-    pub cache: Arc<Cache>,
-    // lza: RwLock<Arc<LocalZoneAuthority>>
-    // shs: RwLock<Arc<SinkHoleSystem>>
-    pub srs: StubResolverSystem,
+    // pub cache: Arc<Cache>,
+    // pub lza: RwLock<Arc<LocalZoneAuthority>>
+    // pub shs: RwLock<Arc<SinkHoleSystem>>
+    pub srs: Arc<StubResolverSystem>,
     pub socket_data: SocketData,
 }
 
@@ -30,10 +29,10 @@ impl Query {
     pub async fn create(
         downstream_socket: Arc<UdpSocket>,
         upstream_socket: Arc<UdpSocket>,
-        cache: Arc<Cache>,
+        // cache: Arc<Cache>,
         // shs: RwLock<Arc<SinkHoleSystem>>
         // lza: RwLock<Arc<LocalZoneAuthority>>
-        srs: StubResolverSystem,
+        srs: Arc<StubResolverSystem>,
         socket_data: SocketData,
     ) {
         let query_packet = match DnsPacket::parse_from(socket_data.data) {
@@ -46,7 +45,7 @@ impl Query {
             downstream_socket,
             upstream_socket,
             timestamp: SystemTime::now(),
-            cache,
+            // cache,
             // shs,
             // lza,
             srs,
@@ -62,26 +61,7 @@ impl Query {
         }
 
         // Interrogate cache
-        let question = match self.query_packet.questions.first() {
-            None => {
-                eprintln!(
-                    "[Query] Packet contained no queries. Note, this should be an impossible state. The packet should be validated to be a valid query before being used. See `Query::validate_query()`"
-                );
-                return;
-            }
-            Some(v) => v,
-        };
-
-        if let Some(rr_set) = self.cache.check_for(question).await {
-            let answer_packet = self.create_answer(&self.query_packet, rr_set);
-
-            let buf = answer_packet.to_raw_bytes().unwrap();
-            let _ = self
-                .downstream_socket
-                .send_to(&buf, self.socket_data.origin)
-                .await;
-            return;
-        }
+        // TODO: implement caching
 
         // Interrogate LZA
 
