@@ -1,16 +1,22 @@
 use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4}, sync::Arc,
+    f32::consts::E,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
 };
 
 use tokio::{net::UdpSocket, runtime, task::JoinSet};
 
-use crate::{constants::{DOWNSTREAM_SOCKET_ADDR, MAX_PACKET_SIZE, UPSTREAM_SOCKET_ADDR}, query::{Query, SocketData}, srs::StubResolverSystem};
+use crate::{
+    constants::{DOWNSTREAM_SOCKET_ADDR, MAX_PACKET_SIZE, UPSTREAM_SOCKET_ADDR},
+    query::{Query, SocketData},
+    srs::StubResolverSystem,
+};
 
 mod buffer;
+mod constants;
 mod protocol;
 mod query;
 mod srs;
-mod constants;
 
 pub fn entry() {
     let rt = runtime::Builder::new_multi_thread()
@@ -43,9 +49,12 @@ pub fn entry() {
                 socket
             }
         };
+        if let Err(e) = upstream_socket.connect("1.1.1.1:53").await {
+            panic!("Error occurred while trying to connect to upstream socket. \n Error {e}");
+        }
         let upstream_socket = Arc::new(upstream_socket);
 
-        let srs = Arc::new(StubResolverSystem::new(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(1, 1, 1, 1), 53))));
+        let srs = Arc::new(StubResolverSystem::new());
 
         let mut active_query_join_set = JoinSet::<()>::new();
 

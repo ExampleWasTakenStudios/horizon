@@ -40,6 +40,8 @@ impl Query {
             Ok(v) => v,
         };
 
+        println!("received query: {:#?}", query_packet);
+
         let query = Query {
             query_packet,
             downstream_socket,
@@ -72,7 +74,8 @@ impl Query {
 
         let buffer = [0_u8; MAX_PACKET_SIZE];
         if response_packet.to_bytes(buffer).is_ok() {
-            let _ = self.downstream_socket.send(&buffer).await;
+            println!("Sending response to client");
+            let _ = self.downstream_socket.send_to(&buffer, self.socket_data.origin).await;
         }
     }
 

@@ -1,22 +1,16 @@
 use std::net::SocketAddr;
 
 use crate::{
-    constants::MAX_PACKET_SIZE, protocol::{
-        DnsHeader, DnsRecord,
-        ResponseCode,
-        packet::DnsPacket,
-    }, query::Query,
+    constants::MAX_PACKET_SIZE,
+    protocol::{DnsHeader, DnsRecord, ResponseCode, packet::DnsPacket},
+    query::Query,
 };
 
-pub struct StubResolverSystem {
-    upstream_resolver_addr: SocketAddr,
-}
+pub struct StubResolverSystem;
 
 impl StubResolverSystem {
-    pub fn new(upstream_resolver_addr: SocketAddr) -> Self {
-        Self {
-            upstream_resolver_addr
-        }
+    pub fn new() -> Self {
+        Self {}
     }
 
     /// Sends the query to the specified upstream resolver.
@@ -32,6 +26,8 @@ impl StubResolverSystem {
             return self.create_serv_fail_response(&query.query_packet);
         }
 
+        println!("[SRS] Sent query to upstream resolver...");
+
         let mut recv_buf = [0_u8; MAX_PACKET_SIZE];
 
         // Since we will receive all incoming traffic including that designated for other queries,
@@ -45,16 +41,22 @@ impl StubResolverSystem {
             }
 
             // Read ID from the received buffer and compare it against the ID of the query
-            let response_id = match recv_buf.get(0..12) {
+            let response_id = match recv_buf.get(0..2) {
                 None => continue,
                 Some(v) => {
-                    let id: u16 = (v[0] | v[1] | v[2] | v[3]) as u16;
+                    let mut id: u16 = (v[0] as u16) << 8;
+                    id |= v[1] as u16;
                     id
                 }
             };
             if response_id != query.query_packet.header.id {
+                println!(
+                    "Received response with non-matching ID. \n    Query:\t{}\n    Response:\t{}",
+                    query.query_packet.header.id, response_id
+                );
                 continue; // The ID did not match - we continue the loop and listen again
             } else {
+                println!("Received response with matching ID.");
                 break; // The ID matched - we break out of the loop
             }
         }
@@ -92,8 +94,6 @@ impl StubResolverSystem {
             additional_count: 0,
             ..query_packet.header
         };
-
-
 
         DnsPacket {
             header,
