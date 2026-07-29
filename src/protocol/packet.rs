@@ -10,8 +10,10 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
-    pub fn parse_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
-        let header = DnsHeader::read_from(buffer)?;
+    pub fn parse_from<const T: usize>(buf: [u8; T]) -> Result<Self, ResponseCode> {
+        let mut packet_buf = PacketBuffer::<T>::from_raw_buffer(buf);
+
+        let header = DnsHeader::read_from(&mut packet_buf)?;
         let mut questions: Vec<DnsQuestion> = Vec::with_capacity(header.question_count as usize);
         let mut answers: Vec<DnsRecord> = Vec::with_capacity(header.answer_count as usize);
         let mut authoritatives: Vec<DnsRecord> =
@@ -19,22 +21,22 @@ impl DnsPacket {
         let mut additionals: Vec<DnsRecord> = Vec::with_capacity(header.additional_count as usize);
 
         for _ in 0..header.question_count {
-            let question = DnsQuestion::read_from(buffer)?;
+            let question = DnsQuestion::read_from(&mut packet_buf)?;
             questions.push(question);
         }
 
         for _ in 0..header.answer_count {
-            let answer = DnsRecord::read_from(buffer)?;
+            let answer = DnsRecord::read_from(&mut packet_buf)?;
             answers.push(answer);
         }
 
         for _ in 0..header.authoritative_count {
-            let authoritative = DnsRecord::read_from(buffer)?;
+            let authoritative = DnsRecord::read_from(&mut packet_buf)?;
             authoritatives.push(authoritative);
         }
 
         for _ in 0..header.additional_count {
-            let additional = DnsRecord::read_from(buffer)?;
+            let additional = DnsRecord::read_from(&mut packet_buf)?;
             additionals.push(additional);
         }
 

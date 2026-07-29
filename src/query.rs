@@ -49,8 +49,7 @@ impl Query {
 
     async fn run(&self) {
         let (_length, _socket_addr, buf) = self.socket_data;
-        let mut packet_buf = PacketBuffer::from_raw_buffer(buf);
-        let packet = match DnsPacket::parse_from(&mut packet_buf) {
+        let packet = match DnsPacket::parse_from(buf) {
             Err(_) => return,
             Ok(v) => v,
         };
