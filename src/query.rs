@@ -69,6 +69,10 @@ impl Query {
 
         // Command lookup through SHS
         let response_packet = self.command_srs().await;
+
+        if let Some(packet) = response_packet.to_raw_bytes() {
+            let _ = self.downstream_socket.send(&packet).await;
+        }
     }
 
     async fn command_srs(&self) -> DnsPacket {
