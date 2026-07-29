@@ -7,9 +7,10 @@ use crate::{cache::Cache, query::Query};
 use tokio::{net::UdpSocket, runtime, task::JoinSet};
 
 mod buffer;
+mod cache;
 mod protocol;
 mod query;
-mod cache;
+mod srs;
 
 const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
 const DOWNSTREAM_PORT: u16 = 1234;
@@ -78,7 +79,8 @@ pub fn entry() {
                             upstream_socket,
                             cache,
                             (length, origin, recv_buf),
-                        ).await;
+                        )
+                        .await;
                     });
                 }
             };
