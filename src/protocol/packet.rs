@@ -1,7 +1,6 @@
 use crate::{
-    MAX_PACKET_SIZE,
-    buffer::PacketBuffer,
-    protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode},
+
+    buffer::PacketBuffer, constants::MAX_PACKET_SIZE, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode},
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

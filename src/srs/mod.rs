@@ -1,18 +1,22 @@
+use std::net::SocketAddr;
+
 use crate::{
-    MAX_PACKET_SIZE,
-    protocol::{
+    constants::MAX_PACKET_SIZE, protocol::{
         DnsHeader, DnsRecord,
         ResponseCode,
         packet::DnsPacket,
-    },
-    query::Query,
+    }, query::Query,
 };
 
-pub struct StubResolverSystem;
+pub struct StubResolverSystem {
+    upstream_resolver_addr: SocketAddr,
+}
 
 impl StubResolverSystem {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(upstream_resolver_addr: SocketAddr) -> Self {
+        Self {
+            upstream_resolver_addr
+        }
     }
 
     /// Sends the query to the specified upstream resolver.

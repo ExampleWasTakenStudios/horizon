@@ -3,9 +3,7 @@ use std::{net::SocketAddr, sync::Arc, time::SystemTime};
 use tokio::net::UdpSocket;
 
 use crate::{
-    MAX_PACKET_SIZE,
-    protocol::{DnsHeader, DnsRecord, ResponseCode, packet::DnsPacket},
-    srs::StubResolverSystem,
+    constants::MAX_PACKET_SIZE, protocol::{DnsHeader, DnsRecord, ResponseCode, packet::DnsPacket}, srs::StubResolverSystem,
 };
 
 /// A query that is currently handled by the service.

@@ -1,28 +1,18 @@
 use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4}, str::FromStr, sync::Arc,
 };
 
 use tokio::{net::UdpSocket, runtime, task::JoinSet};
 
-use crate::{query::{Query, SocketData}, srs::StubResolverSystem};
+use crate::{constants::{DOWNSTREAM_SOCKET_ADDR, MAX_PACKET_SIZE, UPSTREAM_SOCKET_ADDR}, query::{Query, SocketData}, srs::StubResolverSystem};
 
 mod buffer;
 mod protocol;
 mod query;
 mod srs;
+mod constants;
 
-const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
-const DOWNSTREAM_PORT: u16 = 1234;
-pub const DOWNSTREAM_SOCKET_ADDR: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(DOWNSTREAM_IP_ADDR, DOWNSTREAM_PORT));
 
-const UPSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(1, 1, 1, 1);
-const UPSTREAM_PORT: u16 = 53;
-pub const UPSTREAM_SOCKET_ADDR: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(UPSTREAM_IP_ADDR, UPSTREAM_PORT));
-
-pub const MAX_PACKET_SIZE: usize = 512;
 
 pub fn entry() {
     let rt = runtime::Builder::new_multi_thread()
@@ -45,8 +35,8 @@ pub fn entry() {
         };
         let downstream_socket = Arc::new(downstream_socket);
 
-        let upstream_socket = match UdpSocket::bind(DOWNSTREAM_SOCKET_ADDR).await {
-            Err(e) => panic!("Error occurred while trying to bind upstream socket: {e}"),
+        let upstream_socket = match UdpSocket::bind(UPSTREAM_SOCKET_ADDR).await {
+            Err(e) => panic!("Error occurred while trying to bind upstream socket with address {DOWNSTREAM_SOCKET_ADDR}.\n Error: {e}"),
             Ok(socket) => {
                 println!(
                     "Successfully bound upstream socket to: {}",
@@ -57,7 +47,7 @@ pub fn entry() {
         };
         let upstream_socket = Arc::new(upstream_socket);
 
-        let srs = Arc::new(StubResolverSystem::new());
+        let srs = Arc::new(StubResolverSystem::new(SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(1, 1, 1, 1), 53))));
 
         let mut active_query_join_set = JoinSet::<()>::new();
 
