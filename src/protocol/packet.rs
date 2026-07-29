@@ -1,4 +1,8 @@
-use crate::{MAX_PACKET_SIZE, buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
+use crate::{
+    MAX_PACKET_SIZE,
+    buffer::PacketBuffer,
+    protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsPacket {
@@ -50,6 +54,6 @@ impl DnsPacket {
     }
 
     pub fn to_raw_bytes(&self) -> Option<[u8; MAX_PACKET_SIZE]> {
-        None // TODO: impl.
+        todo!("Translating a DnsPacket back into raw bytes is NOT YET IMPLEMENTED");
     }
 }
