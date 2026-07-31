@@ -6,7 +6,9 @@ impl DownstreamUdpSocket {
     /// Create a [`tokio::net::UdpSocket`] with the `SO_REUSEPORT` flag set.
     ///
     /// # Panics
-    /// This
+    /// This method panics whenever the listener cannot be created.
+    /// This is intentional as an application without a downstream UDP
+    /// socket is not desirable and we, thus, rather exit the application.
     pub fn create() -> tokio::net::UdpSocket {
         println!("Creating downstream UDP socket...");
         let socket = socket2::Socket::new(
