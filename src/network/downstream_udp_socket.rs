@@ -6,8 +6,9 @@ impl DownstreamUdpSocket {
     /// Create a [`tokio::net::UdpSocket`] with the `SO_REUSEPORT` flag set.
     ///
     /// # Panics
-    /// This 
+    /// This
     pub fn create() -> tokio::net::UdpSocket {
+        println!("Creating downstream UDP socket...");
         let socket = socket2::Socket::new(
             socket2::Domain::IPV4,
             socket2::Type::DGRAM,
@@ -20,6 +21,7 @@ impl DownstreamUdpSocket {
         socket
             .bind(&constants::DOWNSTREAM_SOCKET_ADDR.into())
             .unwrap();
+        println!("Bound socket to {:?}", &constants::DOWNSTREAM_SOCKET_ADDR);
 
         tokio::net::UdpSocket::from_std(socket.into()).unwrap()
     }
