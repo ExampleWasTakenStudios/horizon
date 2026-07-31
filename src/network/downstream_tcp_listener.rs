@@ -23,6 +23,13 @@ impl DownstreamTcpListener {
         socket
             .bind(&constants::DOWNSTREAM_SOCKET_ADDR.into())
             .unwrap();
+        socket.listen(constants::DOWNSTREAM_TCP_BACKLOG).unwrap();
+
+        println!(
+            "Bound downstream TCP socket to {:?} with backlog of {}",
+            constants::DOWNSTREAM_SOCKET_ADDR,
+            constants::DOWNSTREAM_TCP_BACKLOG
+        );
 
         tokio::net::TcpListener::from_std(socket.into()).unwrap()
     }

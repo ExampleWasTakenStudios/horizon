@@ -75,9 +75,8 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
             loop {
                 // This is used to read length prefix that TCP messages carry as defined in
                 // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
-                let mut prefix_buf = [0_u8, 2];
-
-                let (stream, socket_addr) = match listener.accept().await {
+                let mut _prefix_buf = [0_u8, 2];
+                let (_stream, _socket_addr) = match listener.accept().await {
                     Err(e) => {
                         eprintln!("error while accepting TCP connection: {e}");
                         continue;
