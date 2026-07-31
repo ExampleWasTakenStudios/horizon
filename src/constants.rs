@@ -16,6 +16,9 @@ const DOWNSTREAM_PORT: u16 = 1234;
 pub const DOWNSTREAM_SOCKET_ADDR: SocketAddr =
     SocketAddr::V4(SocketAddrV4::new(DOWNSTREAM_IP_ADDR, DOWNSTREAM_PORT));
 
+/// Specifies how many unaccepted handshakes the OS should queue in memory before rejecting new clients.
+pub const DOWNSTREAM_TCP_BACKLOG: i32 = 1024;
+
 /// IP address to the socket that connects to the upstream resolver.
 ///
 /// This is the IP address of the socket itself, **NOT** the IP address of the recursive resolver.

@@ -1,6 +1,9 @@
 use tokio::task::JoinSet;
 
-use crate::{constants, network::DownstreamUdpSocket};
+use crate::{
+    constants,
+    network::{DownstreamTcpListener, DownstreamUdpSocket},
+};
 
 /// Represents the core state of the application.
 pub struct ApplicationState {
@@ -17,6 +20,7 @@ pub fn init() -> ApplicationState {
 
     let mut global_join_set = JoinSet::<()>::new();
     init_downstream_udp_sockets(&mut global_join_set);
+    init_downstream_tcp_listeners(&mut global_join_set);
 
     ApplicationState { global_join_set }
 }
@@ -32,7 +36,7 @@ pub fn init_tokio_runtime() -> tokio::runtime::Runtime {
 
 fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
     println!(
-        "Spawning {} downstream socket tasks...",
+        "Spawning {} downstream UDP tasks...",
         constants::DOWNSTREAM_SOCKET_TASK_COUNT
     );
     for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
@@ -52,6 +56,37 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
         });
         println!(
             "Created downstream UDP socket task {} of {}",
+            i + 1,
+            constants::DOWNSTREAM_SOCKET_TASK_COUNT
+        );
+    }
+}
+
+fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
+    println!(
+        "Spawning {} downstream TCP tasks...",
+        constants::DOWNSTREAM_SOCKET_TASK_COUNT
+    );
+
+    for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
+        let listener = DownstreamTcpListener::create();
+
+        join_set.spawn(async move {
+            loop {
+                // This is used to read length prefix that TCP messages carry as defined in
+                // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
+                let mut _prefix_buf = [0_u8, 2];
+                let (_stream, _socket_addr) = match listener.accept().await {
+                    Err(e) => {
+                        eprintln!("error while accepting TCP connection: {e}");
+                        continue;
+                    }
+                    Ok(v) => v, // TODO: create internal query struct that then handles the query's journey through the service
+                };
+            }
+        });
+        println!(
+            "Created downstream TCP listener task {} of {}",
             i + 1,
             constants::DOWNSTREAM_SOCKET_TASK_COUNT
         );
