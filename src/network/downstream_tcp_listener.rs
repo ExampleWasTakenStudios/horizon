@@ -1,3 +1,7 @@
+use std::net::SocketAddr;
+
+use tokio::net::TcpStream;
+
 use crate::constants;
 
 pub struct DownstreamTcpListener;
@@ -32,5 +36,9 @@ impl DownstreamTcpListener {
         );
 
         tokio::net::TcpListener::from_std(socket.into()).unwrap()
+    }
+
+    pub async fn on_recv(stream: TcpStream, origin: SocketAddr) {
+        todo!("query creation and handling");
     }
 }

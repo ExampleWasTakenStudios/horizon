@@ -45,13 +45,18 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
         join_set.spawn(async move {
             loop {
                 let mut buf = [0_u8; constants::MAX_PACKET_SIZE];
-                let (_length, _origin) = match socket.recv_from(&mut buf).await {
+                let (length, origin) = match socket.recv_from(&mut buf).await {
                     Err(e) => {
                         eprintln!("error while receiving downstream traffic: {e}");
                         continue;
                     }
-                    Ok(v) => v, // TODO: create internal query struct that then handles the query's journey through the service
+                    Ok(v) => v,
                 };
+
+                // Create new task to handle connection
+                tokio::spawn(async move {
+                    DownstreamUdpSocket::on_recv(length, origin).await;
+                });
             }
         });
         println!(
@@ -73,16 +78,18 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
 
         join_set.spawn(async move {
             loop {
-                // This is used to read length prefix that TCP messages carry as defined in
-                // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
-                let mut _prefix_buf = [0_u8, 2];
-                let (_stream, _socket_addr) = match listener.accept().await {
+                let (stream, origin) = match listener.accept().await {
                     Err(e) => {
                         eprintln!("error while accepting TCP connection: {e}");
                         continue;
                     }
-                    Ok(v) => v, // TODO: create internal query struct that then handles the query's journey through the service
+                    Ok(v) => v,
                 };
+
+                // Create new task to handle connection
+                tokio::spawn(async move {
+                    DownstreamTcpListener::on_recv(stream, origin).await;
+                });
             }
         });
         println!(

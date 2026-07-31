@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use crate::constants;
 
 pub struct DownstreamUdpSocket;
@@ -26,5 +28,9 @@ impl DownstreamUdpSocket {
         println!("Bound socket to {:?}", &constants::DOWNSTREAM_SOCKET_ADDR);
 
         tokio::net::UdpSocket::from_std(socket.into()).unwrap()
+    }
+
+    pub async fn on_recv(length: usize, origin: SocketAddr) {
+        todo!("query creation and handling");
     }
 }
