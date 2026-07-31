@@ -7,7 +7,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AData {
     pub address: [u8; 4],
 }
@@ -25,7 +25,7 @@ impl AData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NsData {
     pub ns_domain_name: DomainName,
 }
@@ -38,7 +38,7 @@ impl NsData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CNameData {
     pub c_name: DomainName,
 }
@@ -51,7 +51,7 @@ impl CNameData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SoaRecordData {
     pub m_name: DomainName,
     pub r_name: DomainName,
@@ -82,9 +82,21 @@ impl SoaRecordData {
             minimum,
         })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.m_name.to_bytes(buffer)?;
+        length_written += self.r_name.to_bytes(buffer)?;
+        length_written += buffer.write_u32(self.serial)?;
+        length_written += buffer.write_u32(self.refresh)?;
+        length_written += buffer.write_u32(self.retry)?;
+        length_written += buffer.write_u32(self.expire)?;
+        length_written += buffer.write_u32(self.minimum)?;
+
+        Ok(length_written)
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PtrData {
     pub ptr_d_name: DomainName,
 }
@@ -97,7 +109,7 @@ impl PtrData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MxRecordData {
     pub preference: u16,
     pub exchange: DomainName,
@@ -113,31 +125,44 @@ impl MxRecordData {
             exchange,
         })
     }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = buffer.write_u16(self.preference)?;
+        length_written += self.exchange.to_bytes(buffer)?;
+
+        Ok(length_written)
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TxtData {
     pub txt_data: CharString,
 }
 
 impl TxtData {
-    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: u16) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(
+        buffer: &mut PacketBuffer<T>,
+        rd_length: u16,
+    ) -> Result<Self, ResponseCode> {
         Ok(TxtData {
             txt_data: CharString::read_from(buffer, rd_length)?,
         })
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnknownRData(Vec<u8>);
 
 impl UnknownRData {
-    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>, rd_length: usize) -> Result<Self, ResponseCode> {
+    pub fn read_from<const T: usize>(
+        buffer: &mut PacketBuffer<T>,
+        rd_length: usize,
+    ) -> Result<Self, ResponseCode> {
         Ok(UnknownRData(buffer.read_subarray(rd_length)?))
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsRecordData {
     A(AData),
     NS(NsData),
@@ -149,28 +174,22 @@ pub enum DnsRecordData {
     UNKNOWN(UnknownRData),
 }
 
-#[derive(Debug, Clone)]
-pub struct DnsQuestion {
-    pub name: DomainName,
-    pub query_type: DnsType,
-    pub query_class: DnsClass,
-}
-
-impl DnsQuestion {
-    pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
-        let q_name = DomainName::read_from(buffer)?;
-        let q_type = DnsType::from_number(buffer.read_u16()?);
-        let q_class = DnsClass::from_number(buffer.read_u16()?);
-
-        Ok(DnsQuestion {
-            name: q_name,
-            query_type: q_type,
-            query_class: q_class,
-        })
+impl DnsRecordData {
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        match self {
+            DnsRecordData::A(d) => Ok(buffer.write_subarray(&d.address)?),
+            DnsRecordData::NS(d) => Ok(d.ns_domain_name.to_bytes(buffer)?),
+            DnsRecordData::CNAME(d) => Ok(d.c_name.to_bytes(buffer)?),
+            DnsRecordData::SOA(d) => Ok(d.to_bytes(buffer)?),
+            DnsRecordData::PTR(d) => Ok(d.ptr_d_name.to_bytes(buffer)?),
+            DnsRecordData::MX(d) => Ok(d.to_bytes(buffer)?),
+            DnsRecordData::TXT(d) => Ok(d.txt_data.to_bytes(buffer)?),
+            DnsRecordData::UNKNOWN(d) => Ok(buffer.write_subarray(&d.0)?),
+        }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsRecord {
     pub name: DomainName,
     pub r#type: DnsType,
@@ -208,5 +227,17 @@ impl DnsRecord {
             rd_length,
             r_data,
         })
+    }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let mut length_written = self.name.to_bytes(buffer)?;
+
+        length_written += buffer.write_u16(self.r#type.to_number())?;
+        length_written += buffer.write_u16(self.class.to_number())?;
+        length_written += buffer.write_u32(self.ttl)?;
+        length_written += buffer.write_u16(self.rd_length)?;
+        length_written += self.r_data.to_bytes(buffer)?;
+
+        Ok(length_written)
     }
 }

@@ -1,6 +1,6 @@
-use crate::{MAX_PACKET_SIZE, buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
+use crate::{buffer::PacketBuffer, protocol::{DnsHeader, DnsQuestion, DnsRecord, ResponseCode}};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DnsPacket {
     pub header: DnsHeader,
     pub questions: Vec<DnsQuestion>,
@@ -10,8 +10,10 @@ pub struct DnsPacket {
 }
 
 impl DnsPacket {
-    pub fn parse_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
-        let header = DnsHeader::read_from(buffer)?;
+    pub fn parse_from<const T: usize>(buf: [u8; T]) -> Result<Self, ResponseCode> {
+        let mut packet_buf = PacketBuffer::<T>::from_raw_buffer(buf);
+
+        let header = DnsHeader::read_from(&mut packet_buf)?;
         let mut questions: Vec<DnsQuestion> = Vec::with_capacity(header.question_count as usize);
         let mut answers: Vec<DnsRecord> = Vec::with_capacity(header.answer_count as usize);
         let mut authoritatives: Vec<DnsRecord> =
@@ -19,22 +21,22 @@ impl DnsPacket {
         let mut additionals: Vec<DnsRecord> = Vec::with_capacity(header.additional_count as usize);
 
         for _ in 0..header.question_count {
-            let question = DnsQuestion::read_from(buffer)?;
+            let question = DnsQuestion::read_from(&mut packet_buf)?;
             questions.push(question);
         }
 
         for _ in 0..header.answer_count {
-            let answer = DnsRecord::read_from(buffer)?;
+            let answer = DnsRecord::read_from(&mut packet_buf)?;
             answers.push(answer);
         }
 
         for _ in 0..header.authoritative_count {
-            let authoritative = DnsRecord::read_from(buffer)?;
+            let authoritative = DnsRecord::read_from(&mut packet_buf)?;
             authoritatives.push(authoritative);
         }
 
         for _ in 0..header.additional_count {
-            let additional = DnsRecord::read_from(buffer)?;
+            let additional = DnsRecord::read_from(&mut packet_buf)?;
             additionals.push(additional);
         }
 
@@ -47,7 +49,54 @@ impl DnsPacket {
         })
     }
 
-    pub fn to_raw_bytes(&self) -> Option<[u8; MAX_PACKET_SIZE]> {
-        None // TODO: impl.
+    pub fn to_bytes<const T: usize>(&self, buffer: [u8; T]) -> Result<usize, String> {
+        let mut packet_buf = PacketBuffer::from_raw_buffer(buffer);
+
+        if packet_buf.get_position() != 0 {
+            return Err("Attempted to translate packet into non-empty buffer.".into());
+        }
+
+        let mut length_written = self.header.to_bytes(&mut packet_buf)?;
+
+        // Safety check since a DNS header must always be 12 bytes long
+        if length_written != 12 {
+            return Err(format!(
+                "Header should be 12 bytes but was {length_written}"
+            ));
+        }
+
+        for question in &self.questions {
+            length_written += question.to_bytes(&mut packet_buf)?;
+        }
+
+        for answer in &self.answers {
+            length_written += answer.to_bytes(&mut packet_buf)?;
+        }
+
+        for authoritative in &self.authoritatives {
+            length_written += authoritative.to_bytes(&mut packet_buf)?;
+        }
+
+        for additional in &self.additionals {
+            length_written += additional.to_bytes(&mut packet_buf)?;
+        }
+
+        Ok(length_written)
+    }
+
+    pub fn new(
+        header: DnsHeader,
+        questions: Vec<DnsQuestion>,
+        answers: Vec<DnsRecord>,
+        authoritatives: Vec<DnsRecord>,
+        additionals: Vec<DnsRecord>,
+    ) -> Self {
+        Self {
+            header,
+            questions,
+            answers,
+            authoritatives,
+            additionals,
+        }
     }
 }

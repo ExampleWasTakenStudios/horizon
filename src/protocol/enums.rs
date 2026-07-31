@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ResponseCode {
     NOERROR = 0,
     FORMERR = 1,
@@ -20,9 +20,20 @@ impl ResponseCode {
             0 | _ => ResponseCode::NOERROR,
         }
     }
+
+    pub fn to_number(&self) -> u8 {
+        match *self {
+            ResponseCode::NOERROR => 0,
+            ResponseCode::FORMERR => 1,
+            ResponseCode::SERVFAIL => 2,
+            ResponseCode::NXDOMAIN => 3,
+            ResponseCode::NOTIMP => 4,
+            ResponseCode::REFUSED => 5,
+        }
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsClass {
     IN = 1,
     WILDCARD = 255,
@@ -45,7 +56,7 @@ impl DnsClass {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum DnsType {
     A = 1,
     NS = 2,

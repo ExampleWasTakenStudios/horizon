@@ -1,6 +1,6 @@
 use crate::{buffer::PacketBuffer, protocol::ResponseCode};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DomainName {
     /// A `Vec` containing all labels that make up the domain name.
     ///
@@ -82,10 +82,27 @@ impl DomainName {
     }
 
     pub fn read_from<const T: usize>(buffer: &mut PacketBuffer<T>) -> Result<Self, ResponseCode> {
-        let (labels, bytes_consumed) = Self::parse_raw(buffer.as_slice(), buffer.get_position())?;
+        let (labels, bytes_consumed) = Self::parse_raw(buffer.to_slice(), buffer.get_position())?;
 
         buffer.advance_by(bytes_consumed);
 
         Ok(DomainName { labels })
+    }
+
+    pub fn to_bytes<const T: usize>(&self, buffer: &mut PacketBuffer<T>) -> Result<usize, String> {
+        let label_slice = self
+            .labels
+            .get(0..self.labels.len())
+            .ok_or("Index out of bounds while trying to access labels.")?;
+
+        let mut length_written = 0_usize;
+
+        for label in label_slice {
+            for char_byte in label {
+                length_written = buffer.write_u8(*char_byte)?;
+            }
+        }
+
+        Ok(length_written)
     }
 }

@@ -1,16 +1,22 @@
-use std::net::Ipv4Addr;
+use std::{
+    f32::consts::E,
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    sync::Arc,
+};
 
-use crate::systems::{DecisionPipelineSystem, IngressEgressSystem, StubResolverSystem};
-use tokio::runtime;
+use tokio::{net::UdpSocket, runtime, task::JoinSet};
+
+use crate::{
+    constants::{DOWNSTREAM_SOCKET_ADDR, MAX_PACKET_SIZE, UPSTREAM_SOCKET_ADDR},
+    query::{Query, SocketData},
+    srs::StubResolverSystem,
+};
 
 mod buffer;
-mod isc;
+mod constants;
 mod protocol;
-mod query_state;
-mod systems;
-
-pub const IP_ADDR: &str = "0.0.0.0:1234";
-pub const MAX_PACKET_SIZE: usize = 1232;
+mod query;
+mod srs;
 
 pub fn entry() {
     let rt = runtime::Builder::new_multi_thread()
@@ -20,31 +26,62 @@ pub fn entry() {
         .build()
         .unwrap();
 
-    rt.block_on(async {
-        // Initialize communication channels
-        let channels = isc::init_msg_channels();
+    rt.block_on(async move {
+        let downstream_socket = match UdpSocket::bind(DOWNSTREAM_SOCKET_ADDR).await {
+            Err(e) => panic!("Error occurred while trying to bind downstream socket: {e}"),
+            Ok(socket) => {
+                println!(
+                    "Successfully bound downstream socket to: {}",
+                    socket.local_addr().unwrap()
+                );
+                socket
+            }
+        };
+        let downstream_socket = Arc::new(downstream_socket);
 
-        // Init IES
-        let ies = IngressEgressSystem::new(
-            Ipv4Addr::new(1, 1, 1, 1),
-            channels.ies_to_dps.tx.clone(),
-            channels.ies_answer.rx,
-            channels.ies_upstream_resolve.rx,
-        )
-        .await;
+        let upstream_socket = match UdpSocket::bind(UPSTREAM_SOCKET_ADDR).await {
+            Err(e) => panic!("Error occurred while trying to bind upstream socket with address {DOWNSTREAM_SOCKET_ADDR}.\n Error: {e}"),
+            Ok(socket) => {
+                println!(
+                    "Successfully bound upstream socket to: {}",
+                    socket.local_addr().unwrap()
+                );
+                socket
+            }
+        };
+        if let Err(e) = upstream_socket.connect("1.1.1.1:53").await {
+            panic!("Error occurred while trying to connect to upstream socket. \n Error {e}");
+        }
+        let upstream_socket = Arc::new(upstream_socket);
 
-        // Init DPS
-        let dps = DecisionPipelineSystem::new(channels.ies_to_dps.rx, channels.dps_to_srs.tx.clone());
+        let srs = Arc::new(StubResolverSystem::new());
 
-        // Init SRS
-        let srs = StubResolverSystem::new(channels.dps_to_srs.rx, channels.ies_upstream_resolve.tx.clone(), channels.ies_answer.tx.clone());
+        let mut active_query_join_set = JoinSet::<()>::new();
 
-        let ies_join_set = ies.run().await;
-        let dps_join_set = dps.run().await;
-        let srs_join_set = srs.run().await;
+        loop {
+            let mut recv_buf = [0_u8; MAX_PACKET_SIZE];
+            match downstream_socket.recv_from(&mut recv_buf).await {
+                Err(e) => {
+                    eprintln!("Error while receiving on downstream socket: {e}");
+                    continue;
+                }
+                Ok((length, origin)) => {
+                    let downstream_socket = downstream_socket.clone();
+                    let upstream_socket = upstream_socket.clone();
+                    let srs = srs.clone();
 
-        ies_join_set.join_all().await;
-        dps_join_set.join_all().await;
-        srs_join_set.join_all().await;
-    })
+                    let socket_data = SocketData { length, origin, data: recv_buf };
+
+                    active_query_join_set.spawn(async move {
+                        Query::create(
+                            downstream_socket,
+                            upstream_socket,
+                            srs,
+                            socket_data,
+                        ).await;
+                    });
+                }
+            };
+        }
+    });
 }
