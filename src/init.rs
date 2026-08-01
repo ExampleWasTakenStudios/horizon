@@ -73,7 +73,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
                             }
                             tokio::sync::TryAcquireError::NoPermits => {
                                 eprintln!("  warning: max. number of concurrent UDP Queries reached. Dropping query...");
-                                return;
+                                continue;
                             }
                         }
                     }
