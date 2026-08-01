@@ -3,7 +3,7 @@ use crate::{
     network::{DownstreamTcpListener, DownstreamUdpSocket, Firewall},
 };
 use std::sync::Arc;
-use tokio::task::JoinSet;
+use tokio::{sync::Semaphore, task::JoinSet};
 
 /// Represents the core state of the application.
 pub struct ApplicationState {
@@ -19,7 +19,9 @@ pub fn init() -> ApplicationState {
     println!("Initializing...");
 
     let mut global_join_set = JoinSet::<()>::new();
-    init_downstream_udp_sockets(&mut global_join_set);
+    let udp_query_semaphore = Arc::new(Semaphore::new(5_000));
+
+    init_downstream_udp_sockets(&mut global_join_set, udp_query_semaphore);
     init_downstream_tcp_listeners(&mut global_join_set);
 
     ApplicationState { global_join_set }
@@ -34,14 +36,17 @@ pub fn init_tokio_runtime() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
-fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
+fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaphore>) {
     println!(
         "Spawning {} downstream UDP tasks...",
         constants::DOWNSTREAM_SOCKET_TASK_COUNT
     );
+
     for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
         let socket = Arc::new(DownstreamUdpSocket::create());
         let recv_task_socket = socket.clone();
+
+        let semaphore_clone = semaphore.clone();
 
         join_set.spawn(async move {
             loop {
@@ -54,12 +59,27 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                if !Firewall::verify_udp_query(buf) {
+                if !Firewall::verify_udp_query(&buf, length) {
                     eprintln!("  warning: received invalid DGRAM from {}", origin.ip());
                     continue;
                 }
 
-                DownstreamUdpSocket::on_recv(recv_task_socket.clone(), length, origin, buf);
+                let permit = match semaphore_clone.clone().try_acquire_owned() {
+                    Err(e) => {
+                        match e {
+                            tokio::sync::TryAcquireError::Closed => {
+                                panic!("UDP Query Semaphore is closed. No new permits can be offered. Unrecoverable state.");
+                            }
+                            tokio::sync::TryAcquireError::NoPermits => {
+                                eprintln!("  warning: max. number of concurrent UDP Queries reached. Dropping query...");
+                                return;
+                            }
+                        }
+                    }
+                    Ok(permit) => permit,
+                };
+
+                DownstreamUdpSocket::on_recv(permit, recv_task_socket.clone(), length, origin, buf);
             }
         });
         println!(

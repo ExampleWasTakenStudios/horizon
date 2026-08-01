@@ -1,6 +1,6 @@
 use crate::{constants, network::TransmissionProtocol, query::Query};
 use std::{net::SocketAddr, sync::Arc};
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::OwnedSemaphorePermit};
 
 pub struct DownstreamUdpSocket;
 
@@ -32,13 +32,12 @@ impl DownstreamUdpSocket {
 
     /// Handles incoming UDP datagrams
     pub fn on_recv(
+        semaphore_permit: OwnedSemaphorePermit,
         downstream_socket: Arc<UdpSocket>,
         length: usize,
         origin: SocketAddr,
         buf: [u8; constants::MAX_PACKET_SIZE],
     ) {
-        // TODO: rate limiting and attack mitigation
-
         // Create new task to handle the query and immediately release the receiving task back to the runtime.
         tokio::spawn(async move {
             // If the length exceeds the maximum supported packet size we drop the packet.
@@ -48,13 +47,14 @@ impl DownstreamUdpSocket {
                     constants::MAX_PACKET_SIZE,
                     length
                 );
-                return; // Dropping the packet here
+                return; // Dropping the packet
             }
 
             let query = Query::new(
+                semaphore_permit,
                 TransmissionProtocol::Udp(downstream_socket),
                 origin,
-                buf.to_vec(),
+                Vec::from(&buf[0..length]),
             );
             query.process().await;
         });
