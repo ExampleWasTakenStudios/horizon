@@ -1,6 +1,6 @@
 use crate::{
     constants,
-    network::{DownstreamTcpListener, DownstreamUdpSocket},
+    network::{DownstreamTcpListener, DownstreamUdpSocket, Firewall},
 };
 use std::sync::Arc;
 use tokio::task::JoinSet;
@@ -53,6 +53,11 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
                     }
                     Ok(v) => v,
                 };
+
+                if !Firewall::verify_udp_query(buf) {
+                    eprintln!("  warning: received invalid DGRAM from {}", origin.ip());
+                    continue;
+                }
 
                 DownstreamUdpSocket::on_recv(recv_task_socket.clone(), length, origin, buf);
             }
