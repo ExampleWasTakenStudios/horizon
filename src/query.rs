@@ -1,20 +1,16 @@
 use std::net::SocketAddr;
 
-use crate::{constants, network::TransmissionProtocol};
+use crate::network::TransmissionProtocol;
 
 #[derive(Debug, Clone)]
 pub struct Query {
     trans_proto: TransmissionProtocol,
     origin: SocketAddr,
-    buf: [u8; constants::MAX_PACKET_SIZE],
+    buf: Vec<u8>,
 }
 
 impl Query {
-    pub fn new(
-        trans_proto: TransmissionProtocol,
-        origin: SocketAddr,
-        buf: [u8; constants::MAX_PACKET_SIZE],
-    ) -> Query {
+    pub fn new(trans_proto: TransmissionProtocol, origin: SocketAddr, buf: Vec<u8>) -> Query {
         Query {
             trans_proto,
             origin,
@@ -23,7 +19,7 @@ impl Query {
     }
 
     /// Process the query. This is the starting point of a query in the system.
-    pub fn process(&self) {
+    pub async fn process(&self) {
         todo!("query processing");
     }
 }
