@@ -53,10 +53,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                // Create new task to handle connection
-                tokio::spawn(async move {
-                    DownstreamUdpSocket::on_recv(length, origin).await;
-                });
+                DownstreamUdpSocket::on_recv(length, origin, buf);
             }
         });
         println!(
@@ -86,10 +83,7 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                // Create new task to handle connection
-                tokio::spawn(async move {
-                    DownstreamTcpListener::on_recv(stream, origin).await;
-                });
+                DownstreamTcpListener::on_recv(stream, origin);
             }
         });
         println!(

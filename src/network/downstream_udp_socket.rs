@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 
-use crate::constants;
+use crate::{constants, network::TransmissionProtocol, query::Query};
 
 pub struct DownstreamUdpSocket;
 
@@ -30,7 +30,24 @@ impl DownstreamUdpSocket {
         tokio::net::UdpSocket::from_std(socket.into()).unwrap()
     }
 
-    pub async fn on_recv(length: usize, origin: SocketAddr) {
-        todo!("query creation and handling");
+    /// Handles incoming UDP datagrams
+    pub fn on_recv(length: usize, origin: SocketAddr, buf: [u8; constants::MAX_PACKET_SIZE]) {
+        // TODO: potentially implement rate limiting here
+
+        // Create new task to handle the query and immediately release the receiving task back to the runtime.
+        tokio::spawn(async move {
+            // If the length exceeds the maximum supported packet size we drop the packet.
+            if length > constants::MAX_PACKET_SIZE {
+                eprintln!(
+                    "  error: received packet exceeded maximum supported size. expected {}; got {}",
+                    constants::MAX_PACKET_SIZE,
+                    length
+                );
+                return; // Dropping the packet here
+            }
+
+            let query = Query::new(TransmissionProtocol::UDP, origin, buf);
+            query.process();
+        });
     }
 }

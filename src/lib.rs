@@ -1,6 +1,7 @@
 mod constants;
 mod init;
 mod network;
+mod query;
 
 use crate::init::{init, init_tokio_runtime};
 
