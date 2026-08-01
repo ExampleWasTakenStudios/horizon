@@ -60,7 +60,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
                     Ok(v) => v,
                 };
 
-                if !Firewall::verify_udp_query(&buf, length) {
+                if !Firewall::verify_query(&buf, length) {
                     eprintln!("  warning: received invalid DGRAM from {}", origin.ip());
                     continue;
                 }
@@ -114,22 +114,22 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>, semaphore: Arc<Sema
                 };
 
                 let permit = match semaphore_clone.clone().try_acquire_owned() {
-                    Err(e) => {
-                        match e {
-                            tokio::sync::TryAcquireError::Closed => {
-                                panic!("TCP Query Semaphore is closed. No new permits can be offered. Unrecoverable state...");
-                            }
-                            tokio::sync::TryAcquireError::NoPermits => {
-                                eprintln!("   warning: max. number of concurrent TCP queries reached. Dropping query...");
-                                let _ = stream.set_zero_linger(); // We do this to force the socket to be closed immediately.
-                                return;
+                        Err(e) => {
+                            match e {
+                                tokio::sync::TryAcquireError::Closed => {
+                                    panic!("TCP Query Semaphore is closed. No new permits can be offered. Unrecoverable state...");
+                                }
+                                tokio::sync::TryAcquireError::NoPermits => {
+                                    eprintln!("   warning: max. number of concurrent TCP queries reached. Dropping query...");
+                                    let _ = stream.set_zero_linger(); // We do this to force the socket to be closed immediately.
+                                    continue;
+                                }
                             }
                         }
-                    }
-                    Ok(v) => v,
-                };
+                        Ok(v) => v,
+                    };
 
-                DownstreamTcpListener::on_recv(permit, recv_task_listener.clone(), stream, origin);
+                    DownstreamTcpListener::on_recv(permit, stream, origin);
             }
         });
         println!(

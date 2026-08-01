@@ -1,8 +1,10 @@
-use crate::{constants, network::TransmissionProtocol, query::Query};
-use std::{net::SocketAddr, sync::Arc};
-use tokio::{
-    io::AsyncReadExt, net::{TcpListener, TcpStream}, sync::OwnedSemaphorePermit,
+use crate::{
+    constants,
+    network::{Firewall, TransmissionProtocol},
+    query::Query,
 };
+use std::{net::SocketAddr, time::Duration};
+use tokio::{io::AsyncReadExt, net::TcpStream, sync::OwnedSemaphorePermit, time::timeout};
 
 pub struct DownstreamTcpListener;
 
@@ -38,34 +40,72 @@ impl DownstreamTcpListener {
         tokio::net::TcpListener::from_std(socket.into()).unwrap()
     }
 
-    pub fn on_recv(semaphore_permit: OwnedSemaphorePermit, downstream_socket: Arc<TcpListener>, mut stream: TcpStream, origin: SocketAddr) {
-        // TODO: rate limiting and attack mitigation
-
+    pub fn on_recv(
+        semaphore_permit: OwnedSemaphorePermit,
+        mut stream: TcpStream,
+        origin: SocketAddr,
+    ) {
         // Create a new task to handle the query and immediately release the receiving task back to the runtime
         tokio::spawn(async move {
-            // Read the length prefix that TCP DNS messages carry as defined in
-            // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
-            let mut prefix_buf = [0_u8, 2];
-            if let Err(e) = stream.read_exact(&mut prefix_buf).await {
-                eprintln!("  error while reading TCP length prefix: {e}");
-                return;
+            let dns_buf = match DownstreamTcpListener::read_packet(&mut stream).await {
+                None => return,
+                Some(dns_buf) => dns_buf,
             };
-            let length: u16 = (prefix_buf[0] << 8) as u16 | prefix_buf[1] as u16;
 
-            // This is the buffer that will contain the actual DNS data
-            let mut dns_buf = Vec::<u8>::with_capacity(length as usize);
-            if let Err(e) = stream.read_exact(&mut dns_buf).await {
-                eprintln!("  error while reading TCP DNS buffer: {e}");
+            if !Firewall::verify_query(&dns_buf, dns_buf.len()) {
+                eprintln!(
+                    "  warning: received invalid TCP stream from {}",
+                    origin.ip()
+                );
                 return;
             }
 
             let query = Query::new(
                 semaphore_permit,
-                TransmissionProtocol::Tcp(downstream_socket),
+                TransmissionProtocol::Tcp(stream),
                 origin,
                 dns_buf,
             );
             query.process().await;
         });
+    }
+
+    /// Read an entire DNS packet from a [`TcpStream`].
+    ///
+    /// This method also enforces that the packet be sent within 2 seconds to prevent slowloris attacks.
+    async fn read_packet(stream: &mut TcpStream) -> Option<Vec<u8>> {
+        // Read the length prefix that TCP DNS messages carry as defined in
+        // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
+        let mut prefix_buf = [0_u8; 2];
+
+        // The length of the DNS packet announced by `prefix_buf`
+        let mut length: usize = 0;
+
+        // This is the buffer that will contain the actual DNS data
+        let mut dns_buf = Vec::<u8>::new();
+
+        if timeout(Duration::from_secs(2), async {
+            if let Err(e) = stream.read_exact(&mut prefix_buf).await {
+                eprintln!("  error while reading TCP length prefix: {e}");
+                return;
+            };
+
+            length = ((prefix_buf[0] as usize) << 8) | prefix_buf[1] as usize;
+            dns_buf = vec![0; length];
+
+            if let Err(e) = stream.read_exact(&mut dns_buf).await {
+                eprintln!("  error while reading TCP DNS buffer: {e}");
+            }
+        })
+        .await
+        .is_err()
+        {
+            eprintln!(
+                "  error: full TCP DNS packet was not received in the legal time frame (2 seconds)"
+            );
+            return None;
+        }
+
+        Some(dns_buf)
     }
 }
