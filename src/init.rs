@@ -51,7 +51,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
 
         join_set.spawn(async move {
             loop {
-                let mut buf = Vec::new();
+                let mut buf = vec![0; constants::MAX_PACKET_SIZE];
                 let (length, origin) = match recv_task_socket.recv_from(&mut buf).await {
                     Err(e) => {
                         eprintln!("error while receiving downstream traffic: {e}");
@@ -59,6 +59,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
                     }
                     Ok(v) => v,
                 };
+                buf.truncate(length);
 
                 if !Firewall::verify_query(&buf, length) {
                     eprintln!("  warning: received invalid DGRAM from {}", origin.ip());
