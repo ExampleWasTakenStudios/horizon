@@ -36,7 +36,7 @@ impl DownstreamUdpSocket {
         downstream_socket: Arc<UdpSocket>,
         length: usize,
         origin: SocketAddr,
-        buf: [u8; constants::MAX_PACKET_SIZE],
+        buf: Vec<u8>,
     ) {
         // Create new task to handle the query and immediately release the receiving task back to the runtime.
         tokio::spawn(async move {
@@ -54,7 +54,7 @@ impl DownstreamUdpSocket {
                 semaphore_permit,
                 TransmissionProtocol::Udp(downstream_socket),
                 origin,
-                Vec::from(&buf[0..length]),
+                buf,
             );
             query.process().await;
         });

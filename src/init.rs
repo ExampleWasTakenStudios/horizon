@@ -51,7 +51,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
 
         join_set.spawn(async move {
             loop {
-                let mut buf = [0_u8; constants::MAX_PACKET_SIZE];
+                let mut buf = Vec::new();
                 let (length, origin) = match recv_task_socket.recv_from(&mut buf).await {
                     Err(e) => {
                         eprintln!("error while receiving downstream traffic: {e}");
