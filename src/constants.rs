@@ -45,4 +45,9 @@ pub const MAX_PACKET_SIZE: usize = 512;
 /// The maximum amount of concurrent UDP queries the system may ever handle.
 ///
 /// Incoming queries are dropped if this number would otherwise be exceeded.
-pub const MAX_CONCURRENT_UDP_QUERIES: u16 = 5_000;
+pub const MAX_CONCURRENT_UDP_QUERIES: usize = 5_000;
+
+/// The maximum amount of concurrent TCP queries the system may ever handle.
+///
+/// Incoming queries are dropped if this number would otherwise be exceeded.
+pub const MAX_CONCURRENT_TCP_QUERIES: usize = 1_000;

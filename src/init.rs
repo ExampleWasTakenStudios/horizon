@@ -19,10 +19,11 @@ pub fn init() -> ApplicationState {
     println!("Initializing...");
 
     let mut global_join_set = JoinSet::<()>::new();
-    let udp_query_semaphore = Arc::new(Semaphore::new(5_000));
+    let udp_query_semaphore = Arc::new(Semaphore::new(constants::MAX_CONCURRENT_UDP_QUERIES));
+    let tcp_query_semaphore = Arc::new(Semaphore::new(constants::MAX_CONCURRENT_TCP_QUERIES));
 
     init_downstream_udp_sockets(&mut global_join_set, udp_query_semaphore);
-    init_downstream_tcp_listeners(&mut global_join_set);
+    init_downstream_tcp_listeners(&mut global_join_set, tcp_query_semaphore);
 
     ApplicationState { global_join_set }
 }
@@ -90,7 +91,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
     }
 }
 
-fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
+fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>, semaphore: Arc<Semaphore>) {
     println!(
         "Spawning {} downstream TCP tasks...",
         constants::DOWNSTREAM_SOCKET_TASK_COUNT
@@ -99,6 +100,8 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
     for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
         let listener = Arc::new(DownstreamTcpListener::create());
         let recv_task_listener = listener.clone();
+
+        let semaphore_clone = semaphore.clone();
 
         join_set.spawn(async move {
             loop {
@@ -110,7 +113,23 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                DownstreamTcpListener::on_recv(recv_task_listener.clone(), stream, origin);
+                let permit = match semaphore_clone.clone().try_acquire_owned() {
+                    Err(e) => {
+                        match e {
+                            tokio::sync::TryAcquireError::Closed => {
+                                panic!("TCP Query Semaphore is closed. No new permits can be offered. Unrecoverable state...");
+                            }
+                            tokio::sync::TryAcquireError::NoPermits => {
+                                eprintln!("   warning: max. number of concurrent TCP queries reached. Dropping query...");
+                                let _ = stream.set_zero_linger(); // We do this to force the socket to be closed immediately.
+                                return;
+                            }
+                        }
+                    }
+                    Ok(v) => v,
+                };
+
+                DownstreamTcpListener::on_recv(permit, recv_task_listener.clone(), stream, origin);
             }
         });
         println!(
