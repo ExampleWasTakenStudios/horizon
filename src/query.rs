@@ -6,7 +6,9 @@ use crate::network::TransmissionProtocol;
 
 #[derive(Debug)]
 pub struct Query {
-    // This permit is used to ensure the maximum number of concurrent queries.
+    // The OwnedSemaphorePermit ensures a bounded number of concurrent queries.
+    // The permit is held for the lifetime of query processing and dropped when processing completes.
+    // In other words, this permit is used to ensure the maximum number of concurrent queries.
     // It acts sort of as an ID that acts as prove for your legal status in a country.
     semaphore_permit: OwnedSemaphorePermit,
     trans_proto: TransmissionProtocol,
