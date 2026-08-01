@@ -39,7 +39,7 @@ impl DownstreamTcpListener {
     }
 
     pub async fn on_recv(mut stream: TcpStream, origin: SocketAddr) {
-        // TODO: potentially implement rate limiting here
+        // TODO: rate limiting and attack mitigation
 
         // Create a new task to handle the query and immediately release the receiving task back to the runtime
         tokio::spawn(async move {

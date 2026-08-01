@@ -32,7 +32,7 @@ impl DownstreamUdpSocket {
 
     /// Handles incoming UDP datagrams
     pub fn on_recv(length: usize, origin: SocketAddr, buf: [u8; constants::MAX_PACKET_SIZE]) {
-        // TODO: potentially implement rate limiting here
+        // TODO: rate limiting and attack mitigation
 
         // Create new task to handle the query and immediately release the receiving task back to the runtime.
         tokio::spawn(async move {
