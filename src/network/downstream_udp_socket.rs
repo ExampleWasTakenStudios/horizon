@@ -46,7 +46,7 @@ impl DownstreamUdpSocket {
                 return; // Dropping the packet here
             }
 
-            let query = Query::new(TransmissionProtocol::UDP, origin, buf.to_vec());
+            let query = Query::new(TransmissionProtocol::Udp, origin, buf.to_vec());
             query.process().await;
         });
     }

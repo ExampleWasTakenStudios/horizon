@@ -59,7 +59,7 @@ impl DownstreamTcpListener {
                 return;
             }
 
-            let query = Query::new(super::TransmissionProtocol::TCP, origin, dns_buf);
+            let query = Query::new(super::TransmissionProtocol::Tcp, origin, dns_buf);
             query.process().await;
         });
     }

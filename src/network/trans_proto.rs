@@ -4,6 +4,6 @@
 /// protocol should be used to exit the query. Either to an upstream resolver or to the downstream client.
 #[derive(Debug, Clone)]
 pub enum TransmissionProtocol {
-    UDP,
-    TCP,
+    Udp,
+    Tcp,
 }
