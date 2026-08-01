@@ -1,6 +1,6 @@
-use std::net::SocketAddr;
-
 use crate::{constants, network::TransmissionProtocol, query::Query};
+use std::{net::SocketAddr, sync::Arc};
+use tokio::net::UdpSocket;
 
 pub struct DownstreamUdpSocket;
 
@@ -31,7 +31,12 @@ impl DownstreamUdpSocket {
     }
 
     /// Handles incoming UDP datagrams
-    pub fn on_recv(length: usize, origin: SocketAddr, buf: [u8; constants::MAX_PACKET_SIZE]) {
+    pub fn on_recv(
+        downstream_socket: Arc<UdpSocket>,
+        length: usize,
+        origin: SocketAddr,
+        buf: [u8; constants::MAX_PACKET_SIZE],
+    ) {
         // TODO: rate limiting and attack mitigation
 
         // Create new task to handle the query and immediately release the receiving task back to the runtime.
@@ -46,7 +51,11 @@ impl DownstreamUdpSocket {
                 return; // Dropping the packet here
             }
 
-            let query = Query::new(TransmissionProtocol::Udp, origin, buf.to_vec());
+            let query = Query::new(
+                TransmissionProtocol::Udp(downstream_socket),
+                origin,
+                buf.to_vec(),
+            );
             query.process().await;
         });
     }

@@ -1,8 +1,9 @@
-use std::net::SocketAddr;
-
-use tokio::{io::AsyncReadExt, net::TcpStream};
-
-use crate::{constants, query::Query};
+use crate::{constants, network::TransmissionProtocol, query::Query};
+use std::{net::SocketAddr, sync::Arc};
+use tokio::{
+    io::AsyncReadExt,
+    net::{TcpListener, TcpStream},
+};
 
 pub struct DownstreamTcpListener;
 
@@ -38,7 +39,7 @@ impl DownstreamTcpListener {
         tokio::net::TcpListener::from_std(socket.into()).unwrap()
     }
 
-    pub async fn on_recv(mut stream: TcpStream, origin: SocketAddr) {
+    pub fn on_recv(downstream_socket: Arc<TcpListener>, mut stream: TcpStream, origin: SocketAddr) {
         // TODO: rate limiting and attack mitigation
 
         // Create a new task to handle the query and immediately release the receiving task back to the runtime
@@ -59,7 +60,11 @@ impl DownstreamTcpListener {
                 return;
             }
 
-            let query = Query::new(super::TransmissionProtocol::Tcp, origin, dns_buf);
+            let query = Query::new(
+                TransmissionProtocol::Tcp(downstream_socket),
+                origin,
+                dns_buf,
+            );
             query.process().await;
         });
     }

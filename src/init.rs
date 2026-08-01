@@ -1,9 +1,9 @@
-use tokio::task::JoinSet;
-
 use crate::{
     constants,
     network::{DownstreamTcpListener, DownstreamUdpSocket},
 };
+use std::sync::Arc;
+use tokio::task::JoinSet;
 
 /// Represents the core state of the application.
 pub struct ApplicationState {
@@ -40,12 +40,13 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
         constants::DOWNSTREAM_SOCKET_TASK_COUNT
     );
     for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
-        let socket = DownstreamUdpSocket::create();
+        let socket = Arc::new(DownstreamUdpSocket::create());
+        let recv_task_socket = socket.clone();
 
         join_set.spawn(async move {
             loop {
                 let mut buf = [0_u8; constants::MAX_PACKET_SIZE];
-                let (length, origin) = match socket.recv_from(&mut buf).await {
+                let (length, origin) = match recv_task_socket.recv_from(&mut buf).await {
                     Err(e) => {
                         eprintln!("error while receiving downstream traffic: {e}");
                         continue;
@@ -53,7 +54,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                DownstreamUdpSocket::on_recv(length, origin, buf);
+                DownstreamUdpSocket::on_recv(recv_task_socket.clone(), length, origin, buf);
             }
         });
         println!(
@@ -71,11 +72,12 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
     );
 
     for i in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
-        let listener = DownstreamTcpListener::create();
+        let listener = Arc::new(DownstreamTcpListener::create());
+        let recv_task_listener = listener.clone();
 
         join_set.spawn(async move {
             loop {
-                let (stream, origin) = match listener.accept().await {
+                let (stream, origin) = match recv_task_listener.accept().await {
                     Err(e) => {
                         eprintln!("error while accepting TCP connection: {e}");
                         continue;
@@ -83,7 +85,7 @@ fn init_downstream_tcp_listeners(join_set: &mut JoinSet<()>) {
                     Ok(v) => v,
                 };
 
-                DownstreamTcpListener::on_recv(stream, origin);
+                DownstreamTcpListener::on_recv(recv_task_listener.clone(), stream, origin);
             }
         });
         println!(
