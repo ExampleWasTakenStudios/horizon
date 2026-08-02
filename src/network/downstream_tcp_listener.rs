@@ -52,7 +52,7 @@ impl DownstreamTcpListener {
                 Some(dns_buf) => dns_buf,
             };
 
-            if !Firewall::verify_query(&dns_buf, dns_buf.len()) {
+            if !Firewall::verify_query(&dns_buf) {
                 eprintln!(
                     "  warning: received invalid TCP stream from {}",
                     origin.ip()
@@ -73,6 +73,9 @@ impl DownstreamTcpListener {
     /// Read an entire DNS packet from a [`TcpStream`].
     ///
     /// This method also enforces that the packet be sent within 2 seconds to prevent slowloris attacks.
+    ///
+    /// # Return
+    /// The returned vector has the exact size of the number of bytes read.
     async fn read_packet(stream: &mut TcpStream) -> Option<Vec<u8>> {
         // Read the length prefix that TCP DNS messages carry as defined in
         // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>

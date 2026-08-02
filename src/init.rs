@@ -61,7 +61,7 @@ fn init_downstream_udp_sockets(join_set: &mut JoinSet<()>, semaphore: Arc<Semaph
                 };
                 buf.truncate(length);
 
-                if !Firewall::verify_query(&buf, length) {
+                if !Firewall::verify_query(&buf) {
                     eprintln!("  warning: received invalid DGRAM from {}", origin.ip());
                     continue;
                 }
