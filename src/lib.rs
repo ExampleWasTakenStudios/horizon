@@ -9,7 +9,7 @@ use tokio::{io::AsyncReadExt as _, net::TcpStream, time::timeout};
 
 use crate::{
     init::{AppState, init_tokio_runtime},
-    network::{Firewall, TransmissionProtocol},
+    network::{DnsTcpListener, DnsUdpSocket, Firewall, TransmissionProtocol},
     query::Query,
 };
 
@@ -26,7 +26,7 @@ pub fn entry() {
         println!("RUNNING...");
         println!(" ");
 
-        app_state.join_set.join_all().await;
+        await_join_sets(&mut app_state).await;
     });
 }
 
@@ -39,134 +39,48 @@ fn run_downstream(app_state: &mut AppState) {
             let semaphore = app_state.downstream.semaphore.clone();
             let downstream_socket = downstream_socket.clone();
 
-            app_state.join_set.spawn(async move {
-                loop {
-                    let mut buf = vec![0; constants::MAX_PACKET_SIZE];
-                    let (length, origin) = match downstream_socket.recv_from(&mut buf).await {
-                        Err(e) => {
-                            eprintln!("  error while receiving downstream UDP traffic: {e}");
-                            continue;
-                        }
-                        Ok(v) => v,
-                    };
-                    buf.truncate(length);
-
-                    if !Firewall::verify_query(&buf) {
-                        eprintln!("  warning: firewall rejected DGRAM from {}", &origin.ip());
-                        continue;
-                    }
-
-                    let permit = match semaphore.clone().try_acquire_owned() {
-                        Err(e) => {
-                            match e {
-                                tokio::sync::TryAcquireError::Closed => {
-                                    panic!("Query Semaphore is closed. No new permits can be offered. Unrecoverable state.");
-                                }
-                                tokio::sync::TryAcquireError::NoPermits => {
-                                    eprintln!("  warning: max. number of concurrent queries reached. Dropping query...");
-                                    continue;
-                                }
-                            }
-                        }
-                        Ok(permit ) => permit,
-                    };
-
-                    let query = Query::new(permit, TransmissionProtocol::Udp(downstream_socket.clone()), origin, buf);
-                    query.process().await;
-                }
+            app_state.downstream.udp_join_set.spawn(async move {
+                downstream_socket.listen_and_process(semaphore).await;
             });
         }
     }
 
     fn run_tcp(app_state: &mut AppState) {
         for downstream_listener in &app_state.downstream.tcp_listeners {
+            let listener = downstream_listener.clone();
             let semaphore = app_state.downstream.semaphore.clone();
-            let downstream_listener = downstream_listener.clone();
 
-            app_state.join_set.spawn(async move {
+            app_state.downstream.tcp_join_set.spawn(async move {
                 loop {
-                    let (mut stream, origin) = match downstream_listener.accept().await {
-                        Err(e) => {
-                            eprintln!("  error while accepting TCP connection: {e}");
-                            continue;
-                        }
-                        Ok(v) => v,
-                    };
-
-                    let permit = match semaphore.clone().try_acquire_owned() {
-                        Err(e) => {
-                            match e {
-                                tokio::sync::TryAcquireError::Closed => {
-                                    panic!("Query Semaphore is closed. No new permits can be offered. Unrecoverable state.");
-                                }
-                                tokio::sync::TryAcquireError::NoPermits => {
-                                    eprintln!("  warning: max. number of concurrent queries reached. Dropping query...");
-                                    continue;
-                                }
-                            }
-                        }
-                        Ok(permit ) => permit,
-                    };
-
-                    let dns_buf = match read_packet(&mut stream).await {
-                        None => continue,
-                        Some(v) => v,
-                    };
-
-                    if !Firewall::verify_query(&dns_buf) {
-                        eprintln!(
-                            "  warning: received invalid TCP stream from {}",
-                            origin.ip()
-                        );
-                        return;
-                    }
-
-                    let query = Query::new(permit, TransmissionProtocol::Tcp(stream), origin, dns_buf);
-                    query.process().await;
+                    let stream = listener.accept().await;
+                    stream.read_and_process(semaphore.clone()).await;
                 }
             });
         }
+    }
+}
 
-        /// Read an entire DNS packet from a [`TcpStream`].
-        ///
-        /// This method also enforces that the packet be sent within 2 seconds to prevent slowloris attacks.
-        ///
-        /// # Return
-        /// The returned vector has the exact size of the number of bytes read.
-        async fn read_packet(stream: &mut TcpStream) -> Option<Vec<u8>> {
-            // Read the length prefix that TCP DNS messages carry as defined in
-            // RFC 1035 Section 4.2.2 <https://datatracker.ietf.org/doc/html/rfc1035#section-4.2.2>
-            let mut prefix_buf = [0_u8; 2];
+async fn await_join_sets(app_state: &mut AppState) {
+    // Catch any panics in tasks hosting a downstream UDP socket and spawn a new one.
+    while let Some(Err(_)) = app_state.downstream.udp_join_set.join_next().await {
+        println!("Downstream UDP task panicked. Spawning a new one...");
+        let semaphore = app_state.downstream.semaphore.clone();
 
-            // The length of the DNS packet announced by `prefix_buf`
-            let mut length: usize = 0;
+        app_state.downstream.udp_join_set.spawn(async move {
+            let socket = DnsUdpSocket::new();
+            socket.listen_and_process(semaphore).await;
+        });
+    }
 
-            // This is the buffer that will contain the actual DNS data
-            let mut dns_buf = Vec::<u8>::new();
+    // Catch any panics in TCP query handling tasks
+    while let Some(Err(_)) = app_state.downstream.tcp_join_set.join_next().await {
+        println!("Downstream TCP task panicked. Spawning a new one...");
+        let semaphore = app_state.downstream.semaphore.clone();
 
-            if timeout(Duration::from_secs(2), async {
-                if let Err(e) = stream.read_exact(&mut prefix_buf).await {
-                    eprintln!("  error while reading TCP length prefix: {e}");
-                    return;
-                };
-
-                length = ((prefix_buf[0] as usize) << 8) | prefix_buf[1] as usize;
-                dns_buf = vec![0; length];
-
-                if let Err(e) = stream.read_exact(&mut dns_buf).await {
-                    eprintln!("  error while reading TCP DNS buffer: {e}");
-                }
-            })
-            .await
-            .is_err()
-            {
-                eprintln!(
-                    "  error: full TCP DNS packet was not received in the legal time frame (2 seconds)"
-                );
-                return None;
-            }
-
-            Some(dns_buf)
-        }
+        app_state.downstream.tcp_join_set.spawn(async move {
+            let listener = DnsTcpListener::new();
+            let stream = listener.accept().await;
+            stream.read_and_process(semaphore).await;
+        });
     }
 }

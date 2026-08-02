@@ -1,15 +1,13 @@
 use std::sync::Arc;
 
-use tokio::net::TcpListener;
+use crate::{constants, network::DnsTcpListener};
 
-use crate::constants;
-
-pub(super) fn init() -> Vec<Arc<TcpListener>> {
+pub(super) fn init() -> Vec<Arc<DnsTcpListener>> {
     let mut listeners =
-        Vec::<Arc<TcpListener>>::with_capacity(constants::DOWNSTREAM_SOCKET_TASK_COUNT as usize);
+        Vec::<Arc<DnsTcpListener>>::with_capacity(constants::DOWNSTREAM_SOCKET_TASK_COUNT as usize);
 
     for _ in 0..constants::DOWNSTREAM_SOCKET_TASK_COUNT {
-        listeners.push(Arc::new(crate::network::create_tcp_listener()));
+        listeners.push(Arc::new(crate::network::DnsTcpListener::new()));
     }
 
     listeners

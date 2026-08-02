@@ -1,17 +1,14 @@
 mod downstream;
 
-use tokio::task::JoinSet;
 pub use downstream::*;
 
 pub struct AppState {
     pub downstream: DownstreamAppState,
-    pub join_set: JoinSet<()>,
 }
 
 pub fn init() -> AppState {
     AppState {
         downstream: downstream::init(),
-        join_set: JoinSet::new(),
     }
 }
 
