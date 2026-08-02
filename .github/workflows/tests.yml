@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+    pull_request:
+        types:
+            - opened
+            - reopened
+            - ready_for_review
+            - synchronize
+
+env:
+    CARGO_TERM_COLOR: always
+    # Fail the build if there are compiler warnings
+    RUSTFLAGS: "-Dwarnings"
+
+jobs:
+    test:
+        name: Test Suite
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+            - name: Install Rust Toolchain
+              uses: dtolnay/rust-toolchain@stable
+
+            - name: Setup Rust-Cache
+              uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+
+            - name: Run Tests
+              run: cargo test --workspace --verbose
+
+    lint:
+        name: Linting (Fmt & Clippy)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+            - name: Install Rust Toolchain
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                components: rustfmt, clippy
+
+            - name: Setup Rust-Cache
+              uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4
+
+            - name: Check Formatting
+              run: cargo fmt --all -- --check
+
+            - name: Run Clippy
+              run: cargo clippy --workspace --all-targets --all-features
