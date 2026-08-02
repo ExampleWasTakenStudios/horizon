@@ -41,3 +41,8 @@ pub const _UPSTREAM_SOCKET_ADDR: SocketAddr =
 /// This value should be set to `512` when the service does not support EDNS(0).
 /// In case of EDNS(0) support, this value should be set to `1232`.
 pub const MAX_PACKET_SIZE: usize = 512;
+
+/// The maximum amount of concurrent UDP queries the system may ever handle.
+///
+/// Incoming queries are dropped if this number would otherwise be exceeded.
+pub const MAX_CONCURRENT_ACTIVE_QUERIES: usize = 6_000;
