@@ -25,6 +25,8 @@ pub fn entry() {
         println!(" ");
         println!("RUNNING...");
         println!(" ");
+
+        app_state.join_set.join_all().await;
     });
 }
 
