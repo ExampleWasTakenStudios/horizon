@@ -1,5 +1,4 @@
 use std::sync::Arc;
-
 use tokio::net::{TcpStream, UdpSocket};
 
 /// Simple enum representing UDP and TCP.
