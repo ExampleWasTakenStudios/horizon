@@ -23,7 +23,7 @@ impl DownstreamUdpSocket {
         socket
             .bind(&constants::DOWNSTREAM_SOCKET_ADDR.into())
             .unwrap();
-        println!("Bound socket to {:?}", &constants::DOWNSTREAM_SOCKET_ADDR);
+        println!("Bound socket to {:?}", constants::DOWNSTREAM_SOCKET_ADDR);
 
         tokio::net::UdpSocket::from_std(socket.into()).unwrap()
     }
