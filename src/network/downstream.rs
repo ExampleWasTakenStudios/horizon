@@ -34,7 +34,7 @@ impl DnsUdpSocket {
             .unwrap();
         println!(
             "Bound downstream UDP socket to {:?}",
-            &constants::DOWNSTREAM_SOCKET_ADDR
+            constants::DOWNSTREAM_SOCKET_ADDR
         );
 
         Self {
@@ -78,7 +78,7 @@ impl DnsUdpPacket {
 
     pub async fn process(self, semaphore: Arc<Semaphore>) {
         if !Firewall::verify_query(&self.buf) {
-            eprintln!("  warning: firewall rejected DGRAM from {}", &self.peer_addr.ip());
+            eprintln!("  warning: firewall rejected DGRAM from {}", self.peer_addr.ip());
             return;
         }
 

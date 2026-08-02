@@ -3,14 +3,9 @@ mod init;
 mod network;
 mod query;
 
-use std::time::Duration;
-
-use tokio::{io::AsyncReadExt as _, net::TcpStream, time::timeout};
-
 use crate::{
     init::{AppState, init_tokio_runtime},
-    network::{DnsTcpListener, DnsUdpSocket, Firewall, TransmissionProtocol},
-    query::Query,
+    network::{DnsTcpListener, DnsUdpSocket},
 };
 
 pub fn entry() {
