@@ -17,6 +17,7 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
+    if: ${{github.event.pull_request.draft == false }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -32,9 +33,13 @@ jobs:
       - name: Run Tests
         run: cargo test --workspace --verbose
 
+      - name: Compile
+        run: cargo build
+
   lint:
     name: Linting (Fmt & Clippy)
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.draft == false }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
