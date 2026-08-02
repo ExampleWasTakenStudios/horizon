@@ -43,7 +43,7 @@ impl DnsUdpSocket {
     }
 
     /// Continuously listens to the socket and processes incoming queries.
-    pub async fn listen_and_process(&self, semaphore: Arc<Semaphore>) {
+    pub async fn listen(&self) -> DnsUdpPacket {
         loop {
             let mut buf = vec![0; constants::MAX_PACKET_SIZE];
             let (length, origin) = match self.socket.recv_from(&mut buf).await {
@@ -55,36 +55,57 @@ impl DnsUdpSocket {
             };
             buf.truncate(length);
 
-            if !Firewall::verify_query(&buf) {
-                eprintln!("  warning: firewall rejected DGRAM from {}", &origin.ip());
-                continue;
-            }
-
-            let permit = match semaphore.clone().try_acquire_owned() {
-                Err(e) => match e {
-                    tokio::sync::TryAcquireError::Closed => {
-                        panic!(
-                            "Query Semaphore is closed. No new permits can be offered. Unrecoverable state."
-                        );
-                    }
-                    tokio::sync::TryAcquireError::NoPermits => {
-                        eprintln!(
-                            "  warning: max. number of concurrent queries reached. Dropping query..."
-                        );
-                        continue;
-                    }
-                },
-                Ok(permit) => permit,
-            };
-
-            let query = Query::new(
-                permit,
-                TransmissionProtocol::Udp(self.socket.clone()),
-                origin,
-                buf,
-            );
-            query.process().await;
+            return DnsUdpPacket::new(self.socket.clone(), origin, buf);
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct DnsUdpPacket {
+    socket: Arc<UdpSocket>,
+    peer_addr: SocketAddr,
+    buf: Vec<u8>,
+}
+
+impl DnsUdpPacket {
+    pub fn new(socket: Arc<UdpSocket>, peer_addr: SocketAddr, buf: Vec<u8>) -> Self {
+        Self {
+            socket,
+            peer_addr,
+            buf,
+        }
+    }
+
+    pub async fn process(self, semaphore: Arc<Semaphore>) {
+        if !Firewall::verify_query(&self.buf) {
+            eprintln!("  warning: firewall rejected DGRAM from {}", &self.peer_addr.ip());
+            return;
+        }
+
+        let permit = match semaphore.clone().try_acquire_owned() {
+            Err(e) => match e {
+                tokio::sync::TryAcquireError::Closed => {
+                    panic!(
+                        "Query Semaphore is closed. No new permits can be offered. Unrecoverable state."
+                    );
+                }
+                tokio::sync::TryAcquireError::NoPermits => {
+                    eprintln!(
+                        "  warning: max. number of concurrent queries reached. Dropping query..."
+                    );
+                    return;
+                }
+            },
+            Ok(permit) => permit,
+        };
+
+        let query = Query::new(
+            permit,
+            TransmissionProtocol::Udp(self.socket.clone()),
+            self.peer_addr,
+            self.buf,
+        );
+        query.process().await;
     }
 }
 
