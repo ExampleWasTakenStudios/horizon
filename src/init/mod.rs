@@ -1,14 +1,18 @@
 mod downstream;
+mod upstream;
 
 pub use downstream::*;
+pub use upstream::*;
 
 pub struct AppState {
     pub downstream: DownstreamAppState,
+    pub upstream: UpstreamAppState,
 }
 
 pub fn init() -> AppState {
     AppState {
         downstream: downstream::init(),
+        upstream: upstream::init(),
     }
 }
 

@@ -3,6 +3,12 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 /// Number of tasks spawned that each create a downstream socket.
 pub const DOWNSTREAM_SOCKET_TASK_COUNT: u8 = 4;
 
+/// Specifies how many sockets are created for the Upstream UDP Socket Pool.
+pub const UPSTREAM_UDP_SOCKET_POOL_SIZE: u16 = 2_000;
+
+/// Specifies how many sockets are created for the Upstream TCP Socket Pool.
+pub const UPSTREAM_TCP_SOCKET_POOL_SIZE: u16 = 500;
+
 /// IP Address of the socket that listens to incoming queries from hosts on the network.
 const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
 

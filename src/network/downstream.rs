@@ -14,11 +14,11 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct DnsUdpSocket {
+pub struct DownstreamUdpSocket {
     socket: Arc<UdpSocket>,
 }
 
-impl DnsUdpSocket {
+impl DownstreamUdpSocket {
     pub fn new() -> Self {
         let socket = socket2::Socket::new(
             socket2::Domain::IPV4,
@@ -43,7 +43,7 @@ impl DnsUdpSocket {
     }
 
     /// Continuously listens to the socket and processes incoming queries.
-    pub async fn listen(&self) -> DnsUdpPacket {
+    pub async fn listen(&self) -> DownstreamUdpPacket {
         loop {
             let mut buf = vec![0; constants::MAX_PACKET_SIZE];
             let (length, origin) = match self.socket.recv_from(&mut buf).await {
@@ -55,19 +55,19 @@ impl DnsUdpSocket {
             };
             buf.truncate(length);
 
-            return DnsUdpPacket::new(self.socket.clone(), origin, buf);
+            return DownstreamUdpPacket::new(self.socket.clone(), origin, buf);
         }
     }
 }
 
 #[derive(Debug)]
-pub struct DnsUdpPacket {
+pub struct DownstreamUdpPacket {
     socket: Arc<UdpSocket>,
     peer_addr: SocketAddr,
     buf: Vec<u8>,
 }
 
-impl DnsUdpPacket {
+impl DownstreamUdpPacket {
     pub fn new(socket: Arc<UdpSocket>, peer_addr: SocketAddr, buf: Vec<u8>) -> Self {
         Self {
             socket,
@@ -113,11 +113,11 @@ impl DnsUdpPacket {
 }
 
 #[derive(Debug)]
-pub struct DnsTcpListener {
+pub struct DownstreamTcpListener {
     listener: TcpListener,
 }
 
-impl DnsTcpListener {
+impl DownstreamTcpListener {
     pub fn new() -> Self {
         let socket = socket2::Socket::new(
             socket2::Domain::IPV4,
@@ -146,22 +146,22 @@ impl DnsTcpListener {
     }
 
     /// Continuously waits for a connection on the socket. Once a connection has been established, it returns a [`DnsTcpStream`].
-    pub async fn accept(&self) -> DnsTcpStream {
+    pub async fn accept(&self) -> DownstreamTcpStream {
         loop {
             if let Ok((stream, addr)) = self.listener.accept().await {
-                return DnsTcpStream::new(stream, addr);
+                return DownstreamTcpStream::new(stream, addr);
             }
         }
     }
 }
 
 #[derive(Debug)]
-pub struct DnsTcpStream {
+pub struct DownstreamTcpStream {
     stream: TcpStream,
     peer_addr: SocketAddr,
 }
 
-impl DnsTcpStream {
+impl DownstreamTcpStream {
     pub fn new(stream: TcpStream, peer_addr: SocketAddr) -> Self {
         Self { stream, peer_addr }
     }
