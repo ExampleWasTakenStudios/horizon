@@ -53,7 +53,13 @@ fn run_downstream(app_state: &mut AppState) {
             app_state.downstream.tcp_join_set.spawn(async move {
                 loop {
                     let stream = listener.accept().await;
-                    stream.read_and_process(semaphore.clone()).await;
+                    let semaphore = semaphore.clone();
+
+                    // Detaching individual connections is perfectly fine here.
+                    // If a single connection panics, it won't crash the listener.
+                    tokio::spawn(async move {
+                        stream.read_and_process(semaphore.clone()).await;
+                    });
                 }
             });
         }
@@ -61,26 +67,45 @@ fn run_downstream(app_state: &mut AppState) {
 }
 
 async fn await_join_sets(app_state: &mut AppState) {
-    // Catch any panics in tasks hosting a downstream UDP socket and spawn a new one.
-    while let Some(Err(_)) = app_state.downstream.udp_join_set.join_next().await {
-        println!("Downstream UDP task panicked. Spawning a new one...");
-        let semaphore = app_state.downstream.semaphore.clone();
+    loop {
+        tokio::select! {
+            Some(result) = app_state.downstream.udp_join_set.join_next() => {
+                if result.is_err() {
+                    println!("Downstream UDP task panicked. Spawning a new one...");
+                    let semaphore = app_state.downstream.semaphore.clone();
 
-        app_state.downstream.udp_join_set.spawn(async move {
-            let socket = DnsUdpSocket::new();
-            socket.listen_and_process(semaphore).await;
-        });
-    }
+                    app_state.downstream.udp_join_set.spawn(async move {
+                        let socket = DnsUdpSocket::new();
+                        socket.listen_and_process(semaphore).await;
+                    });
+                }
+            },
+            Some(result) = app_state.downstream.tcp_join_set.join_next() => {
+                if result.is_err() {
+                    println!("Downstream UDP task panicked. Spawning a new one...");
+                    let semaphore = app_state.downstream.semaphore.clone();
 
-    // Catch any panics in TCP query handling tasks
-    while let Some(Err(_)) = app_state.downstream.tcp_join_set.join_next().await {
-        println!("Downstream TCP task panicked. Spawning a new one...");
-        let semaphore = app_state.downstream.semaphore.clone();
+                    app_state.downstream.udp_join_set.spawn(async move {
+                        let listener = DnsTcpListener::new();
+                        loop {
+                            let stream = listener.accept().await;
+                            let semaphore = semaphore.clone();
 
-        app_state.downstream.tcp_join_set.spawn(async move {
-            let listener = DnsTcpListener::new();
-            let stream = listener.accept().await;
-            stream.read_and_process(semaphore).await;
-        });
+                            // Detaching individual connections is perfectly fine here.
+                            // If a single connection panics, it won't crash the listener.
+                            tokio::spawn(async move {
+                                stream.read_and_process(semaphore.clone()).await;
+                            });
+                        }
+                    });
+                }
+            }
+
+            // Triggers if both JoinSets are empty (return None)
+            else => {
+                println!("All tasks finished cleanly. Shutting down.");
+                break;
+            }
+        };
     }
 }
