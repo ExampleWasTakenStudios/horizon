@@ -1,9 +1,9 @@
-/// This module is mostly for organizational and structural reasons. E.g. to easily collapse the UDP section of the [`crate::network::upstream`] module.
+/// This module exists mostly for organizational and structural reasons. E.g. to easily collapse the UDP section of the [`crate::network::upstream`] module.
 pub mod udp {
     use crate::constants;
     use std::{
         collections::VecDeque,
-        ops::{Deref, DerefMut},
+        ops::Deref,
         sync::{Arc, Mutex},
     };
     use tokio::net::UdpSocket;
@@ -89,7 +89,7 @@ pub mod udp {
     }
 }
 
-/// This module is mostly for organizational and structural reasons. E.g. to easily collapse the UDP section of the [`crate::network::upstream`] module.
+/// This module exists mostly for organizational and structural reasons. E.g. to easily collapse the UDP section of the [`crate::network::upstream`] module.
 pub mod tcp {
     use std::{
         net::SocketAddr,

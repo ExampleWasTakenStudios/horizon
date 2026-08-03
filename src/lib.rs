@@ -5,7 +5,10 @@ mod query;
 
 use std::time::Instant;
 
-use crate::{init::{AppState, init_tokio_runtime}, network::downstream::{tcp::DownstreamTcpListener, udp::DownstreamUdpSocket}};
+use crate::{
+    init::{AppState, init_tokio_runtime},
+    network::downstream::{tcp::DownstreamTcpListener, udp::DownstreamUdpSocket},
+};
 
 pub fn entry() {
     let runtime = init_tokio_runtime();
