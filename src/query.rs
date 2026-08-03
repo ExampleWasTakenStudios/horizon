@@ -10,13 +10,9 @@ pub struct Query {
     // The permit is held for the lifetime of query processing and dropped when processing completes.
     // In other words, this permit is used to ensure the maximum number of concurrent queries.
     // It acts sort of as an ID that acts as prove for your legal status in a country.
-    #[allow(unused)]
     semaphore_permit: OwnedSemaphorePermit,
-    #[allow(unused)]
     trans_proto: TransmissionProtocol,
-    #[allow(unused)]
     origin: SocketAddr,
-    #[allow(unused)]
     buf: Vec<u8>,
 }
 

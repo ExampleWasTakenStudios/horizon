@@ -4,15 +4,15 @@ use tokio::{sync::Semaphore, task::JoinSet};
 
 use crate::{
     constants,
-    network::{DnsTcpListener, DnsUdpSocket},
+    network::downstream::{tcp::DownstreamTcpListener, udp::DownstreamUdpSocket},
 };
 
 pub(super) mod tcp;
 pub(super) mod udp;
 
 pub struct DownstreamAppState {
-    pub udp_sockets: Vec<Arc<DnsUdpSocket>>,
-    pub tcp_listeners: Vec<Arc<DnsTcpListener>>,
+    pub udp_sockets: Vec<Arc<DownstreamUdpSocket>>,
+    pub tcp_listeners: Vec<Arc<DownstreamTcpListener>>,
     pub udp_join_set: JoinSet<()>,
     pub tcp_join_set: JoinSet<()>,
     pub semaphore: Arc<Semaphore>,

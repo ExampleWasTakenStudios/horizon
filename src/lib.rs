@@ -3,9 +3,11 @@ mod init;
 mod network;
 mod query;
 
+use std::time::Instant;
+
 use crate::{
     init::{AppState, init_tokio_runtime},
-    network::{DnsTcpListener, DnsUdpSocket},
+    network::downstream::{tcp::DownstreamTcpListener, udp::DownstreamUdpSocket},
 };
 
 pub fn entry() {
@@ -13,10 +15,13 @@ pub fn entry() {
     println!("Successfully created tokio runtime.");
 
     runtime.block_on(async move {
+        let start_init = Instant::now();
         let mut app_state = init::init();
-        println!("Successfully initialized");
+        let end_init = Instant::duration_since(&Instant::now(), start_init);
 
-        run_downstream(&mut app_state);
+        println!("Successfully initialized in {:?}", end_init);
+
+        listen_downstream(&mut app_state);
         println!(" ");
         println!("RUNNING...");
         println!(" ");
@@ -25,7 +30,7 @@ pub fn entry() {
     });
 }
 
-fn run_downstream(app_state: &mut AppState) {
+fn listen_downstream(app_state: &mut AppState) {
     run_udp(app_state);
     run_tcp(app_state);
 
@@ -78,7 +83,7 @@ async fn await_join_sets(app_state: &mut AppState) {
                 if result.is_err() {
                     println!("Downstream UDP task panicked. Spawning a new one...");
                     let semaphore = app_state.downstream.semaphore.clone();
-                    let socket = DnsUdpSocket::new();
+                    let socket = DownstreamUdpSocket::new();
 
                     app_state.downstream.udp_join_set.spawn(async move {
                         loop {
@@ -101,7 +106,7 @@ async fn await_join_sets(app_state: &mut AppState) {
                     let semaphore = app_state.downstream.semaphore.clone();
 
                     app_state.downstream.tcp_join_set.spawn(async move {
-                        let listener = DnsTcpListener::new();
+                        let listener = DownstreamTcpListener::new();
                         loop {
                             let stream = listener.accept().await;
                             let semaphore = semaphore.clone();
