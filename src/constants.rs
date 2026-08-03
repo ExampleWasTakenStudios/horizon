@@ -10,7 +10,7 @@ pub const UPSTREAM_UDP_SOCKET_POOL_SIZE: u16 = 2_000;
 pub const UPSTREAM_TCP_SOCKET_POOL_SIZE: u16 = 500;
 
 /// IP Address of the socket that listens to incoming queries from hosts on the network.
-const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
+const DOWNSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(127, 0, 0, 1);
 
 /// Port of th socket that listens to incoming queries from hosts on the network.
 /// This should be set to port 53 in production environments. (Elevated privilege required!)
@@ -24,23 +24,6 @@ pub const DOWNSTREAM_SOCKET_ADDR: SocketAddr =
 
 /// Specifies how many unaccepted handshakes the OS should queue in memory before rejecting new clients.
 pub const DOWNSTREAM_TCP_BACKLOG: i32 = 1024;
-
-/// IP address to the socket that connects to the upstream resolver.
-///
-/// This is the IP address of the socket itself, **NOT** the IP address of the recursive resolver.
-const _UPSTREAM_IP_ADDR: Ipv4Addr = Ipv4Addr::new(0, 0, 0, 0);
-
-/// The port of the socket that connects to the upstream resolver.
-///
-/// This is the port of the socket itself, **NOT** the port of the recursive resolver.
-const _UPSTREAM_PORT: u16 = 0;
-
-/// The [`SocketAddr`] of the socket that connects to the upstream resolver.
-///
-/// This is the [`SocketAddr`] of the socket itself, **NOT** the [`SocketAddr`] of the recursive resolver.
-/// The [`SocketAddr`] of the recursive resolver is specified in the constructor of the [`SHS`](crate::srs::StubResolverSystem::new()).
-pub const _UPSTREAM_SOCKET_ADDR: SocketAddr =
-    SocketAddr::V4(SocketAddrV4::new(_UPSTREAM_IP_ADDR, _UPSTREAM_PORT));
 
 /// The maximum size any given DNS packet may have. Any packets exceeding this packet will be ignored.
 ///
