@@ -4,7 +4,7 @@ use tokio::{sync::Semaphore, task::JoinSet};
 
 use crate::{
     constants,
-    network::{DownstreamTcpListener, DownstreamUdpSocket},
+    network::downstream::{tcp::DownstreamTcpListener, udp::DownstreamUdpSocket},
 };
 
 pub(super) mod tcp;

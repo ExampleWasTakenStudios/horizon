@@ -1,4 +1,4 @@
-use crate::network::{tcp::UpstreamTcpStreamPool, udp::UpstreamUdpSocketPool};
+use crate::network::upstream::{tcp::UpstreamTcpStreamPool, udp::UpstreamUdpSocketPool};
 
 pub struct UpstreamAppState {
     pub udp_socket_pool: UpstreamUdpSocketPool,
