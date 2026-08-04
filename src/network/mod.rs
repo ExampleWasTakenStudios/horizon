@@ -1,8 +1,2 @@
-pub mod downstream;
-pub mod upstream;
-
-mod firewall;
-mod trans_proto;
-
-pub use firewall::*;
-pub use trans_proto::*;
+//! The network module wraps all network related components like the UDP and TCP servers as well as upstream functionality.
+mod udp;
