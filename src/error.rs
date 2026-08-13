@@ -7,12 +7,10 @@
 /// A good indicator that an `Option` might work better is when the errors have no internal state themselves.
 /// However, one may still elect to use an error if the added context contributes to keeping mental capacity low.
 #[derive(Debug)]
-pub enum Error {
-    /// Used by: [`crate::worker::WorkerPool`]
-    /// Indicates: No worker is currently free.
-    /// No guarantee is given for when a worker will be free again.
-    NoWorkerAvail,
+pub enum DnsError {
+    // Indicates: The received packet is shorter than 12 bytes and can thus not make up a valid DNS packet
+    PacketTooShort,
 }
 
 /// Convenience type alias to [`std::result::Result<T, E>`] where `E` is defined as [`self::Error`].
-pub type Result<T> = std::result::Result<T, Error>;
+pub type DnsResult<T> = std::result::Result<T, DnsError>;

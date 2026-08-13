@@ -2,7 +2,8 @@ mod constants;
 mod error;
 mod ring;
 mod server;
-mod worker;
+mod query;
+mod protocol;
 
 use std::time::Instant;
 

@@ -3,6 +3,9 @@ use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 /// Number of tasks spawned that each create a downstream socket.
 pub const DOWNSTREAM_SOCKET_TASK_COUNT: u8 = 4;
 
+/// Maximum number of concurrent active UDP queries.
+pub const DOWNSTREAM_UDP_WORKER_POOL_SIZE: usize = 300;
+
 /// Specifies how many sockets are created for the Upstream UDP Socket Pool.
 pub const UPSTREAM_UDP_SOCKET_POOL_SIZE: u16 = 2_000;
 

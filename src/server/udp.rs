@@ -1,30 +1,27 @@
-use std::sync::Arc;
+use tokio::net::UdpSocket;
+use tokio_util::task::TaskTracker;
 
-use tokio::{
-    net::UdpSocket,
-    task::JoinSet,
-};
-
-use crate::{constants, worker::WorkerPool};
+use crate::constants;
 
 #[derive(Debug)]
-pub struct Listener {
+pub struct UdpListener {
     socket: UdpSocket,
-    worker_pool: WorkerPool,
-    active_queries: JoinSet<()>,
+    task_tracker: TaskTracker,
 }
 
-impl Listener {
-    /// Run the server
-    ///
-    /// Listen for inbound datagrams and feed them into the worker pool.
-    /// The worker pool attempts to provide a free worker to handle the datagram. If no worker is available the datagram is dropped.
-    async fn run(&self, socket: UdpSocket, worker_pool: WorkerPool) {
-        loop {
-            let mut buf = [0_u8; constants::MAX_PACKET_SIZE];
+impl UdpListener {
+    pub fn new(socket: UdpSocket, task_tracker: TaskTracker) -> Self {
+        Self {
+            socket,
+            task_tracker,
+        }
+    }
 
-            // Waiting for a datagram to arrive at the socket
-            let (length, peer_addr) = match socket.recv_from(&mut buf).await {
+    pub async fn listen(&self) {
+        let mut buf = [0; constants::MAX_PACKET_SIZE];
+
+        loop {
+            let (length, peer_addr) = match self.socket.recv_from(&mut buf).await {
                 Ok(v) => v,
                 Err(e) => {
                     eprintln!("Error while receiving datagram: {e}");
@@ -32,8 +29,9 @@ impl Listener {
                 }
             };
 
-            // Requesting a free worker from the worker pool. If no worker is available, we drop the datagram by continuing the loop
-            todo!("request a free worker from the worker pool");
+            self.task_tracker.spawn(async move {
+                todo!("call the protocol layer for parsing");
+            });
         }
     }
 }
