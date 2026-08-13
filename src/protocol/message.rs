@@ -11,11 +11,13 @@ pub struct DnsMessage<'a> {
 }
 
 impl<'a> DnsMessage<'a> {
-    pub fn from_bytes(bytes: Vec<u8>) -> () {
+    pub fn from_bytes(bytes: Vec<u8>) -> DnsResult<()> {
         if bytes.len() < 12 {
-            //return Err(DnsError::PacketTooShort);
+            return Err(DnsError::PacketTooShort);
         }
 
         let header = DnsHeader::from_bytes(bytes.as_slice());
+
+        Ok(())
     }
 }
