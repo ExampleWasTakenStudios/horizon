@@ -11,10 +11,10 @@ pub struct DnsHeader {
     pub recursion_avail: bool,
     pub z: u8,
     pub response_code: u8,
-    pub questions: u16,
-    pub answers: u16,
-    pub authoritatives: u16,
-    pub additionals: u16,
+    pub question_count: u16,
+    pub answer_count: u16,
+    pub authoritative_count: u16,
+    pub additional_count: u16,
 }
 
 impl DnsHeader {
@@ -31,10 +31,10 @@ impl DnsHeader {
         let z: u8 = ((flags >> 4) & 0x5) as u8;
         let response_code: u8 = (flags & 0xF) as u8;
 
-        let questions = u16::from_be_bytes([bytes[4], bytes[5]]);
-        let answers = u16::from_be_bytes([bytes[6], bytes[7]]);
-        let authoritatives = u16::from_be_bytes([bytes[8], bytes[9]]);
-        let additionals = u16::from_be_bytes([bytes[10], bytes[11]]);
+        let question_count = u16::from_be_bytes([bytes[4], bytes[5]]);
+        let answer_count = u16::from_be_bytes([bytes[6], bytes[7]]);
+        let authoritative_count = u16::from_be_bytes([bytes[8], bytes[9]]);
+        let additional_count = u16::from_be_bytes([bytes[10], bytes[11]]);
 
         Self {
             id,
@@ -46,10 +46,10 @@ impl DnsHeader {
             recursion_avail,
             z,
             response_code,
-            questions,
-            answers,
-            authoritatives,
-            additionals,
+            question_count,
+            answer_count,
+            authoritative_count,
+            additional_count,
         }
     }
 
@@ -73,16 +73,16 @@ impl DnsHeader {
         buf.push(flags);
 
         // Push question count
-        buf.extend(self.questions.to_be_bytes());
+        buf.extend(self.question_count.to_be_bytes());
 
         // Push answer count
-        buf.extend(self.authoritatives.to_be_bytes());
+        buf.extend(self.authoritative_count.to_be_bytes());
 
         // Push authoritative count
-        buf.extend(self.authoritatives.to_be_bytes());
+        buf.extend(self.authoritative_count.to_be_bytes());
 
         // Push additional count
-        buf.extend(self.additionals.to_be_bytes());
+        buf.extend(self.additional_count.to_be_bytes());
     }
 }
 
@@ -111,10 +111,10 @@ mod tests {
         recursion_avail: false,
         z: 0,
         response_code: 0,
-        questions: 1,
-        answers: 0,
-        authoritatives: 0,
-        additionals: 0,
+        question_count: 1,
+        answer_count: 0,
+        authoritative_count: 0,
+        additional_count: 0,
     };
 
     #[test]
@@ -130,10 +130,10 @@ mod tests {
         assert!(!header.recursion_avail);
         assert_eq!(header.z, 0);
         assert_eq!(header.response_code, 0);
-        assert_eq!(header.questions, 1);
-        assert_eq!(header.answers, 0);
-        assert_eq!(header.authoritatives, 0);
-        assert_eq!(header.additionals, 0);
+        assert_eq!(header.question_count, 1);
+        assert_eq!(header.answer_count, 0);
+        assert_eq!(header.authoritative_count, 0);
+        assert_eq!(header.additional_count, 0);
     }
 
     #[test]
