@@ -1,12 +1,11 @@
-use arrayvec::ArrayVec;
-
 use crate::{
     error::{DnsError, DnsResult},
     protocol::{
-        DnsCursor, DnsHeader, DnsMessage, DnsQuestion, DnsRecord, DomainName, MAX_NAME_LENGTH,
-        RawMessage,
+        DnsClass, DnsCursor, DnsHeader, DnsMessage, DnsQClass, DnsQType, DnsQuestion, DnsRecord,
+        DnsType, DomainName, MAX_NAME_LENGTH, RawMessage,
     },
 };
+use arrayvec::ArrayVec;
 
 pub fn deserialize(buf: RawMessage) -> DnsResult<DnsMessage> {
     let mut cursor = DnsCursor::new(buf);
@@ -14,20 +13,34 @@ pub fn deserialize(buf: RawMessage) -> DnsResult<DnsMessage> {
     let header = deserialize_header(&mut cursor)?;
 
     // RFC 9619 bans queries with more than one question. Consequently, we check the QDCOUNT field of the header before continuing.
-    if header.op_code == 0 && header.question_count > 1 {
-        todo!(
-            "From RFC 9619: A DNS message with OPCODE = 0 and QDCOUNT > 1 MUST be treated as an incorrectly formatted message. The value of the RCODE parameter in the response message MUST be set to 1 (FORMERR)."
-        );
-    }
 
-    let questions = deserialize_question(&mut cursor, header.question_count)?;
+    let question = match (header.op_code, header.question_count) {
+        // 1. Strict RFC 9619 Compliance
+        // If it's a standard query with >1 question, it is explicitly malformed.
+        (0, count) if count > 1 => return Err(DnsError::TooManyQuestions),
+
+        // 2. Standard Happy Path
+        // Exactly 1 question. We deserialize it and wrap it in Some.
+        (_, 1) => Some(deserialize_question(&mut cursor)?),
+
+        // 3. Zero Path
+        // Valid for server responses across various OpCodes.
+        (_, 0) => None,
+
+        // 4. Structural Limit
+        // If it's an obscure OpCode that somehow has >1 questions,
+        // out `DnsMessage` struct fundamentally cannot represent it via Option<DnsQuestion>.
+        // We must reject it here to protect the data model.
+        (opcode, count) => return Err(DnsError::UnsupportedQuestionCount { opcode, count })
+    };
+
     let answers = deserialize_records(&mut cursor, header.answer_count)?;
     let authoritatives = deserialize_records(&mut cursor, header.authoritative_count)?;
     let additionals = deserialize_records(&mut cursor, header.additional_count)?;
 
     Ok(DnsMessage::new(
         header,
-        questions,
+        question,
         answers,
         authoritatives,
         additionals,
@@ -38,20 +51,21 @@ fn deserialize_header(cursor: &mut DnsCursor) -> DnsResult<DnsHeader> {
     if cursor.pos() != 0 {
         return Err(DnsError::CursorPositionNotAtZeroWhileDeserializingHeader);
     }
-    if cursor.len() <= 12 {
+    if cursor.len() < 12 {
         return Err(DnsError::PacketTooShort(Box::new(cursor.clone_buf())));
     }
 
     let id = cursor.read_u16()?;
 
     let flags = cursor.read_u16()?;
+
     let is_response: bool = (flags >> 15) != 0;
     let op_code: u8 = ((flags >> 11) & 0xF) as u8;
     let is_authoritative: bool = ((flags >> 10) & 0x1) != 0;
     let is_truncated: bool = ((flags >> 9) & 0x1) != 0;
-    let recursion_desired: bool = (flags >> 8 & 0x1) != 0;
+    let recursion_desired: bool = ((flags >> 8) & 0x1) != 0;
     let recursion_avail: bool = ((flags >> 7) & 0x1) != 0;
-    let z: u8 = ((flags >> 4) & 0x5) as u8;
+    let z: u8 = ((flags >> 4) & 0x7) as u8;
     let response_code: u8 = (flags & 0xF) as u8;
 
     let question_count = cursor.read_u16()?;
@@ -76,12 +90,40 @@ fn deserialize_header(cursor: &mut DnsCursor) -> DnsResult<DnsHeader> {
     })
 }
 
-fn deserialize_question(cursor: &DnsCursor, amount: u16) -> DnsResult<DnsQuestion> {
-    todo!()
+fn deserialize_question(cursor: &mut DnsCursor) -> DnsResult<DnsQuestion> {
+    let q_name = deserialize_domain_name(cursor)?;
+    let q_type = DnsQType(cursor.read_u16()?);
+    let q_class = DnsQClass(cursor.read_u16()?);
+
+    Ok(DnsQuestion {
+        q_name,
+        q_type,
+        q_class,
+    })
 }
 
-fn deserialize_records(cursor: &DnsCursor, amount: u16) -> DnsResult<Vec<DnsRecord>> {
-    todo!()
+fn deserialize_records(cursor: &mut DnsCursor, amount: u16) -> DnsResult<Vec<DnsRecord>> {
+    let mut records = Vec::<DnsRecord>::with_capacity(amount as usize);
+
+    for _ in 0..amount {
+        let name = deserialize_domain_name(cursor)?;
+        let r#type = DnsType(cursor.read_u16()?);
+        let class = DnsClass(cursor.read_u16()?);
+        let ttl = cursor.read_u32()?;
+        let rd_length = cursor.read_u16()?;
+        let r_data = cursor.read_slice(rd_length as usize)?.to_vec();
+
+        records.push(DnsRecord {
+            name,
+            r#type,
+            class,
+            ttl,
+            rd_length,
+            r_data,
+        });
+    }
+
+    Ok(records)
 }
 
 fn deserialize_domain_name(cursor: &mut DnsCursor) -> DnsResult<DomainName> {
@@ -164,4 +206,12 @@ fn deserialize_domain_name(cursor: &mut DnsCursor) -> DnsResult<DomainName> {
     }
 
     Ok(DomainName::new(domain_name))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_deserialize_valid_domain_name() {}
 }

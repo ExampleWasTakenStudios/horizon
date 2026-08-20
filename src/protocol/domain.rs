@@ -4,7 +4,7 @@ use arrayvec::ArrayVec;
 pub const MAX_NAME_LENGTH: usize = 255;
 pub const MAX_LABEL_LENGTH: usize = 63;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DomainName {
     octets: ArrayVec<u8, MAX_NAME_LENGTH>,
 }

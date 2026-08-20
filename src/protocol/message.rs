@@ -1,12 +1,9 @@
-use crate::{
-    error::{DnsError, DnsResult},
-    protocol::{DnsHeader, DnsQuestion, DnsRecord},
-};
+use crate::protocol::{DnsHeader, DnsQuestion, DnsRecord};
 
 #[derive(Debug, Clone)]
 pub struct DnsMessage {
     header: DnsHeader,
-    question: DnsQuestion,
+    question: Option<DnsQuestion>,
     answers: Vec<DnsRecord>,
     authoritatives: Vec<DnsRecord>,
     additionals: Vec<DnsRecord>,
@@ -15,7 +12,7 @@ pub struct DnsMessage {
 impl DnsMessage {
     pub fn new(
         header: DnsHeader,
-        question: DnsQuestion,
+        question: Option<DnsQuestion>,
         answers: Vec<DnsRecord>,
         authoritatives: Vec<DnsRecord>,
         additionals: Vec<DnsRecord>,
@@ -37,12 +34,12 @@ impl DnsMessage {
         &mut self.header
     }
 
-    pub fn get_question(&self) -> &DnsQuestion {
-        &self.question
+    pub fn get_question(&self) -> Option<&DnsQuestion> {
+        self.question.as_ref()
     }
 
-    pub fn get_question_mut(&mut self) -> &mut DnsQuestion {
-        &mut self.question
+    pub fn get_question_mut(&mut self) -> Option<&mut DnsQuestion> {
+        self.question.as_mut()
     }
 
     pub fn get_answers(&self) -> &[DnsRecord] {

@@ -1,6 +1,6 @@
 use crate::protocol::{DnsQClass, DnsQType, DomainName};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsQuestion {
     pub q_name: DomainName,
     pub q_type: DnsQType,

@@ -1,8 +1,11 @@
-#[derive(Debug, Clone)]
-pub struct DnsRecord {}
+use crate::protocol::{DnsClass, DnsType, DomainName};
 
-impl DnsRecord {
-    pub fn from_bytes(bytes: &mut Vec<u8>) {}
-
-    pub fn to_bytes(&self, bytes: &mut Vec<u8>) {}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DnsRecord {
+    pub name: DomainName,
+    pub r#type: DnsType,
+    pub class: DnsClass,
+    pub ttl: u32,
+    pub rd_length: u16,
+    pub r_data: Vec<u8>,
 }

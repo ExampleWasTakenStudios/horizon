@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsHeader {
     pub id: u16,
     pub is_response: bool,
@@ -21,7 +21,7 @@ impl DnsHeader {
 
         let flags = u16::from_be_bytes([bytes[2], bytes[3]]);
         let is_response: bool = (flags >> 15) != 0;
-        let op_code: u8 = ((flags >> 11) & 0xF) as u8;
+        let op_code = ((flags >> 11) & 0xF) as u8;
         let is_authoritative: bool = ((flags >> 10) & 0x1) != 0;
         let is_truncated: bool = ((flags >> 9) & 0x1) != 0;
         let recursion_desired: bool = (flags >> 8 & 0x1) != 0;

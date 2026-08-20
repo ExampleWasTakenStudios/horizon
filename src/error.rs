@@ -25,6 +25,10 @@ pub enum DnsError {
     DomainNameTooLong,
     /// Indicates: A domain name label (the section between two dots) exceeded the maximum allowed length of 63 bytes.
     DomainNameLabelTooLong,
+    /// Indicates: A DNS query with OPCODE = 0 contained more than one question. This directly violates RFC 9619.
+    TooManyQuestions,
+    /// Indicates: We don't support the received OPCODE-QDCOUNT combination.
+    UnsupportedQuestionCount { opcode: u8, count: u16 },
 }
 
 /// Convenience type alias to [`std::result::Result<T, E>`] where `E` is defined as [`self::Error`].

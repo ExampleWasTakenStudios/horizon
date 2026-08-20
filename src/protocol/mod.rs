@@ -16,8 +16,8 @@ pub use serde::*;
 mod cursor;
 pub use cursor::*;
 
-mod enums;
-pub use enums::*;
+mod static_types;
+pub use static_types::*;
 
 mod domain;
 pub use domain::*;
