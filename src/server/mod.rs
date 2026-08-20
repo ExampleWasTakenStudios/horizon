@@ -7,8 +7,9 @@ use tokio::net::UdpSocket;
 use tokio_util::task::TaskTracker;
 pub use udp::*;
 
-pub async fn run(task_tracker: &TaskTracker) {
-    // Since we don't want to start a server where this value is unknown we intentionally panic here
+pub async fn start(task_tracker: TaskTracker) {
+    // Since we don't want to start a server where this value is unknown we intentionally panic here.
+    // This applies to all .unwrap() calls inside this function.
     let avail_para = std::thread::available_parallelism().unwrap().get();
 
     // UDP listeners
@@ -16,7 +17,6 @@ pub async fn run(task_tracker: &TaskTracker) {
         let task_tracker = task_tracker.clone();
 
         task_tracker.clone().spawn(async move {
-            // Since we don't want to start a server where this value is unknown we intentionally panic here
             let socket = socket2::Socket::new(
                 socket2::Domain::IPV4,
                 socket2::Type::DGRAM,
@@ -24,10 +24,9 @@ pub async fn run(task_tracker: &TaskTracker) {
             )
             .unwrap();
 
-            socket.set_nonblocking(true);
-            socket.set_reuse_port(true);
+            socket.set_nonblocking(true).unwrap();
+            socket.set_reuse_port(true).unwrap();
 
-            // Since we don't want to start a server where this value is unknown we intentionally panic here
             let socket = UdpSocket::from_std(socket.into()).unwrap();
 
             let listener = UdpListener::new(socket, task_tracker.clone());

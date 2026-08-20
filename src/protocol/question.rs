@@ -1,12 +1,8 @@
+use crate::protocol::{DnsQClass, DnsQType, DomainName};
+
 #[derive(Debug, Clone)]
-pub struct DnsQuestion {}
-
-impl DnsQuestion {
-    pub fn from_bytes(bytes: &mut Vec<u8>) {
-
-    }
-
-    pub fn to_bytes(&self, bytes: &mut Vec<u8>) {
-        
-    }
+pub struct DnsQuestion {
+    pub q_name: DomainName,
+    pub q_type: DnsQType,
+    pub q_class: DnsQClass,
 }

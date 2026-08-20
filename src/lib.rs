@@ -1,11 +1,11 @@
 mod constants;
 mod error;
+mod protocol;
+mod query;
 mod ring;
 mod server;
-mod query;
-mod protocol;
 
-use std::time::Instant;
+use tokio_util::task::TaskTracker;
 
 pub fn entry() {
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -18,10 +18,9 @@ pub fn entry() {
     println!("Successfully created tokio runtime.");
 
     runtime.block_on(async move {
-        let start_init = Instant::now();
-        let end_init = Instant::duration_since(&Instant::now(), start_init);
+        let task_tracker = TaskTracker::new();
 
-        println!("Successfully initialized in {:?}", end_init);
+        server::start(task_tracker.clone()).await;
 
         println!(" ");
         println!("RUNNING...");

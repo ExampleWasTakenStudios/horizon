@@ -1,5 +1,3 @@
-use crate::error::DnsResult;
-
 #[derive(Debug, Clone)]
 pub struct DnsHeader {
     pub id: u16,

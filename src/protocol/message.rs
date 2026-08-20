@@ -6,25 +6,27 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct DnsMessage {
     header: DnsHeader,
-    questions: Vec<DnsQuestion>,
+    question: DnsQuestion,
     answers: Vec<DnsRecord>,
     authoritatives: Vec<DnsRecord>,
     additionals: Vec<DnsRecord>,
 }
 
 impl DnsMessage {
-    pub fn from_bytes(bytes: &mut Vec<u8>) -> DnsResult<()> {
-        if bytes.len() < 12 {
-            return Err(DnsError::PacketTooShort);
+    pub fn new(
+        header: DnsHeader,
+        question: DnsQuestion,
+        answers: Vec<DnsRecord>,
+        authoritatives: Vec<DnsRecord>,
+        additionals: Vec<DnsRecord>,
+    ) -> Self {
+        Self {
+            header,
+            question,
+            answers,
+            authoritatives,
+            additionals,
         }
-
-        let header = DnsHeader::from_bytes(bytes.as_slice());
-
-        Ok(())
-    }
-
-    pub fn to_bytes(&self, bytes: &mut Vec<u8>) -> DnsResult<()> {
-        Ok(())
     }
 
     pub fn get_header(&self) -> &DnsHeader {
@@ -35,12 +37,12 @@ impl DnsMessage {
         &mut self.header
     }
 
-    pub fn get_questions(&self) -> &[DnsQuestion] {
-        &self.questions
+    pub fn get_question(&self) -> &DnsQuestion {
+        &self.question
     }
 
-    pub fn get_questions_mut(&mut self) -> &mut [DnsQuestion] {
-        &mut self.questions
+    pub fn get_question_mut(&mut self) -> &mut DnsQuestion {
+        &mut self.question
     }
 
     pub fn get_answers(&self) -> &[DnsRecord] {
@@ -65,11 +67,6 @@ impl DnsMessage {
 
     pub fn get_additionals_mut(&mut self) -> &mut [DnsRecord] {
         &mut self.additionals
-    }
-
-    pub fn add_question(&mut self, question: DnsQuestion) {
-        self.header.question_count += 1;
-        self.questions.push(question);
     }
 
     pub fn add_answer(&mut self, answer: DnsRecord) {
