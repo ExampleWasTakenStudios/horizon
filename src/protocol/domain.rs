@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use arrayvec::ArrayVec;
 
 /// Maximum length
@@ -12,5 +14,13 @@ pub struct DomainName {
 impl DomainName {
     pub fn new(octets: ArrayVec<u8, MAX_NAME_LENGTH>) -> Self {
         Self { octets }
+    }
+}
+
+impl Deref for DomainName {
+    type Target = ArrayVec<u8, MAX_NAME_LENGTH>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.octets
     }
 }

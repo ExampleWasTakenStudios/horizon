@@ -1,16 +1,13 @@
-use crate::{
-    error::{DnsError, DnsResult},
-    protocol::RawMessage,
-};
+use crate::error::{DnsError, DnsResult};
 
 #[derive(Debug)]
-pub struct DnsCursor {
-    buf: RawMessage,
+pub struct DnsCursor<'a> {
+    buf: &'a [u8],
     pos: usize,
 }
 
-impl DnsCursor {
-    pub fn new(buf: RawMessage) -> Self {
+impl<'a> DnsCursor<'a> {
+    pub fn new(buf: &'a [u8]) -> Self {
         Self { buf, pos: 0 }
     }
 
@@ -67,7 +64,7 @@ impl DnsCursor {
     }
 
     /// Clones the buffer that this cursor wraps. It ***does not*** clone the Cursor.
-    pub fn clone_buf(&self) -> RawMessage {
+    pub fn clone_buf(&self) -> &'a [u8] {
         self.buf.clone()
     }
 }

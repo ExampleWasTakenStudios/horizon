@@ -11,7 +11,7 @@ use crate::protocol::RawMessage;
 #[derive(Debug)]
 pub enum DnsError {
     /// Indicates: The received packet is shorter than 12 bytes and can thus not make up a valid DNS packet
-    PacketTooShort(Box<RawMessage>),
+    PacketTooShort,
     /// Indicates: Attempted to start deserializing a packet from the network while the internal position of the cursor was not 0.
     /// This indicates that the deserialization process may not have been called in the correct order.
     CursorPositionNotAtZeroWhileDeserializingHeader,

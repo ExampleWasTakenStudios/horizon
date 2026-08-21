@@ -18,7 +18,7 @@ impl UdpListener {
     }
 
     pub async fn listen(&self) {
-        let mut buf = [0; constants::MAX_PACKET_SIZE];
+        let mut buf = [0; constants::MAX_DGRAM_SIZE];
 
         loop {
             let (length, peer_addr) = match self.socket.recv_from(&mut buf).await {

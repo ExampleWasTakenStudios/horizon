@@ -28,11 +28,12 @@ pub const DOWNSTREAM_SOCKET_ADDR: SocketAddr =
 /// Specifies how many unaccepted handshakes the OS should queue in memory before rejecting new clients.
 pub const DOWNSTREAM_TCP_BACKLOG: i32 = 1024;
 
-/// The maximum size any given DNS packet may have. Any packets exceeding this packet will be ignored.
+/// The maximum size any given DNS packet that is received over UDP may have. Any packets exceeding this packet will be ignored.
 ///
 /// This value should be set to `512` when the service does not support EDNS(0).
 /// In case of EDNS(0) support, this value should be set to `1232`.
-pub const MAX_PACKET_SIZE: usize = 512;
+/// This value does not apply to DNS messages received over TCP.
+pub const MAX_DGRAM_SIZE: usize = 512;
 
 /// The maximum amount of concurrent UDP queries the system may ever handle.
 ///
