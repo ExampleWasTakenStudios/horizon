@@ -1,14 +1,13 @@
-use crate::protocol::RawMessage;
-
 /// The sum type of all possible errors that can exists within the application.
 ///
-/// This custom implementation exists to ensure no dynamic dispatch can ever happen during error handling and still being able to use the `?` operator.
+/// This custom implementation exists for a couple of reasons:
+/// 1. To have a centralized place where all possible errors states of the application are hosted. This makes it easy to document and maintain error states.
+/// 2. To ensure no dynamic dispatch ever happens during error handling and still being able to use the `?` operator.
 ///
 /// ## General Considerations
-/// Before adding a new error here, consider if you could also use and [Option] instead.
-/// A good indicator that an `Option` might work better is when the errors have no internal state themselves.
-/// However, one may still elect to use an error if the added context contributes to keeping mental capacity low.
-#[derive(Debug)]
+/// Before adding a new error here, consider if you could also use an [Option] instead. <br>
+/// Errors are intended to represent a state from which the application cannot continue on the [happy path](https://en.wikipedia.org/wiki/Happy_path). E.g. the service cannot fulfill the DNS request.
+#[derive(Debug, PartialEq, Eq)]
 pub enum DnsError {
     /// Indicates: The received packet is shorter than 12 bytes and can thus not make up a valid DNS packet
     PacketTooShort,
@@ -20,7 +19,8 @@ pub enum DnsError {
     /// Indicates: A message compression pointer was encountered during deserialization of a domain name that is invalid.
     IllegalPointer,
     /// Indicates: There are too many pointers in a singular domain name.
-    TooManyPointersInDomainName,
+    /// This value is set inside the private function `crate::protocol::deserialize_domain_name()`.
+    PointerJumpThresholdExceeded,
     /// Indicates: The domain name in question exceeds the maximum allowed length of 255 bytes.
     DomainNameTooLong,
     /// Indicates: A domain name label (the section between two dots) exceeded the maximum allowed length of 63 bytes.
