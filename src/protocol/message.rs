@@ -1,6 +1,6 @@
 use crate::protocol::{DnsHeader, DnsQuestion, DnsRecord};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DnsMessage {
     header: DnsHeader,
     question: Option<DnsQuestion>,
