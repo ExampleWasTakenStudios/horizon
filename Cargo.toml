@@ -2,6 +2,11 @@
 name = "horizon"
 version = "26.1.0-beta.1"
 edition = "2024"
+authors = ["ExampleWasTaken"]
+license-file = "./LICENSE"
+publish = false
+readme = "./README.md"
+repository = "https://github.com/ExampleWasTakenStudios/horizon"
 
 [dependencies]
 arrayvec = "0.7.8"
