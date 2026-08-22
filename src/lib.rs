@@ -2,7 +2,6 @@ mod constants;
 mod error;
 mod protocol;
 mod query;
-mod ring;
 mod server;
 
 use tokio_util::task::TaskTracker;
