@@ -2,12 +2,12 @@ use crate::{
     error::{DnsError, DnsResult},
     protocol::{
         DnsClass, DnsCursor, DnsHeader, DnsMessage, DnsQClass, DnsQType, DnsQuestion, DnsRecord,
-        DnsType, DomainName, MAX_NAME_LENGTH, RawMessage,
+        DnsType, DomainName, MAX_NAME_LENGTH,
     },
 };
 use arrayvec::ArrayVec;
 
-pub fn deserialize(buf: RawMessage) -> DnsResult<DnsMessage> {
+pub fn deserialize(buf: &[u8]) -> DnsResult<DnsMessage> {
     let mut cursor = DnsCursor::new(buf);
 
     let header = deserialize_header(&mut cursor)?;
@@ -52,7 +52,7 @@ fn deserialize_header(cursor: &mut DnsCursor) -> DnsResult<DnsHeader> {
         return Err(DnsError::CursorPositionNotAtZeroWhileDeserializingHeader);
     }
     if cursor.len() < 12 {
-        return Err(DnsError::PacketTooShort(Box::new(cursor.clone_buf())));
+        return Err(DnsError::PacketTooShort);
     }
 
     let id = cursor.read_u16()?;
@@ -148,7 +148,7 @@ fn deserialize_domain_name(cursor: &mut DnsCursor) -> DnsResult<DomainName> {
         // Is `length` a pointer
         if length & PTR_ID_MASK == 0xC0 {
             if jump_counter >= MAX_JUMP_COUNT {
-                return Err(DnsError::TooManyPointersInDomainName);
+                return Err(DnsError::PointerJumpThresholdExceeded);
             }
 
             let ptr_high_byte: u16 = ((length & PTR_HIGH_BIT_MASK) as u16) << 8;
@@ -206,167 +206,4 @@ fn deserialize_domain_name(cursor: &mut DnsCursor) -> DnsResult<DomainName> {
     }
 
     Ok(DomainName::new(domain_name))
-}
-
-#[cfg(test)]
-mod domain_name_tests {
-    use hex_literal::hex;
-
-    use super::*;
-
-    static VALID_QUERY: [u8; 93] = hex!(
-        "
-        74 42 7f 8a 90 b3 54 8d 5a 1f 9b 59 08 00 45 00
-        00 4f 91 ec 00 00 40 11 25 06 c0 a8 01 02 01 01
-        01 01 b5 e8 00 35 00 3b cd 67 9b 4c 01 20 00 01
-        00 00 00 00 00 01 06 67 6f 6f 67 6c 65 03 63 6f
-        6d 00 00 01 00 01 00 00 29 04 d0 00 00 00 00 00
-        0c 00 0a 00 08 bf cd b6 13 88 d5 1c 3b
-    "
-    );
-
-    static valid_response: [u8; 97] = hex!(
-        "
-        54 8d 5a 1f 9b 59 74 42 7f 8a 90 b3 08 00 45 00
-        00 53 d4 1c 40 00 3b 11 a7 d1 01 01 01 01 c0 a8
-        01 02 00 35 b5 e8 00 3f e7 e5 9b 4c 81 80 00 01
-        00 01 00 00 00 01 06 67 6f 6f 67 6c 65 03 63 6f
-        6d 00 00 01 00 01 c0 0c 00 01 00 01 00 00 00 b7
-        00 04 8e fb 25 6e 00 00 29 04 d0 00 00 00 00 00
-        00
-    "
-    );
-
-    #[test]
-    fn test_root_domain_only_packets_correctly_parsed() {
-        todo!()
-    }
-
-    #[test]
-    fn test_uncompressed_name_correctly_parsed() {
-        todo!()
-    }
-
-    #[test]
-    fn test_single_pointer_correctly_parsed() {
-        todo!()
-    }
-
-    #[test]
-    fn test_nested_pointers_correctly_parsed() {
-        todo!()
-    }
-
-    #[test]
-    fn test_infinite_pointer_loop_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_self_referential_pointer_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_forward_pointer_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_jump_limit_respected() {
-        todo!()
-    }
-
-    #[test]
-    fn test_too_long_label_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_too_long_nam_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_missing_zero_terminator_caught() {}
-}
-
-#[cfg(test)]
-mod header_tests {
-    use super::*;
-
-    #[test]
-    fn test_all_zeros_correctly_parsed() {
-        todo!()
-    }
-
-    #[test]
-    fn test_flag_parsing() {
-        todo!()
-    }
-
-    #[test]
-    fn test_counts() {
-        todo!()
-    }
-
-    #[test]
-    fn test_buffer_too_short_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_cursor_not_at_zero() {
-        todo!()
-    }
-}
-
-#[cfg(test)]
-mod question_tests {
-    use super::*;
-
-    #[test]
-    fn test_question_count_is_correct() {
-        todo!()
-    }
-
-    #[test]
-    fn test_empty_query_has_no_question() {
-        todo!()
-    }
-
-    #[test]
-    fn test_rfc_9619_only_one_question() {
-        todo!()
-    }
-
-    #[test]
-    fn test_queries_with_multiple_questions_refused() {
-        todo!()
-    }
-}
-
-#[cfg(test)]
-mod record_tests {
-    use super::*;
-
-    #[test]
-    fn test_record_parsing() {
-        todo!()
-    }
-
-    #[test]
-    fn test_multiple_records_parsing() {
-        todo!()
-    }
-
-    #[test]
-    fn test_rdlength_mismatch_caught() {
-        todo!()
-    }
-
-    #[test]
-    fn test_zero_rdlength_is_accepted() {
-        todo!()
-    }
 }
