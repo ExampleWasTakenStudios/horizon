@@ -1,7 +1,7 @@
 use tokio::net::UdpSocket;
 use tokio_util::task::TaskTracker;
 
-use crate::constants;
+use crate::{constants, query};
 
 #[derive(Debug)]
 pub struct UdpListener {
@@ -30,7 +30,10 @@ impl UdpListener {
             };
 
             self.task_tracker.spawn(async move {
-                todo!("call the protocol layer for parsing");
+                let mut packet = Vec::with_capacity(length);
+                packet.extend_from_slice(&buf[0..length]); // Only pass the bytes actually containing data to the vector. Empty bytes are discarded.
+
+                query::handle(packet, peer_addr);
             });
         }
     }
