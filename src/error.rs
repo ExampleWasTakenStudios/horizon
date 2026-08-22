@@ -29,6 +29,12 @@ pub enum DnsError {
     TooManyQuestions,
     /// Indicates: We don't support the received OPCODE-QDCOUNT combination.
     UnsupportedQuestionCount { opcode: u8, count: u16 },
+    /// Indicates: An illegal OPCODE was provided while attempting to build a DNS packet. Valid: 0-15
+    IllegalOpCodeWhileBuildingPacket,
+    /// Indicates: An illegal Z value was provided while attempting to build a DNS packet. Valid: 0-7
+    IllegalZValueWhileBuildingPacket,
+    /// Indicates: An illegal Response Code was provided while attempting to build a DNS packet. Valid: 0-15
+    IllegalResponseCodeWhileBuildingPacket,
 }
 
 /// Convenience type alias to [`std::result::Result<T, E>`] where `E` is defined as [`self::Error`].
