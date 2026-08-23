@@ -4,19 +4,20 @@
 mod udp;
 
 use tokio::net::UdpSocket;
-use tokio_util::task::TaskTracker;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 pub use udp::*;
 
-pub async fn start(task_tracker: TaskTracker) {
+pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
     // Since we don't want to start a server where this value is unknown we intentionally panic here.
     // This applies to all .unwrap() calls inside this function.
     let avail_para = std::thread::available_parallelism().unwrap().get();
 
     // UDP listeners
     for _ in 0..avail_para {
-        let task_tracker = task_tracker.clone();
+        let tracker = tracker.clone();
+        let cancel_token = cancel_token.clone();
 
-        task_tracker.clone().spawn(async move {
+        tracker.clone().spawn(async move {
             let socket = socket2::Socket::new(
                 socket2::Domain::IPV4,
                 socket2::Type::DGRAM,
@@ -29,7 +30,7 @@ pub async fn start(task_tracker: TaskTracker) {
 
             let socket = UdpSocket::from_std(socket.into()).unwrap();
 
-            let listener = UdpListener::new(socket, task_tracker.clone());
+            let listener = UdpListener::new(socket, tracker.clone(), cancel_token.clone());
             listener.listen().await;
         });
     }
