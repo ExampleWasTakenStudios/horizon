@@ -33,7 +33,6 @@ pub fn entry() {
         println!(" ");
 
         wait_for_shutdown_signal().await;
-        println!("[MAIN] Received Ctrl+C");
         tracker.close();
         cancel_token.cancel();
 
