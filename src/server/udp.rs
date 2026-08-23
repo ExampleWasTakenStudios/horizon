@@ -19,28 +19,28 @@ impl UdpListener {
         }
     }
 
-    pub async fn listen(&self) {
+    pub async fn listen(&self, id: usize) {
         tokio::select! {
             _ = self.cancel_token.cancelled() => {
-                println!("[UDP Listener] Shutting down gracefully...");
+                println!("[UDP Listener {}] Shutting down gracefully...", id);
 
                 #[allow(clippy::needless_return, reason = "Allowed for readability.")]
                 return;
             }
 
-            _ = self.lister_loop() => {}
+            _ = self.lister_loop(id) => {}
         }
     }
 
-    async fn lister_loop(&self) {
+    async fn lister_loop(&self, id: usize) {
         let mut buf = [0; constants::MAX_DGRAM_SIZE];
-        println!("[UDP Listener] Listening on {}", self.socket.local_addr().unwrap());
+        println!("[UDP Listener {}] Listening on {}", id, self.socket.local_addr().unwrap());
 
         loop {
             let (length, peer_addr) = match self.socket.recv_from(&mut buf).await {
                 Ok(v) => v,
                 Err(e) => {
-                    eprintln!("Error while receiving datagram: {e}");
+                    eprintln!("[UDP Listener {}] Error while receiving datagram: {e}", id);
                     continue;
                 }
             };

@@ -15,7 +15,7 @@ pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
     let avail_para = std::thread::available_parallelism().unwrap().get();
 
     // UDP listeners
-    for _ in 0..avail_para {
+    for i in 0..avail_para {
         let tracker = tracker.clone();
         let cancel_token = cancel_token.clone();
 
@@ -36,7 +36,7 @@ pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
             let socket = UdpSocket::from_std(socket.into()).unwrap();
 
             let listener = UdpListener::new(socket, tracker.clone(), cancel_token.clone());
-            listener.listen().await;
+            listener.listen(i).await;
         });
     }
 }
