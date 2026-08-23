@@ -28,10 +28,7 @@ impl UdpListener {
                 return;
             }
 
-            _ = self.lister_loop() => {
-                println!("After listener loop");
-                return;
-            }
+            _ = self.lister_loop() => {}
         }
     }
 
