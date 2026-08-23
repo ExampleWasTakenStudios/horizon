@@ -7,6 +7,8 @@ use tokio::net::UdpSocket;
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 pub use udp::*;
 
+use crate::constants;
+
 pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
     // Since we don't want to start a server where this value is unknown we intentionally panic here.
     // This applies to all .unwrap() calls inside this function.
@@ -27,6 +29,9 @@ pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
 
             socket.set_nonblocking(true).unwrap();
             socket.set_reuse_port(true).unwrap();
+            socket
+                .bind(&constants::DOWNSTREAM_SOCKET_ADDR.into())
+                .unwrap();
 
             let socket = UdpSocket::from_std(socket.into()).unwrap();
 

@@ -34,6 +34,7 @@ impl UdpListener {
 
     async fn lister_loop(&self) {
         let mut buf = [0; constants::MAX_DGRAM_SIZE];
+        println!("[UDP Listener] Listening on {}", self.socket.local_addr().unwrap());
 
         loop {
             let (length, peer_addr) = match self.socket.recv_from(&mut buf).await {
