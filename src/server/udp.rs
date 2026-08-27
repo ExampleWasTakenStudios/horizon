@@ -28,11 +28,11 @@ impl UdpListener {
                 return;
             }
 
-            _ = self.lister_loop(id) => {}
+            _ = self.listener_loop(id) => {}
         }
     }
 
-    async fn lister_loop(&self, id: usize) {
+    async fn listener_loop(&self, id: usize) {
         let mut buf = [0; constants::MAX_DGRAM_SIZE];
         println!("[UDP Listener {}] Listening on {}", id, self.socket.local_addr().unwrap());
 
