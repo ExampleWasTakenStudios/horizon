@@ -35,6 +35,16 @@ pub enum DnsError {
     IllegalZValueWhileBuildingPacket,
     /// Indicates: An illegal Response Code was provided while attempting to build a DNS packet. Valid: 0-15
     IllegalResponseCodeWhileBuildingPacket,
+    /// Indicates: That a inbound connection could not be accepted because the system was at capacity.
+    NoPermitAvailable,
+    /// Indicates: The semaphore tracking active connections/queries has closed.
+    ConnectionSemaphoreClosed,
+    /// Indicates: An error occurred while accepting an inbound connection.
+    ConnectionAcceptError,
+    /// Indicates: An error occurred while reading
+    TcpStreamReadError,
+    /// Indicates: An error occurred while writing.
+    TcpStreamWriteError,
 }
 
 /// Convenience type alias to [`std::result::Result<T, E>`] where `E` is defined as [`self::Error`].

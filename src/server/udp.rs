@@ -49,7 +49,7 @@ impl UdpListener {
                 let mut packet = Vec::with_capacity(length);
                 packet.extend_from_slice(&buf[0..length]); // Only pass the bytes actually containing data to the vector. Empty bytes are discarded.
 
-                query::handle(packet, peer_addr);
+                query::handle(packet, ClientConnection::Udp(peer_addr));
             });
         }
     }

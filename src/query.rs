@@ -8,16 +8,14 @@
 //! of the service such as local zone authority or blocking queries. Instead, it knows about
 //! the correct systems to handle the query accordingly and calls them accordingly.
 
-use std::net::SocketAddr;
-
-use crate::protocol;
+use crate::{protocol, server::ClientConnection};
 
 /// This is the central handler of a query through its flow through the system.
 /// It acts the routing instance passing the query to all relevant subsystems like the local zone authority
 /// and the sinkhole before forwarding it to an upstream resolver.
 ///
 /// As this function is the global handler, a query can be considered dealt with when this function returns.
-pub fn handle(packet: Vec<u8>, src_addr: SocketAddr) {
+pub fn handle(packet: Vec<u8>, client_connection: ClientConnection) {
     // 1. Deserialize
     let message = match protocol::deserialize(&packet) {
         Ok(m) => m,

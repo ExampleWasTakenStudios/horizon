@@ -2,10 +2,16 @@
 //!
 //! **Rules:** It depends on the [`protocol`](crate::protocol) module to which is hands the data it receives.
 mod udp;
-
-use tokio::net::UdpSocket;
-use tokio_util::{sync::CancellationToken, task::TaskTracker};
 pub use udp::*;
+
+mod tcp;
+pub use tcp::*;
+
+mod network;
+pub use network::*;
+
+use tokio::net::{TcpListener, UdpSocket};
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 use crate::constants;
 
@@ -37,6 +43,44 @@ pub async fn start(tracker: TaskTracker, cancel_token: CancellationToken) {
 
             let listener = UdpListener::new(socket, tracker.clone(), cancel_token.clone());
             listener.listen(i).await;
+        });
+    }
+
+    // TCP listeners
+    for i in 0..avail_para {
+        let tracker = tracker.clone();
+        let cancel_token = cancel_token.clone();
+
+        tracker.clone().spawn(async move {
+            let socket =
+                socket2::Socket::new(socket2::Domain::IPV4, socket2::Type::STREAM, None).unwrap();
+
+            socket.set_nonblocking(true).unwrap();
+            socket.set_reuse_port(true).unwrap();
+
+            let socket = TcpListener::from_std(socket.into()).unwrap();
+
+            // TCP Listener
+            tracker.clone().spawn(async move {
+                let (stream, peer_addr) = tokio::select! {
+                    _ = cancel_token.cancelled() => {
+                        println!("[TCP Listener {i}] Shutting down gracefully...");
+
+                        #[allow(clippy::needless_return, reason = "Allowed for readability.")]
+                        return;
+                    }
+
+                    res = socket.accept() => {
+                        match res {
+                            Ok(v) => v,
+                            Err(e) => {
+                                eprintln!("Error occurred while accepting stream: {e}");
+                                return;
+                            },
+                        }
+                    }
+                };
+            });
         });
     }
 }
