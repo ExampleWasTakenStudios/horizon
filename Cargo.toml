@@ -14,5 +14,6 @@ dashmap = "6.2.1"
 hex-literal = "1.1.0"
 rand = "0.10.2"
 socket2 = "0.6.5"
+thiserror = "2.0.20"
 tokio = { version = "1.52.3", features = ["full"] }
 tokio-util = { version = "0.7.19", features = ["full"]}
