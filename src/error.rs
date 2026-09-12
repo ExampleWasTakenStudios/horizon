@@ -49,3 +49,13 @@ pub enum DnsError {
 
 /// Convenience type alias to [`std::result::Result<T, E>`] where `E` is defined as [`self::Error`].
 pub type DnsResult<T> = std::result::Result<T, DnsError>;
+
+
+// NEW IMPL
+#[derive(thiserror::Error, Debug)]
+pub enum AppError {
+    #[error(transparent)]
+    ProtocolError(ProtocolError),
+    #[error(transparent)]
+    NetworkError(NetworkError),
+}

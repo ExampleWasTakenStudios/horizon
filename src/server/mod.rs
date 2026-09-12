@@ -10,6 +10,9 @@ pub use tcp::*;
 mod network;
 pub use network::*;
 
+mod network_error;
+pub use network_error::*;
+
 use tokio::net::{TcpListener, UdpSocket};
 use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
